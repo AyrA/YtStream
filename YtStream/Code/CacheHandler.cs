@@ -161,5 +161,33 @@ namespace YtStream
         {
             return IsStale(FileName, DateTime.UtcNow.Subtract(MaxAge.ToUniversalTime()));
         }
+
+        public int ClearStale()
+        {
+            return ClearStale(DefaultCacheLifetime);
+        }
+
+        public int ClearStale(TimeSpan MaxAge)
+        {
+            int Removed = 0;
+            var DI = new DirectoryInfo(CachePath);
+            var Cutoff = DateTime.UtcNow.Subtract(MaxAge);
+            foreach (var FI in DI.EnumerateFiles(CachePath))
+            {
+                if (FI.LastWriteTimeUtc < Cutoff)
+                {
+                    try
+                    {
+                        FI.Delete();
+                        ++Removed;
+                    }
+                    catch
+                    {
+                        //NOOP
+                    }
+                }
+            }
+            return Removed;
+        }
     }
 }
