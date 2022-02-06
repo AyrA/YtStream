@@ -34,12 +34,39 @@ namespace YtStream.Controllers
             }
             if (Tools.IsYoutubeId(id))
             {
-                var Ranges = await SponsorBlock.GetRangesAsync(id);
-                if (Ranges == null)
+                var Name = $"{id}.json";
+                var C = Cache.GetHandler(Cache.CacheType.SponsorBlock, Tools.SponsorBlockCacheTime);
+                TimeRange[] Ranges;
+                var FS = C.OpenIfNotStale(Name);
+
+                if (FS == null)
                 {
-                    return StatusCode(502, "Got invalid SponsorBlock response");
+                    Ranges = await SponsorBlock.GetRangesAsync(id);
+                    if (Ranges == null)
+                    {
+                        return StatusCode(502, "Got invalid SponsorBlock response");
+                    }
+                    using (FS = C.WriteFile(Name))
+                    {
+                        await Tools.WriteStringAsync(FS, Ranges.ToJson());
+                    }
+                    Response.Headers.Add("X-From-Cache", "No");
                 }
-                return Ok(string.Join("\r\n", Ranges.Select(m => m.ToString()).ToArray()));
+                else
+                {
+                    using (FS)
+                    {
+                        Ranges = (await Tools.ReadStringAsync(FS)).FromJson<TimeRange[]>();
+                    }
+                    if (Ranges == null)
+                    {
+                        C.DeleteFile(Name);
+                        return StatusCode(500, "Cache corrupt");
+                    }
+                    Response.Headers.Add("X-From-Cache", "Yes");
+                }
+                Tools.SetExpiration(Response, C.TimeToStale(Name));
+                return Json(Ranges);
             }
             return BadRequest("Invalid id");
         }

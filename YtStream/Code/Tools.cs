@@ -1,7 +1,9 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -9,6 +11,10 @@ namespace YtStream
 {
     public static class Tools
     {
+        public const int SponsorBlockCacheTime = 86400 * 7;
+
+        private const string UnixZero = "Thu, 01 Jan 1970 00:00:00 GMT";
+
         private static readonly Regex IdRegex = new Regex(@"^[\w\-]{10}[AEIMQUYcgkosw048]=?$");
         private static readonly Random R = new Random();
         private static readonly char[] InvalidNameChars = Path.GetInvalidFileNameChars();
@@ -27,7 +33,7 @@ namespace YtStream
             {
                 return (HttpWebResponse)await req.GetResponseAsync();
             }
-            catch(WebException ex)
+            catch (WebException ex)
             {
                 return (HttpWebResponse)ex.Response;
             }
@@ -88,6 +94,18 @@ namespace YtStream
             return Array;
         }
 
+        internal static DateTime SetExpiration(HttpResponse response, TimeSpan duration)
+        {
+            if (duration.Ticks <= 0)
+            {
+                response.Headers["Expires"] = UnixZero;
+                return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            }
+            var EndDate = DateTime.UtcNow.Add(duration);
+            response.Headers["Expires"] = EndDate.ToString("R");
+            return EndDate;
+        }
+
         public static bool IsYoutubeId(string Id)
         {
             return !string.IsNullOrEmpty(Id) &&
@@ -96,7 +114,7 @@ namespace YtStream
 
         public static string ReadString(Stream stream)
         {
-            using (var SR = new StreamReader(stream))
+            using (var SR = new StreamReader(stream, leaveOpen: true))
             {
                 return SR.ReadToEnd();
             }
@@ -104,9 +122,27 @@ namespace YtStream
 
         public async static Task<string> ReadStringAsync(Stream stream)
         {
-            using (var SR = new StreamReader(stream))
+            using (var SR = new StreamReader(stream, leaveOpen: true))
             {
                 return await SR.ReadToEndAsync();
+            }
+        }
+
+        public static void WriteString(Stream S, string Data)
+        {
+            if (!string.IsNullOrEmpty(Data))
+            {
+                var bytes = Encoding.UTF8.GetBytes(Data);
+                S.Write(bytes, 0, bytes.Length);
+            }
+        }
+
+        public async static Task WriteStringAsync(Stream S, string Data)
+        {
+            if (!string.IsNullOrEmpty(Data))
+            {
+                var bytes = Encoding.UTF8.GetBytes(Data);
+                await S.WriteAsync(bytes, 0, bytes.Length);
             }
         }
 

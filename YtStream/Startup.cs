@@ -11,7 +11,7 @@ namespace YtStream
         public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
             Configuration = configuration;
-            Cache.SetBaseDirectory(env.ContentRootPath);
+            Cache.SetBaseDirectory(System.IO.Path.Combine(env.ContentRootPath, "Cache"));
         }
 
         public IConfiguration Configuration { get; }
