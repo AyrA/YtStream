@@ -1,5 +1,3 @@
-using System;
-
 namespace YtStream.Models
 {
     public class ErrorViewModel

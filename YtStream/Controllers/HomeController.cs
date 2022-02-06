@@ -1,10 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using YtStream.Models;
 
 namespace YtStream.Controllers
@@ -20,6 +16,8 @@ namespace YtStream.Controllers
 
         public IActionResult Index()
         {
+            var Base = string.Format("http{0}://{1}", Request.IsHttps ? "s" : "", Request.Host);
+            ViewBag.Host = Base;
             return View();
         }
 

@@ -2,7 +2,7 @@
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
+<div>
     <h1>YtStream</h1>
     <p>
         This system allows you to directly stream Youtube videos to MP3.
@@ -34,11 +34,11 @@
         Copy the watch id from any youtube video and add it to this URL.<br />
         Example:<br />
         YT: <code>https://www.youtube.com/watch?v=<b>dQw4w9WgXcQ</b></code><br />
-        Stream: <code>/stream/order/<b>dQw4w9WgXcQ</b></code>
+        Stream: <code>@(ViewBag.Host)/Stream/Order/<b>dQw4w9WgXcQ</b></code>
     </p>
     <p>
         You can supply multiple ids (including duplicates) using commas.<br />
-        Example: <code>/stream/order/<b>dQw4w9WgXcQ,dQw4w9WgXcQ,hJresi7z_YM,dQw4w9WgXcQ</b></code><br />
+        Example: <code>@(ViewBag.Host)/Stream/Order/<b>dQw4w9WgXcQ,dQw4w9WgXcQ,hJresi7z_YM,dQw4w9WgXcQ</b></code><br />
         This will play a video twice, then another one, then the first one again.
         The source files will be concatenated into a single continuous MP3 stream.<br />
         Note: Depending on how big your cache is
@@ -46,7 +46,7 @@
         A 5 second cache is usually sufficient.
     </p>
     <p>
-        Randomized play. Using <code>/stream/random/</code> as base URL will shuffle the id list.
+        Randomized play. Using <code>@(ViewBag.Host)/Stream/<b>Random</b>/</code> as base URL will shuffle the id list.
     </p>
     <hr />
     <p>
