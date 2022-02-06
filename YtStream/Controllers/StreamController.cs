@@ -34,7 +34,7 @@ namespace YtStream.Controllers
             }
             if (Tools.IsYoutubeId(id))
             {
-                var Name = $"{id}.json";
+                var Name = $"{Tools.GetIdName(id)}.json";
                 var C = Cache.GetHandler(Cache.CacheType.SponsorBlock, Tools.SponsorBlockCacheTime);
                 TimeRange[] Ranges;
                 var FS = C.OpenIfNotStale(Name);

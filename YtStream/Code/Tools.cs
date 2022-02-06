@@ -112,6 +112,16 @@ namespace YtStream
                 IdRegex.IsMatch(Id);
         }
 
+        public static string GetIdName(string Id)
+        {
+            if (!IsYoutubeId(Id))
+            {
+                throw new FormatException("Argument must be a youtube id");
+            }
+            var Num = Convert.FromBase64String(Id.Replace('_', '/').Replace('-', '+') + "=");
+            return string.Concat(Num.Select(m => m.ToString("X2")));
+        }
+
         public static string ReadString(Stream stream)
         {
             using (var SR = new StreamReader(stream, leaveOpen: true))
