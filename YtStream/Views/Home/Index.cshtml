@@ -1,0 +1,62 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1>YtStream</h1>
+    <p>
+        This system allows you to directly stream Youtube videos to MP3.
+        It has a few features that separate it from other systems.
+        Options marked with an asterisk may be disabled by the application operator.
+    </p>
+    <ul>
+        <li>
+            The audio stream is delivered while being downloaded.
+            No need to wait for it to finish on the server.
+        </li>
+        <li>
+            Sends additional HTTP headers that allow streaming on DLNA devices.
+        </li>
+        <li>
+            Concatenate multiple videos into one stream.
+        </li>
+        <li>
+            * Once streamed, the stream stays available,
+            even if the original video is deleted.
+        </li>
+        <li>
+            * Removal of non-music sections.
+            This application uses SponsorBlock to reliably remove non-music sections from music videos.
+        </li>
+    </ul>
+    <p>
+        How to use:<br />
+        Copy the watch id from any youtube video and add it to this URL.<br />
+        Example:<br />
+        YT: <code>https://www.youtube.com/watch?v=<b>dQw4w9WgXcQ</b></code><br />
+        Stream: <code>/stream/order/<b>dQw4w9WgXcQ</b></code>
+    </p>
+    <p>
+        You can supply multiple ids (including duplicates) using commas.<br />
+        Example: <code>/stream/order/<b>dQw4w9WgXcQ,dQw4w9WgXcQ,hJresi7z_YM,dQw4w9WgXcQ</b></code><br />
+        This will play a video twice, then another one, then the first one again.
+        The source files will be concatenated into a single continuous MP3 stream.<br />
+        Note: Depending on how big your cache is
+        you may experience a short interruption if youtube is slow to answer.
+        A 5 second cache is usually sufficient.
+    </p>
+    <p>
+        Randomized play. Using <code>/stream/random/</code> as base URL will shuffle the id list.
+    </p>
+    <hr />
+    <p>
+        YtStream: Live transcoding of youtube videos into MP3<br />
+        Copyright (C) 2022 Kevin Gut
+    </p>
+    <p>
+        This program is free software: you can redistribute it and/or modify
+        it under the terms of the GNU Affero General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version.
+    </p>
+</div>
