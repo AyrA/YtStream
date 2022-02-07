@@ -76,6 +76,11 @@ namespace YtStream
             {
                 var stale = false;
                 var FS = ReadFile(FileName);
+                //Never stale if zero
+                if (FS != null && MaxAge.Ticks == 0)
+                {
+                    return FS;
+                }
                 try
                 {
                     stale = IsStale(FileName, MaxAge);
@@ -118,6 +123,10 @@ namespace YtStream
 
         public TimeSpan TimeToStale(string FileName, TimeSpan MaxAge)
         {
+            if (MaxAge.Ticks == 0)
+            {
+                return TimeSpan.MaxValue;
+            }
             try
             {
                 var Age = DateTime.UtcNow.Subtract(GetFileAge(FileName));
@@ -149,7 +158,8 @@ namespace YtStream
             {
                 return true;
             }
-            return DateTime.UtcNow.Subtract(File.GetLastWriteTimeUtc(F)) >= MaxAge;
+            //A timeout of zero is never stale
+            return MaxAge.Ticks > 0 && DateTime.UtcNow.Subtract(File.GetLastWriteTimeUtc(F)) >= MaxAge;
         }
 
         public bool IsStale(string FileName, int Seconds)
@@ -169,6 +179,10 @@ namespace YtStream
 
         public int ClearStale(TimeSpan MaxAge)
         {
+            if (MaxAge.Ticks == 0)
+            {
+                return 0;
+            }
             int Removed = 0;
             var DI = new DirectoryInfo(CachePath);
             var Cutoff = DateTime.UtcNow.Subtract(MaxAge);
