@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Filters;
 using System.Linq;
 using System.Threading.Tasks;
+using YtStream.Models;
 
 namespace YtStream.Controllers
 {
@@ -98,6 +99,16 @@ namespace YtStream.Controllers
                 return Ok(Response);
             }
             return BadRequest("No video id specified");
+        }
+
+        public async Task<IActionResult> Test(string id)
+        {
+            if (!Tools.IsYoutubeId(id))
+            {
+                return BadRequest("Invalid youtube id");
+            }
+            var ytdl = new YoutubeDl(ConfigModel.Load().YoutubedlPath);
+            return Ok(await ytdl.GetAudioUrl(id));
         }
     }
 }

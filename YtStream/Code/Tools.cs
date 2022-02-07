@@ -112,6 +112,14 @@ namespace YtStream
                 IdRegex.IsMatch(Id);
         }
 
+        public static string IdToUrl(string Id)
+        {
+            if (IsYoutubeId(Id))
+            {
+                return $"https://www.youtube.com/watch?v={Id}";
+            }
+            throw new ArgumentException("Invalid youtube id");
+        }
         public static string GetIdName(string Id)
         {
             if (!IsYoutubeId(Id))
