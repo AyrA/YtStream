@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -9,6 +10,18 @@ namespace YtStream.Controllers
         private static string[] SplitIds(string id)
         {
             return string.IsNullOrEmpty(id) ? new string[0] : id.Split(',');
+        }
+
+        public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+        {
+            if (Startup.Locked)
+            {
+                context.Result = StatusCode(503, "The application is currently out of service. Please try again later");
+            }
+            else
+            {
+                await base.OnActionExecutionAsync(context, next);
+            }
         }
 
         public IActionResult Order(string id)

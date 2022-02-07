@@ -9,10 +9,19 @@ namespace YtStream
 {
     public class Startup
     {
+        /// <summary>
+        /// Base path of the application
+        /// </summary>
         public static string BasePath { get; private set; }
+        /// <summary>
+        /// If set to true, prevents access to streaming functionality
+        /// </summary>
+        public static volatile bool Locked;
+
 
         public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
+            Locked = false;
             Configuration = configuration;
             BasePath = env.ContentRootPath;
             var C = ConfigModel.Load();
