@@ -108,7 +108,7 @@ namespace YtStream.Controllers
                 return BadRequest("Invalid youtube id");
             }
             var ytdl = new YoutubeDl(ConfigModel.Load().YoutubedlPath);
-            return Ok(await ytdl.GetAudioUrl(id));
+            return Json(await ytdl.GetAudioDetails(id));
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace YtStream
@@ -171,6 +172,26 @@ namespace YtStream
                 return false;
             }
             return !Name.Any(m => InvalidNameChars.Contains(m));
+        }
+
+        public static Thread Thread(ThreadStart S)
+        {
+            var T = new Thread(S)
+            {
+                IsBackground = true
+            };
+            T.Start();
+            return T;
+        }
+
+        public static Thread Thread(ParameterizedThreadStart S, object Param)
+        {
+            var T = new Thread(S)
+            {
+                IsBackground = true
+            };
+            T.Start(Param);
+            return T;
         }
     }
 }
