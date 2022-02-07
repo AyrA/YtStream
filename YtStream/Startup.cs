@@ -3,15 +3,23 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using YtStream.Models;
 
 namespace YtStream
 {
     public class Startup
     {
+        public static string BasePath { get; private set; }
+
         public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
             Configuration = configuration;
-            Cache.SetBaseDirectory(System.IO.Path.Combine(env.ContentRootPath, "Cache"));
+            BasePath = env.ContentRootPath;
+            var C = ConfigModel.Load();
+            if (C.UseCache)
+            {
+                Cache.SetBaseDirectory(C.CachePath);
+            }
         }
 
         public IConfiguration Configuration { get; }

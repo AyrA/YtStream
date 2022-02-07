@@ -21,6 +21,27 @@ namespace YtStream.Controllers
             return View();
         }
 
+        [HttpGet, ActionName("Config")]
+        public IActionResult ConfigGet()
+        {
+            return View(ConfigModel.Load());
+        }
+
+        [HttpPost, ActionName("Config"), ValidateAntiForgeryToken]
+        public IActionResult ConfigPost(ConfigModel model)
+        {
+            if (model == null)
+            {
+                return RedirectToAction("Config");
+            }
+            if (!model.IsValid())
+            {
+                return View(model);
+            }
+            model.Save();
+            return RedirectToAction("Config");
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {

@@ -36,3 +36,4 @@ artifacts/
 
 #Cached YtStream resources
 Cache/
+config.json

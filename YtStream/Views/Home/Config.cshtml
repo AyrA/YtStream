@@ -1,0 +1,99 @@
+﻿@model ConfigModel
+@{
+    ViewData["Title"] = "Settings";
+}
+@if (!Model.IsValid())
+{
+    <div class="alert alert-danger">
+        <p>Before you can properly use this application you need to fix the errors listed below</p>
+        <ul>
+            @foreach (var Err in Model.GetValidationMessages())
+            {
+                <li>@Err</li>
+            }
+        </ul>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">Configuration is valid</div>
+}
+<form asp-action="Config" method="post">
+    <div class="row">
+        <div class="col-md-6 form-group">
+            <label>
+                FFmpeg path
+            </label>
+            <input type="text" asp-for="FfmpegPath" class="form-control" />
+            <a href="https://ffmpeg.org/download.html" target="_blank" rel="noreferrer nofollow noopener">Download</a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6 form-group">
+            <label>
+                Youtube-dl path
+            </label>
+            <input type="text" asp-for="YoutubedlPath" class="form-control" />
+            <a href="https://youtube-dl.org/" target="_blank" rel="noreferrer nofollow noopener">Download</a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 form-group">
+            <label>
+                <input type="checkbox" asp-for="UseCache" value="True" />
+                Use cache
+            </label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6 form-group">
+            <label>
+                Cache path
+            </label>
+            <input type="text" asp-for="CachePath" class="form-control" />
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 form-group">
+            <label>
+                Max cache time for MP3 files
+            </label>
+            <input type="number" min="0" asp-for="CacheMp3Lifetime" class="form-control" />
+            <i>Zero indicates to cache forever</i>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 form-group">
+            <label>
+                <input type="checkbox" asp-for="UseSponsorBlock" value="True" />
+                Use SponsorBlock
+            </label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 form-group">
+            <label>
+                SponsorBlock server
+            </label>
+            <input type="text" asp-for="SponsorBlockServer" class="form-control" />
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 form-group">
+            <label>
+                Max cache time for SponsorBlock files
+            </label>
+            <input type="number" min="0" asp-for="CacheSBlockLifetime" class="form-control" />
+            <i>Zero indicates to cache forever</i>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 form-group">
+            <input type="submit" value="Send" class="btn btn-primary" />
+        </div>
+    </div>
+</form>
+@section Scripts
+{
+    <script src="~/js/config.view.js" asp-append-version="true" defer></script>
+}

@@ -22,7 +22,7 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Config">Settings</a>
                         </li>
                     </ul>
                 </div>
@@ -37,12 +37,12 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2022 - YtStream - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            &copy; 2022 - <a href="https://github.com/AyrA/YtStream" target="_blank" rel="noreferrer nofollow noopener">Kevin Gut</a>
         </div>
     </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/lib/jquery/dist/jquery.min.js" defer></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script src="~/js/site.js" asp-append-version="true" defer></script>
     @RenderSection("Scripts", required: false)
 </body>
 </html>
