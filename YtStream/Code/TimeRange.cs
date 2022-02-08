@@ -73,6 +73,11 @@ namespace YtStream
             return !double.IsNaN(d) && !double.IsInfinity(d) && d >= 0;
         }
 
+        public bool IsInRange(double d)
+        {
+            return d >= start && d <= end;
+        }
+
         public override string ToString()
         {
             return $"{Start} --> {End}";

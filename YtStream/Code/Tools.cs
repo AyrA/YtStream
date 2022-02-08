@@ -95,7 +95,16 @@ namespace YtStream
             return Array;
         }
 
-        internal static DateTime SetExpiration(HttpResponse response, TimeSpan duration)
+        /// <summary>
+        /// Sets the "Expires" header to the given time
+        /// </summary>
+        /// <param name="response">HTTP handler</param>
+        /// <param name="duration">Expiration timeout</param>
+        /// <returns>
+        /// Date the header was set to
+        /// </returns>
+        /// <remarks>A value in the past results in "1970-01-01 00:00:00 GMT"</remarks>
+        public static DateTime SetExpiration(HttpResponse response, TimeSpan duration)
         {
             if (duration.Ticks <= 0)
             {
@@ -105,6 +114,22 @@ namespace YtStream
             var EndDate = DateTime.UtcNow.Add(duration);
             response.Headers["Expires"] = EndDate.ToString("R");
             return EndDate;
+        }
+
+        /// <summary>
+        /// Sets headers used to stream MP3 data to the client
+        /// </summary>
+        /// <param name="response">HTTP handler</param>
+        /// <returns>true if headers were set</returns>
+        public static bool SetAudioHeaders(HttpResponse response)
+        {
+            if (!response.HasStarted)
+            {
+                response.ContentType = "audio/mpeg";
+                response.Headers.Add("transferMode.dlna.org", "Streaming");
+                response.Headers.Add("contentFeatures.dlna.org", "DLNA.ORG_PN=MP3;DLNA.ORG_OP=01;DLNA.ORG_FLAGS=01700000000000000000000000000000");
+            }
+            return response.HasStarted;
         }
 
         public static bool IsYoutubeId(string Id)

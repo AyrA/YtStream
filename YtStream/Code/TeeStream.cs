@@ -70,7 +70,7 @@ namespace YtStream
             {
                 throw new ArgumentException("Null or unwritable stream passed to " + nameof(TeeStream));
             }
-            this.Streams.AddRange(Streams.Select(m => new StreamInfo(m)));
+            this.Streams = new List<StreamInfo>(Streams.Select(m => new StreamInfo(m)));
             ownsStreams = OwnsStreams;
         }
 
