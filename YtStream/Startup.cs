@@ -37,6 +37,12 @@ namespace YtStream
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllersWithViews();
+            services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
+            {
+                //Required for the BufferedStream to dispose correctly.
+                //No writes will actualy be performed because we always call FlushAsync() before disposing.
+                options.AllowSynchronousIO = true;
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
