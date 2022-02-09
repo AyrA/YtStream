@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace YtStream
@@ -44,7 +45,7 @@ namespace YtStream
                 UseShellExecute = false,
                 RedirectStandardOutput = true
             };
-            using(var P = Process.Start(PSI))
+            using (var P = Process.Start(PSI))
             {
                 return (await P.StandardOutput.ReadToEndAsync()).Trim();
             }
@@ -65,6 +66,28 @@ namespace YtStream
             using (var P = Process.Start(PSI))
             {
                 return (await P.StandardOutput.ReadToEndAsync()).Trim();
+            }
+        }
+
+        /// <summary>
+        /// Downloads a youtube playlist and returns all video ids within
+        /// </summary>
+        /// <param name="Playlist">Playlist id</param>
+        /// <returns>Video Ids</returns>
+        public async Task<string[]> GetPlaylist(string Playlist)
+        {
+            if (!Tools.IsYoutubePlaylist(Playlist))
+            {
+                throw new FormatException("Argument must be a youtube playlist id");
+            }
+            var Args = "--get-id --flat-playlist https://www.youtube.com/playlist?list=" + Playlist;
+            var PSI = new ProcessStartInfo(executable, Args);
+            PSI.UseShellExecute = false;
+            PSI.RedirectStandardOutput = true;
+            using (var P = Process.Start(PSI))
+            {
+                var Lines = await P.StandardOutput.ReadToEndAsync();
+                return Lines.Trim().Split('\n').Where(m => Tools.IsYoutubeId(m.Trim())).ToArray();
             }
         }
 

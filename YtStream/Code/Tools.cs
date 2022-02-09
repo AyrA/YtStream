@@ -29,7 +29,8 @@ namespace YtStream
         /// Regex of a valid youtube video id
         /// </summary>
         /// <seealso cref="https://cable.ayra.ch/help/fs.php?help=youtube_id"/>
-        private static readonly Regex IdRegex = new Regex(@"^[\w\-]{10}[AEIMQUYcgkosw048]=?$");
+        private static readonly Regex IdRegex = new Regex(@"^[\w\-]{10}[AEIMQUYcgkosw048]$");
+        private static readonly Regex PlRegex = new Regex(@"^PL(?:[\dA-F]{16}|[\w\-]{32})$");
         /// <summary>
         /// RNG for non cryptographic purposes
         /// </summary>
@@ -157,6 +158,29 @@ namespace YtStream
         {
             return !string.IsNullOrEmpty(Id) &&
                 IdRegex.IsMatch(Id);
+        }
+
+        /// <summary>
+        /// Checks if the supplied argument is a potentially valid yt playlist id
+        /// </summary>
+        /// <param name="playlist">Playlist id</param>
+        /// <returns>true, if valid playlist</returns>
+        public static bool IsYoutubePlaylist(string playlist)
+        {
+            if (string.IsNullOrEmpty(playlist))
+            {
+                return false;
+            }
+            //There's way too many damn playlist formats around.
+            //Lists I know of:
+            //"FL" followed by hex or urlbase64: Favs
+            //"OL" followed by hex or urlbase64: Saved list from someone else
+            //"PL" followed by hex: Old playlist
+            //"PL" followed by urlbase64: Newer playlist
+            //"LL": Liked videos
+
+            //Because this service acts anonymously, FL,OL,LL are not actually supported.
+            return PlRegex.IsMatch(playlist);
         }
 
         /// <summary>

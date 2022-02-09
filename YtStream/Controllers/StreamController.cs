@@ -29,10 +29,13 @@ namespace YtStream.Controllers
             var Controller = (ControllerBase)context.Controller;
             if (Startup.Locked)
             {
-                //context.Result = StatusCode(503, "Streaming services are currently locked. Please try again later");
                 context.HttpContext.Response.StatusCode = 503;
                 context.Result = View("Locked");
                 await base.OnActionExecutionAsync(context, next);
+            }
+            else if (!Settings.IsValid())
+            {
+                context.Result = StatusCode(500, "Misconfiguration. Please check the application settings");
             }
             else
             {
@@ -44,6 +47,52 @@ namespace YtStream.Controllers
         {
             return View();
         }
+
+        public async Task<IActionResult> List(string id)
+        {
+            if (!Tools.IsYoutubePlaylist(id))
+            {
+                return BadRequest("Supplied argument is not a valid playlist identifier");
+            }
+            var ytdl = new YoutubeDl(Settings.YoutubedlPath);
+            var PL = await ytdl.GetPlaylist(id);
+            if (PL == null || PL.Length == 0)
+            {
+                return NotFound("Playlist empty or does not exist");
+            }
+            return Json(PL);
+        }
+
+        public async Task<IActionResult> PlaylistOrder(string id)
+        {
+            if (!Tools.IsYoutubePlaylist(id))
+            {
+                return BadRequest("Supplied argument is not a valid playlist identifier");
+            }
+            var ytdl = new YoutubeDl(Settings.YoutubedlPath);
+            var PL = await ytdl.GetPlaylist(id);
+            if (PL == null || PL.Length == 0)
+            {
+                return NotFound("Playlist empty or does not exist");
+            }
+            return await PerformStream(PL);
+        }
+
+        public async Task<IActionResult> PlaylistRandom(string id)
+        {
+            if (!Tools.IsYoutubePlaylist(id))
+            {
+                return BadRequest("Supplied argument is not a valid playlist identifier");
+            }
+            var ytdl = new YoutubeDl(Settings.YoutubedlPath);
+            var PL = await ytdl.GetPlaylist(id);
+            if (PL == null || PL.Length == 0)
+            {
+                return NotFound("Playlist empty or does not exist");
+            }
+            return await PerformStream(Tools.Shuffle(PL));
+        }
+
 
         public async Task<IActionResult> Order(string id)
         {
