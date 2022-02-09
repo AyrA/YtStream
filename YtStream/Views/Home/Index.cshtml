@@ -1,11 +1,37 @@
 ﻿@model ConfigModel
 @{
     ViewData["Title"] = "Home Page";
+    string ErrorMessage = null;
+    if (Model == null)
+    {
+        try
+        {
+            ConfigModel.Load();
+            ErrorMessage = "Configuration is null";
+
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+    }
 }
 
 <div>
     <h1>YtStream</h1>
-    @if (Model != null && !Model.HasPassword)
+    @if (Model == null)
+    {
+        <div class="alert alert-danger">
+            <p>
+                Your configuration is damaged.
+                Please fix <code>config.json</code> manually or delete it to reset the settings.
+            </p>
+            <p>
+                Error: <code>@ErrorMessage</code>
+            </p>
+        </div>
+    }
+    else if (!Model.HasPassword)
     {
         <div class="alert alert-danger">
             Your configuration is not password protected.

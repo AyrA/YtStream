@@ -29,11 +29,23 @@ namespace YtStream
         /// <param name="env">Base environment</param>
         public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
+            ConfigModel C;
             Locked = false;
             Configuration = configuration;
             BasePath = env.ContentRootPath;
-            var C = ConfigModel.Load();
-            if (C != null && C.UseCache)
+            try
+            {
+                C = ConfigModel.Load();
+            }
+            catch
+            {
+                C = null;
+            }
+            if (C == null)
+            {
+                Locked = true;
+            }
+            else if (C.UseCache)
             {
                 Cache.SetBaseDirectory(C.CachePath);
             }

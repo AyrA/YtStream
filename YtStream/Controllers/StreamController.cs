@@ -26,14 +26,23 @@ namespace YtStream.Controllers
 
         public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
+            var Controller = (ControllerBase)context.Controller;
             if (Startup.Locked)
             {
-                context.Result = StatusCode(503, "The application is currently out of service. Please try again later");
+                //context.Result = StatusCode(503, "Streaming services are currently locked. Please try again later");
+                context.HttpContext.Response.StatusCode = 503;
+                context.Result = View("Locked");
+                await base.OnActionExecutionAsync(context, next);
             }
             else
             {
                 await base.OnActionExecutionAsync(context, next);
             }
+        }
+
+        public IActionResult Locked()
+        {
+            return View();
         }
 
         public async Task<IActionResult> Order(string id)

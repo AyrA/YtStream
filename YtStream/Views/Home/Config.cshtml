@@ -2,29 +2,55 @@
 @{
     ViewData["Title"] = "Settings";
     var ErrMsg = (string)ViewBag.ErrorMessage;
+    var HasPassword = false;
+    if (Model == null)
+    {
+        try
+        {
+            ConfigModel.Load();
+            ErrMsg = "Configuration is null";
+
+        }
+        catch (Exception ex)
+        {
+            ErrMsg = ex.Message;
+        }
+    }
+    else
+    {
+        HasPassword = true;
+    }
 }
 <h1>Settings</h1>
-@if (!Model.IsValid() || !string.IsNullOrEmpty(ErrMsg))
+@if (Model != null)
 {
-
-
-    <div class="alert alert-danger">
-        <p>Before you can properly use this application you need to fix the errors listed below</p>
-        <ul>
-            @if (!string.IsNullOrEmpty(ErrMsg))
-            {
-                <li>@ErrMsg</li>
-            }
-            @foreach (var Err in Model.GetValidationMessages())
-            {
-                <li>@Err</li>
-            }
-        </ul>
-    </div>
+    if (!Model.IsValid() || !string.IsNullOrEmpty(ErrMsg))
+    {
+        <div class="alert alert-danger">
+            <p>Before you can properly use this application you need to fix the errors listed below</p>
+            <ul>
+                @if (!string.IsNullOrEmpty(ErrMsg))
+                {
+                    <li>@ErrMsg</li>
+                }
+                @foreach (var Err in Model.GetValidationMessages())
+                {
+                    <li>@Err</li>
+                }
+            </ul>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">Configuration is valid</div>
+    }
 }
 else
 {
-    <div class="alert alert-info">Configuration is valid</div>
+    <div class="alert alert-danger">
+        Your configuration is damaged.<br />
+        Error: <code>@ErrMsg</code>
+    </div>
 }
 <form asp-action="Config" method="post">
     <div class="row">
@@ -33,7 +59,7 @@ else
                 New Password (min 8 chars)
             </label>
             <input type="password" asp-for="AdminPassword" minlength="8" class="form-control" />
-            <i>Leave blank to not @(Model.HasPassword?"change the":"set the") password</i>
+            <i>Leave blank to not @(HasPassword?"change the":"set the") password</i>
         </div>
         <div class="col-md-6 form-group">
             <label>
@@ -120,7 +146,7 @@ else
             <i>Zero indicates to cache forever</i>
         </div>
     </div>
-    @if (Model.HasPassword)
+    @if (HasPassword)
     {
         <div class="row">
             <div class="col-md-6 form-group">
