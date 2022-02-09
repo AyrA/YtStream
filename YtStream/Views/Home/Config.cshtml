@@ -87,18 +87,6 @@ else
     <div class="row">
         <div class="col-md-4 form-group">
             <label>
-                Output buffer (in kb)
-            </label>
-            <input type="number" min="1" asp-for="OutputBufferKB" class="form-control" />
-            <i>
-                Output buffering prevents stalling of the converter by the client to some extent.
-                5000 kb is enough to hold an entire 3 minute song.
-            </i>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-4 form-group">
-            <label>
                 <input type="checkbox" asp-for="UseCache" value="True" />
                 Use cache
             </label>

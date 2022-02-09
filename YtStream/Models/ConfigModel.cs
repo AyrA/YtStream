@@ -50,11 +50,6 @@ namespace YtStream.Models
         public int CacheSBlockLifetime { get; set; }
 
         /// <summary>
-        /// Buffer for the HTTP MP3 output
-        /// </summary>
-        public int OutputBufferKB { get; set; }
-
-        /// <summary>
         /// Path to youtube-dl executable
         /// </summary>
         public string YoutubedlPath { get; set; }
@@ -128,8 +123,6 @@ namespace YtStream.Models
             CacheMp3Lifetime = 0;
             //7 days
             CacheSBlockLifetime = Tools.SponsorBlockCacheTime;
-            //5M is enough for 3 min at 192 kbps
-            OutputBufferKB = 5000;
         }
 
         /// <summary>
@@ -229,10 +222,6 @@ namespace YtStream.Models
                 {
                     Messages.Add("Invalid sponsor block host name");
                 }
-            }
-            if (OutputBufferKB < 1)
-            {
-                Messages.Add("Output buffer must be at least 1");
             }
             if (string.IsNullOrWhiteSpace(YoutubedlPath))
             {

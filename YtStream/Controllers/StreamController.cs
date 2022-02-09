@@ -83,79 +83,72 @@ namespace YtStream.Controllers
             var skipped = 0;
             _logger.LogInformation("Preparing response for {0} ids", ids.Length);
 
-            //Buffering to prevent stalling the server
-            //TODO: Consider reading the audio length from the YTDL metadata
-            //and simply abort the request if download takes longer than playback.
-
-            using (var BS = new BufferedStream(Response.Body, Settings.OutputBufferKB * 1000))
+            foreach (var ytid in ids)
             {
-                foreach (var ytid in ids)
+                //Stop streaming if the client is gone or the application has been locked
+                if (Startup.Locked || HttpContext.RequestAborted.IsCancellationRequested)
                 {
-                    //Stop streaming if the client is gone or the application has been locked
-                    if(Startup.Locked || HttpContext.RequestAborted.IsCancellationRequested)
-                    {
-                        break;
-                    }
-                    var setCache = true;
-                    var filename = Tools.GetIdName(ytid) + ".mp3";
-                    var ranges = await GetRanges(ytid);
-                    _logger.LogInformation("{0} has {1} ranges", filename, ranges.Length);
-                    FileStream CacheStream = null;
-                    try
-                    {
-                        CacheStream = MP3.OpenIfNotStale(filename);
-                    }
-                    catch
-                    {
-                        _logger.LogWarning("Could not open {0} from cache. Will perform a direct YT stream", filename);
-                        //If this doesn't works, the file is currently being written to.
-                        //In that case we directly go to youtube but do not create a cached file
-                        setCache = false;
-                    }
-                    if (CacheStream != null)
-                    {
-                        _logger.LogInformation("Using cache for {0}", filename);
-                        using (CacheStream)
-                        {
-                            Tools.SetAudioHeaders(Response);
-                            await Mp3Cut.CutMp3Async(ranges, CacheStream, BS);
-                            await BS.FlushAsync();
-                            continue;
-                        }
-                    }
-                    //At this point we need to go live to youtube to get the file
-                    var ytdl = new YoutubeDl(Settings.YoutubedlPath);
-                    var converter = new Converter(Settings.FfmpegPath);
-                    var url = await ytdl.GetAudioUrl(ytid);
-                    if (string.IsNullOrEmpty(url))
-                    {
-                        _logger.LogWarning("No YT url for {0} (invalid or restricted video id)", ytid);
-                        ++skipped;
-                        continue;
-                    }
-                    if (setCache)
-                    {
-                        CacheStream = MP3.WriteFile(filename);
-                    }
-                    using (var Mp3Data = converter.ConvertToMp3(url))
+                    break;
+                }
+                var setCache = true;
+                var filename = Tools.GetIdName(ytid) + ".mp3";
+                var ranges = await GetRanges(ytid);
+                _logger.LogInformation("{0} has {1} ranges", filename, ranges.Length);
+                FileStream CacheStream = null;
+                try
+                {
+                    CacheStream = MP3.OpenIfNotStale(filename);
+                }
+                catch
+                {
+                    _logger.LogWarning("Could not open {0} from cache. Will perform a direct YT stream", filename);
+                    //If this doesn't works, the file is currently being written to.
+                    //In that case we directly go to youtube but do not create a cached file
+                    setCache = false;
+                }
+                if (CacheStream != null)
+                {
+                    _logger.LogInformation("Using cache for {0}", filename);
+                    using (CacheStream)
                     {
                         Tools.SetAudioHeaders(Response);
-                        if (CacheStream != null)
-                        {
-                            _logger.LogInformation("Downloading {0} from YT and populate cache", ytid);
-                            using (CacheStream)
-                            {
-                                await Mp3Cut.CutMp3Async(ranges, Mp3Data, BS, CacheStream);
-                            }
-                        }
-                        else
-                        {
-                            _logger.LogInformation("Downloading {0} from YT without populating cache", ytid);
-                            await Mp3Cut.CutMp3Async(ranges, Mp3Data, BS);
-                        }
-                        //Flush all data before attempting the next file
-                        await BS.FlushAsync();
+                        await Mp3Cut.CutMp3Async(ranges, CacheStream, Response.Body);
+                        await Response.Body.FlushAsync();
+                        continue;
                     }
+                }
+                //At this point we need to go live to youtube to get the file
+                var ytdl = new YoutubeDl(Settings.YoutubedlPath);
+                var converter = new Converter(Settings.FfmpegPath, await ytdl.GetUserAgent());
+                var url = await ytdl.GetAudioUrl(ytid);
+                if (string.IsNullOrEmpty(url))
+                {
+                    _logger.LogWarning("No YT url for {0} (invalid or restricted video id)", ytid);
+                    ++skipped;
+                    continue;
+                }
+                if (setCache)
+                {
+                    CacheStream = MP3.WriteFile(filename);
+                }
+                using (var Mp3Data = converter.ConvertToMp3(url))
+                {
+                    Tools.SetAudioHeaders(Response);
+                    if (CacheStream != null)
+                    {
+                        _logger.LogInformation("Downloading {0} from YT and populate cache", ytid);
+                        using (CacheStream)
+                        {
+                            await Mp3Cut.CutMp3Async(ranges, Mp3Data, Response.Body, CacheStream);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Downloading {0} from YT without populating cache", ytid);
+                        await Mp3Cut.CutMp3Async(ranges, Mp3Data, Response.Body);
+                    }
+                    //Flush all data before attempting the next file
+                    await Response.Body.FlushAsync();
                 }
             }
             if (skipped == ids.Length)

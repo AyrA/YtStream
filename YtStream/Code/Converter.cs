@@ -42,6 +42,10 @@ namespace YtStream
         /// </summary>
         private readonly string executable;
         /// <summary>
+        /// User agent string to use for URL requests
+        /// </summary>
+        private readonly string userAgent;
+        /// <summary>
         /// Running instance
         /// </summary>
         private Process P;
@@ -65,7 +69,8 @@ namespace YtStream
         /// Creates a converter instance
         /// </summary>
         /// <param name="Executable">FFmpeg executable path</param>
-        public Converter(string Executable)
+        /// <param name="UserAgent">User agent for URL based requests. See <see cref="YoutubeDl.GetUserAgent"/></param>
+        public Converter(string Executable, string UserAgent)
         {
             if (string.IsNullOrWhiteSpace(Executable))
             {
@@ -75,7 +80,12 @@ namespace YtStream
             {
                 throw new IOException("File not found");
             }
+            if (!string.IsNullOrEmpty(UserAgent))
+            {
+                UserAgent = UserAgent.Replace("\"", "");
+            }
             executable = Executable;
+            userAgent = UserAgent;
         }
 
         /// <summary>
@@ -244,6 +254,10 @@ namespace YtStream
         /// <returns>Conversion arguments for the given file or URL</returns>
         private string GetArgs(string Arg)
         {
+            if (!string.IsNullOrWhiteSpace(userAgent))
+            {
+                return $"-user_agent \"{userAgent}\" -i \"{Arg}\" " + GetBaseArg();
+            }
             return $"-i \"{Arg}\" " + GetBaseArg();
         }
 

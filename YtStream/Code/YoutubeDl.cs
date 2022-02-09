@@ -34,6 +34,41 @@ namespace YtStream
         }
 
         /// <summary>
+        /// Gets the user agent that ytdl uses for requests
+        /// </summary>
+        /// <returns>User agent string</returns>
+        public async Task<string> GetUserAgent()
+        {
+            var PSI = new ProcessStartInfo(executable, "--dump-user-agent")
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
+            using(var P = Process.Start(PSI))
+            {
+                return (await P.StandardOutput.ReadToEndAsync()).Trim();
+            }
+        }
+
+        /// <summary>
+        /// Gets the version of the application
+        /// </summary>
+        /// <returns>Version</returns>
+        /// <remarks>Version number is currently formatted as YYYY.MM.DD</remarks>
+        public async Task<string> GetVersion()
+        {
+            var PSI = new ProcessStartInfo(executable, "--version")
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
+            using (var P = Process.Start(PSI))
+            {
+                return (await P.StandardOutput.ReadToEndAsync()).Trim();
+            }
+        }
+
+        /// <summary>
         /// Gets information about the supplied id
         /// </summary>
         /// <param name="Id">Video id</param>
