@@ -91,6 +91,11 @@ namespace YtStream.Controllers
             {
                 foreach (var ytid in ids)
                 {
+                    //Stop streaming if the client is gone or the application has been locked
+                    if(Startup.Locked || HttpContext.RequestAborted.IsCancellationRequested)
+                    {
+                        break;
+                    }
                     var setCache = true;
                     var filename = Tools.GetIdName(ytid) + ".mp3";
                     var ranges = await GetRanges(ytid);
