@@ -56,6 +56,9 @@
             Concatenate multiple videos into one stream.
         </li>
         <li>
+            Stream entire playlists as one continuous audio segment.
+        </li>
+        <li>
             * Once streamed, the stream stays available,
             even if the original video is deleted.
         </li>
@@ -65,23 +68,7 @@
         </li>
     </ul>
     <p>
-        How to use:<br />
-        Copy the watch id from any youtube video and add it to this URL.<br />
-        Example:<br />
-        YT: <code>https://www.youtube.com/watch?v=<b>dQw4w9WgXcQ</b></code><br />
-        Stream: <code>@(ViewBag.Host)/Stream/Order/<b>dQw4w9WgXcQ</b></code>
-    </p>
-    <p>
-        You can supply multiple ids (including duplicates) using commas.<br />
-        Example: <code>@(ViewBag.Host)/Stream/Order/<b>dQw4w9WgXcQ,dQw4w9WgXcQ,hJresi7z_YM,dQw4w9WgXcQ</b></code><br />
-        This will play a video twice, then another one, then the first one again.
-        The source files will be concatenated into a single continuous MP3 stream.<br />
-        Note: Depending on how big your cache is
-        you may experience a short interruption if youtube is slow to answer.
-        A 5 second cache is usually sufficient.
-    </p>
-    <p>
-        Randomized play. Using <code>@(ViewBag.Host)/Stream/<b>Random</b>/</code> as base URL will shuffle the id list.
+        Check "<a asp-action="Info">How to use</a>" for usage instructions.
     </p>
     <hr />
     <p>

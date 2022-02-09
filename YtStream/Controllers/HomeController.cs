@@ -25,6 +25,11 @@ namespace YtStream.Controllers
 
         public IActionResult Index()
         {
+            return View(settings);
+        }
+
+        public IActionResult Info()
+        {
             var Base = string.Format("http{0}://{1}", Request.IsHttps ? "s" : "", Request.Host);
             ViewBag.Host = Base;
             return View(settings);

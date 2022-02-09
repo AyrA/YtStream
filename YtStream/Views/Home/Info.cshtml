@@ -1,0 +1,76 @@
+﻿@{ViewData["Title"] = "Usage instructions";}
+<h1>Usage instructions</h1>
+<p>
+    This system operates on the video ids or playlist ids.
+    They both can be grabbed from the address bar of your browser.
+</p>
+<h2>Restrictions</h2>
+<p>
+    You can only stream videos and playlists that can be viewed publicly and are not age restricted.
+    The administrator of this system may also put restrictions in place
+    about the video length or the number of videos in a single stream.
+</p>
+<h2>Video id</h2>
+<p>
+    The video id is an 11 character string following the <code>v=</code> of a video URL.<br />
+    Example: <code>https://www.youtube.com/watch?v=<b>dQw4w9WgXcQ</b></code><br />
+</p>
+<p>
+    You can supply multiple ids to a stream function to stream them in order.
+    Use commas to separate them.
+    You can even supply the same id multiple times to repeat the file.<br />
+    Example: <code>/Stream/Order/dQw4w9WgXcQ,dQw4w9WgXcQ,hJresi7z_YM,dQw4w9WgXcQ</code>
+</p>
+<h2>Playlist id</h2>
+<p>
+    The playlist id comes in two versions.
+    Both of them are fairly long and start with "PL"<br />
+    Format: <code>https://www.youtube.com/playlist?list=PL<b>&lt;many_characters&gt;</b></code>
+</p>
+<h2>Stream endpoints</h2>
+<p>
+    A stream endpoint is always in the format <code>/Stream/&lt;Function&gt;/&lt;Parameter&gt;</code><br />
+    The "Function" is one of the following:
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Funtion</th>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Order</td>
+            <td>one or more video ids</td>
+            <td>Plays all supplied ids in the given order</td>
+        </tr>
+        <tr>
+            <td>Random</td>
+            <td>one or more video ids</td>
+            <td>Plays all supplied ids in random order</td>
+        </tr>
+        <tr>
+            <td>PlaylistOrder</td>
+            <td>one playlist id</td>
+            <td>Plays the supplied playlist in original order</td>
+        </tr>
+        <tr>
+            <td>PlaylistRandom</td>
+            <td>one playlist id</td>
+            <td>Plays the supplied playlist in random order</td>
+        </tr>
+        <tr>
+            <td>Ranges</td>
+            <td>single video id</td>
+            <td>Gets all SponsorBlock ranges for the given video</td>
+        </tr>
+        <tr>
+            <td>List</td>
+            <td>one playlist id</td>
+            <td>Gets all video ids for the given playlist</td>
+        </tr>
+    </tbody>
+</table>
+ 
