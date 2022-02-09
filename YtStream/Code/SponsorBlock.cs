@@ -6,13 +6,33 @@ using System.Threading.Tasks;
 
 namespace YtStream
 {
+    /// <summary>
+    /// Provides limited access to the SponsorBlock API
+    /// </summary>
     public static class SponsorBlock
     {
+        /// <summary>
+        /// Host with official API
+        /// </summary>
         public const string DefaultHost = "sponsor.ajay.app";
+        /// <summary>
+        /// Type of range we want to retrieve
+        /// </summary>
         private const string Category = "music_offtopic";
 
+        /// <summary>
+        /// SBlock host
+        /// </summary>
         public static string ApiHost = DefaultHost;
 
+        /// <summary>
+        /// Gets blockable ranges for the given youtube video id
+        /// </summary>
+        /// <param name="Id">Video id</param>
+        /// <returns>
+        /// List of ranges.
+        /// null on severe errors.
+        /// </returns>
         public async static Task<TimeRange[]> GetRangesAsync(string Id)
         {
             if (!Tools.IsYoutubeId(Id))
@@ -47,24 +67,49 @@ namespace YtStream
             return null;
         }
 
+        /// <summary>
+        /// Represents API response of SponsorBlock
+        /// </summary>
         private class SponsorBlockResult
         {
+            /// <summary>
+            /// Category of the range
+            /// </summary>
             [JsonPropertyName("category")]
             public string Category { get; set; }
             
+            /// <summary>
+            /// Type of action
+            /// </summary>
             [JsonPropertyName("actionType")]
             public string ActionType { get; set; }
             
+            /// <summary>
+            /// Start and End timestamp
+            /// </summary>
             [JsonPropertyName("segment")]
             public double[] Segment { get; set; }
+            /// <summary>
+            /// Randomly generated id of this segment
+            /// </summary>
             public string UUID { get; set; }
             
+            /// <summary>
+            /// Votes for this range
+            /// </summary>
             [JsonPropertyName("votes")]
             public int Votes { get; set; }
             
+            /// <summary>
+            /// Id of user that created this range
+            /// </summary>
             [JsonPropertyName("userID")]
             public string UserID { get; set; }
             
+            /// <summary>
+            /// Range description
+            /// </summary>
+            /// <remarks>This seems to always be empty as of now</remarks>
             [JsonPropertyName("description")]
             public string Description { get; set; }
         }

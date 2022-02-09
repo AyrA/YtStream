@@ -10,15 +10,30 @@ using System.Threading.Tasks;
 
 namespace YtStream
 {
+    /// <summary>
+    /// Generic functions
+    /// </summary>
     public static class Tools
     {
+        /// <summary>
+        /// Default sponsorblock cache time
+        /// </summary>
         public const int SponsorBlockCacheTime = 86400 * 7;
 
+        /// <summary>
+        /// HTTP date for zero
+        /// </summary>
         private const string UnixZero = "Thu, 01 Jan 1970 00:00:00 GMT";
 
+        /// <summary>
+        /// Regex of a valid youtube video id
+        /// </summary>
+        /// <seealso cref="https://cable.ayra.ch/help/fs.php?help=youtube_id"/>
         private static readonly Regex IdRegex = new Regex(@"^[\w\-]{10}[AEIMQUYcgkosw048]=?$");
+        /// <summary>
+        /// RNG for non cryptographic purposes
+        /// </summary>
         private static readonly Random R = new Random();
-        private static readonly char[] InvalidNameChars = Path.GetInvalidFileNameChars();
 
         /// <summary>
         /// Get response from web request with exception handling
@@ -132,12 +147,23 @@ namespace YtStream
             return response.HasStarted;
         }
 
+        /// <summary>
+        /// Checks if the given id is a technically valid YT id
+        /// </summary>
+        /// <param name="Id">video id</param>
+        /// <returns>true if valid</returns>
+        /// <remarks>This will not contact youtube and only check formal correctness</remarks>
         public static bool IsYoutubeId(string Id)
         {
             return !string.IsNullOrEmpty(Id) &&
                 IdRegex.IsMatch(Id);
         }
 
+        /// <summary>
+        /// Converts an Id into a standard youtube watch URL
+        /// </summary>
+        /// <param name="Id">video Id</param>
+        /// <returns>Youtube URL</returns>
         public static string IdToUrl(string Id)
         {
             if (IsYoutubeId(Id))
@@ -146,6 +172,15 @@ namespace YtStream
             }
             throw new ArgumentException("Invalid youtube id");
         }
+
+        /// <summary>
+        /// Gets a unique file name for the given id
+        /// </summary>
+        /// <param name="Id">video id</param>
+        /// <returns>File name</returns>
+        /// <remarks>
+        /// This function is useful for case insensitive file systems
+        /// </remarks>
         public static string GetIdName(string Id)
         {
             if (!IsYoutubeId(Id))
@@ -156,6 +191,11 @@ namespace YtStream
             return string.Concat(Num.Select(m => m.ToString("X2")));
         }
 
+        /// <summary>
+        /// Reads a steam as an UTF-8 string
+        /// </summary>
+        /// <param name="stream">Stream</param>
+        /// <returns>String</returns>
         public static string ReadString(Stream stream)
         {
             using (var SR = new StreamReader(stream, leaveOpen: true))
@@ -164,6 +204,11 @@ namespace YtStream
             }
         }
 
+        /// <summary>
+        /// Reads a steam as an UTF-8 string
+        /// </summary>
+        /// <param name="stream">Stream</param>
+        /// <returns>String</returns>
         public async static Task<string> ReadStringAsync(Stream stream)
         {
             using (var SR = new StreamReader(stream, leaveOpen: true))
@@ -172,6 +217,12 @@ namespace YtStream
             }
         }
 
+        /// <summary>
+        /// Writes an UTF-8 encoded string to a stream
+        /// </summary>
+        /// <param name="S">Stream</param>
+        /// <param name="Data">String</param>
+        /// <remarks>Will not write BOM or a length prefix</remarks>
         public static void WriteString(Stream S, string Data)
         {
             if (!string.IsNullOrEmpty(Data))
@@ -181,6 +232,12 @@ namespace YtStream
             }
         }
 
+        /// <summary>
+        /// Writes an UTF-8 encoded string to a stream
+        /// </summary>
+        /// <param name="S">Stream</param>
+        /// <param name="Data">String</param>
+        /// <remarks>Will not write BOM or a length prefix</remarks>
         public async static Task WriteStringAsync(Stream S, string Data)
         {
             if (!string.IsNullOrEmpty(Data))
@@ -188,35 +245,6 @@ namespace YtStream
                 var bytes = Encoding.UTF8.GetBytes(Data);
                 await S.WriteAsync(bytes, 0, bytes.Length);
             }
-        }
-
-        public static bool IsValidFileName(string Name)
-        {
-            if (string.IsNullOrWhiteSpace(Name))
-            {
-                return false;
-            }
-            return !Name.Any(m => InvalidNameChars.Contains(m));
-        }
-
-        public static Thread Thread(ThreadStart S)
-        {
-            var T = new Thread(S)
-            {
-                IsBackground = true
-            };
-            T.Start();
-            return T;
-        }
-
-        public static Thread Thread(ParameterizedThreadStart S, object Param)
-        {
-            var T = new Thread(S)
-            {
-                IsBackground = true
-            };
-            T.Start(Param);
-            return T;
         }
     }
 }

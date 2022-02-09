@@ -1,20 +1,35 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using YtStream.MP3;
 
 namespace YtStream
 {
+    /// <summary>
+    /// Converts to MP3
+    /// </summary>
     public class Converter : IDisposable
     {
+        /// <summary>
+        /// Result for async conversion operation
+        /// </summary>
         public class AsyncStreamResult
         {
+            /// <summary>
+            /// Task that completes when all data has been piped INTO the process
+            /// </summary>
             public Task CopyStreamResult { get; }
+            /// <summary>
+            /// MP3 output stream
+            /// </summary>
             public Stream StandardOutputStream { get; }
 
+            /// <summary>
+            /// Creates a new instance
+            /// </summary>
+            /// <param name="CopyStreamResult">Task</param>
+            /// <param name="StandardOutputStream">Stream</param>
             public AsyncStreamResult(Task CopyStreamResult, Stream StandardOutputStream)
             {
                 this.CopyStreamResult = CopyStreamResult;
@@ -22,15 +37,34 @@ namespace YtStream
             }
         }
 
+        /// <summary>
+        /// FFmpeg Executable path
+        /// </summary>
         private readonly string executable;
+        /// <summary>
+        /// Running instance
+        /// </summary>
         private Process P;
 
+        /// <summary>
+        /// Get or set audio bitrate
+        /// </summary>
         public Bitrate AudioRate { get; set; } = Bitrate.kbps192;
 
+        /// <summary>
+        /// Get or set audio frequency
+        /// </summary>
         public Frequency AudioFrequency { get; set; } = Frequency.Hz44100;
 
+        /// <summary>
+        /// Gets if the converter is currently running
+        /// </summary>
         public bool IsConverting { get => P != null && !P.HasExited; }
 
+        /// <summary>
+        /// Creates a converter instance
+        /// </summary>
+        /// <param name="Executable">FFmpeg executable path</param>
         public Converter(string Executable)
         {
             if (string.IsNullOrWhiteSpace(Executable))
@@ -44,6 +78,10 @@ namespace YtStream
             executable = Executable;
         }
 
+        /// <summary>
+        /// Aborts conversion
+        /// </summary>
+        /// <returns>true if aborted, false if failed to abort</returns>
         public bool Abort()
         {
             try
@@ -62,6 +100,12 @@ namespace YtStream
             return true;
         }
 
+        /// <summary>
+        /// Blocks until the converter exits
+        /// </summary>
+        /// <param name="MaxWaitMs">Maximum wait time</param>
+        /// <returns>true if exited. False if timeout hit</returns>
+        /// <remarks>If the process has already exited returns true immediately</remarks>
         public bool WaitForExit(int MaxWaitMs = int.MaxValue)
         {
             if (IsConverting)
@@ -71,6 +115,12 @@ namespace YtStream
             return true;
         }
 
+        /// <summary>
+        /// Returns a task that completes when the converter exits
+        /// </summary>
+        /// <param name="MaxWaitMs">Maximum wait time</param>
+        /// <returns>true if exited. False if timeout hit</returns>
+        /// <remarks>If the process has already exited returns true immediately</remarks>
         public Task<bool> WaitForExitAsync(int MaxWaitMs = int.MaxValue)
         {
             if (IsConverting)
@@ -80,6 +130,11 @@ namespace YtStream
             return Task.FromResult(true);
         }
 
+        /// <summary>
+        /// Convert a file or URL to MP3
+        /// </summary>
+        /// <param name="SourceFileOrUrl">File path or URL</param>
+        /// <returns>MP3 stream</returns>
         public Stream ConvertToMp3(string SourceFileOrUrl)
         {
             if (P != null)
@@ -98,20 +153,11 @@ namespace YtStream
             return P.StandardOutput.BaseStream;
         }
 
-        private void ExitHandler(object sender, EventArgs e)
-        {
-            var Temp = (Process)sender;
-            try
-            {
-                Temp.Dispose();
-            }
-            catch
-            {
-                //NOOP
-            }
-            P = null;
-        }
-
+        /// <summary>
+        /// Convert a stream to MP3
+        /// </summary>
+        /// <param name="SourceData">Stream with media data</param>
+        /// <returns>Data for async streaming</returns>
         public AsyncStreamResult ConvertToMp3(Stream SourceData)
         {
             if (P != null)
@@ -133,6 +179,9 @@ namespace YtStream
                 P.StandardOutput.BaseStream);
         }
 
+        /// <summary>
+        /// Disposes this instance and kills the converter if still running
+        /// </summary>
         public void Dispose()
         {
             var Temp = P;
@@ -158,16 +207,53 @@ namespace YtStream
             }
         }
 
+        /// <summary>
+        /// Handles process exit (normal and abort)
+        /// </summary>
+        /// <param name="sender">Process</param>
+        /// <param name="e">Generic event arguments</param>
+        private void ExitHandler(object sender, EventArgs e)
+        {
+            var Temp = (Process)sender;
+            try
+            {
+                Temp.Dispose();
+            }
+            catch
+            {
+                //NOOP
+            }
+            P = null;
+        }
+
+        /// <summary>
+        /// Gets conversion arguments for a stream
+        /// </summary>
+        /// <param name="Arg">Stream</param>
+        /// <returns>Conversion arguments for a stream</returns>
+        /// <remarks><paramref name="Arg"/> is not actually touched in any way</remarks>
         private string GetArgs(Stream Arg)
         {
             return $"-i pipe:0 " + GetBaseArg();
         }
 
+        /// <summary>
+        /// Gets conversion arguments for a file or URL
+        /// </summary>
+        /// <param name="Arg">File path or URL</param>
+        /// <returns>Conversion arguments for the given file or URL</returns>
         private string GetArgs(string Arg)
         {
             return $"-i \"{Arg}\" " + GetBaseArg();
         }
 
+        /// <summary>
+        /// Gets conversion arguments that are identical for all types of source media
+        /// </summary>
+        /// <returns>Static conversion arguments</returns>
+        /// <remarks>
+        /// This incorporates <see cref="AudioRate"/> and <see cref="AudioFrequency"/>
+        /// </remarks>
         private string GetBaseArg()
         {
             return $"-ab {(int)AudioRate}k -vn -ar {(int)AudioFrequency} -acodec mp3 -f mp3 -y pipe:1";

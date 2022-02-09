@@ -6,33 +6,90 @@ using System.Text.Json.Serialization;
 
 namespace YtStream.Models
 {
+    /// <summary>
+    /// User editable configuration
+    /// </summary>
     public class ConfigModel : IValidateable
     {
+        /// <summary>
+        /// File name where config is stored
+        /// </summary>
         public const string ConfigFileName = "config.json";
 
+        /// <summary>
+        /// Path to cache main directory
+        /// </summary>
         public string CachePath { get; set; }
 
+        /// <summary>
+        /// Enable or disable cache
+        /// </summary>
         public bool UseCache { get; set; }
 
+        /// <summary>
+        /// Enable or disable SBlock
+        /// </summary>
         public bool UseSponsorBlock { get; set; }
 
+        /// <summary>
+        /// Maximum age for MP3 files in seconds
+        /// </summary>
+        /// <remarks>
+        /// Youtube files theoretically never expire since you can't change them,
+        /// only delete them.
+        /// Setting this to infinite (zero) is recommended
+        /// </remarks>
         public int CacheMp3Lifetime { get; set; }
 
+        /// <summary>
+        /// SBlock response cache lifetime
+        /// </summary>
+        /// <remarks>
+        /// Ranges do not change too often
+        /// </remarks>
         public int CacheSBlockLifetime { get; set; }
 
+        /// <summary>
+        /// Buffer for the HTTP MP3 output
+        /// </summary>
         public int OutputBufferKB { get; set; }
 
+        /// <summary>
+        /// Path to youtube-dl executable
+        /// </summary>
         public string YoutubedlPath { get; set; }
 
+        /// <summary>
+        /// Path to FFmpeg executable
+        /// </summary>
         public string FfmpegPath { get; set; }
 
+        /// <summary>
+        /// Hostname of sponsorblock server
+        /// </summary>
+        /// <remarks>
+        /// Please respect the server license
+        /// </remarks>
         public string SponsorBlockServer { get; set; }
 
+        /// <summary>
+        /// Encrypted password for the settings
+        /// </summary>
+        /// <remarks>
+        /// Not actually encrypted, but the result of a KDF
+        /// Format: Salt:Iterations:Bytes
+        /// </remarks>
         public string EncryptedPassword { get; set; }
 
+        /// <summary>
+        /// Gets if a password has been set
+        /// </summary>
         [JsonIgnore]
         public bool HasPassword { get => !string.IsNullOrEmpty(EncryptedPassword); }
 
+        /// <summary>
+        /// Gets if the password should be set
+        /// </summary>
         [JsonIgnore]
         public bool ShouldChangePassword
         {
@@ -44,12 +101,21 @@ namespace YtStream.Models
             }
         }
 
+        /// <summary>
+        /// Gets the unencrypted admin password from the web UI
+        /// </summary>
         [JsonIgnore]
         public string AdminPassword { get; set; }
 
+        /// <summary>
+        /// Verification of <see cref="AdminPassword"/>
+        /// </summary>
         [JsonIgnore]
         public string AdminPasswordVerify { get; set; }
 
+        /// <summary>
+        /// Initializes a configuration with defaults
+        /// </summary>
         public ConfigModel()
         {
             UseCache = true;
@@ -61,11 +127,14 @@ namespace YtStream.Models
             //Cache MP3 forever
             CacheMp3Lifetime = 0;
             //7 days
-            CacheSBlockLifetime = 86400 * 7;
+            CacheSBlockLifetime = Tools.SponsorBlockCacheTime;
             //5M is enough for 3 min at 192 kbps
             OutputBufferKB = 5000;
         }
 
+        /// <summary>
+        /// Convert <see cref="AdminPassword"/> into <see cref="EncryptedPassword"/>
+        /// </summary>
         public void EncryptPassword()
         {
             if (!ShouldChangePassword)
@@ -78,6 +147,12 @@ namespace YtStream.Models
             }
         }
 
+        /// <summary>
+        /// Checks the supplied password against <see cref="EncryptedPassword"/>
+        /// </summary>
+        /// <param name="Password">Password</param>
+        /// <returns>true if password valid</returns>
+        /// <remarks>Will accept empty password if <see cref="HasPassword"/> is false</remarks>
         public bool CheckPassword(string Password)
         {
             if (string.IsNullOrEmpty(Password))
@@ -99,6 +174,9 @@ namespace YtStream.Models
             return false;
         }
 
+        /// <summary>
+        /// Save this instance to the default configuration file
+        /// </summary>
         public void Save()
         {
             var F = Path.Combine(Startup.BasePath, ConfigFileName);
@@ -180,6 +258,10 @@ namespace YtStream.Models
             return GetValidationMessages().Length == 0;
         }
 
+        /// <summary>
+        /// Loads settings from the default confgiuration file
+        /// </summary>
+        /// <returns>Settings. Defaults if no file was found</returns>
         public static ConfigModel Load()
         {
             var F = Path.Combine(Startup.BasePath, ConfigFileName);

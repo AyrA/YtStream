@@ -7,33 +7,48 @@ using YtStream.Models;
 
 namespace YtStream
 {
+    /// <summary>
+    /// Runs kerstel
+    /// </summary>
     public class Startup
     {
         /// <summary>
         /// Base path of the application
         /// </summary>
         public static string BasePath { get; private set; }
+
         /// <summary>
         /// If set to true, prevents access to streaming functionality
         /// </summary>
         public static volatile bool Locked;
 
-
+        /// <summary>
+        /// Creates this instance
+        /// </summary>
+        /// <param name="configuration">Base configuration</param>
+        /// <param name="env">Base environment</param>
         public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
             Locked = false;
             Configuration = configuration;
             BasePath = env.ContentRootPath;
             var C = ConfigModel.Load();
-            if (C.UseCache)
+            if (C != null && C.UseCache)
             {
                 Cache.SetBaseDirectory(C.CachePath);
             }
         }
 
+        /// <summary>
+        /// Gets the current configuration
+        /// </summary>
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
+        /// <summary>
+        /// This method gets called by the runtime.
+        /// Use this method to add services to the container.
+        /// </summary>
+        /// <param name="services">Service collection</param>
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllersWithViews();
@@ -45,9 +60,15 @@ namespace YtStream
             });
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        /// <summary>
+        /// This method gets called by the runtime.
+        /// Use this method to configure the HTTP request pipeline.
+        /// </summary>
+        /// <param name="app">Application builder</param>
+        /// <param name="env">Hosting environment</param>
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            //Detailed errors for devs
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -56,12 +77,15 @@ namespace YtStream
             {
                 app.UseExceptionHandler("/Home/Error");
             }
+            //Deliver content from "wwwroot" folder
             app.UseStaticFiles();
 
             app.UseRouting();
 
+            //No authorization has been added
             //app.UseAuthorization();
 
+            //Default MVC route
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute(

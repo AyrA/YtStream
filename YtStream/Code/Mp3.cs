@@ -35,7 +35,13 @@ namespace YtStream.MP3
         /// </summary>
         private const int SamplesPerFrame = 1152;
 
+        /// <summary>
+        /// Backing field for <see cref="NumberOfBytes"/>
+        /// </summary>
         private readonly int numBytes;
+        /// <summary>
+        /// Backing field for <see cref="AudioLengthMS"/>
+        /// </summary>
         private readonly double length;
 
         /// <summary>
@@ -133,6 +139,10 @@ namespace YtStream.MP3
     /// <summary>
     /// Known bitrates
     /// </summary>
+    /// <remarks>
+    /// Variable bitrate (VBR) doesn't exists.
+    /// VBR simply is an MP3 file where every header potentially has a different bitrate.
+    /// </remarks>
     public enum Bitrate : int
     {
         kbps32 = 32,

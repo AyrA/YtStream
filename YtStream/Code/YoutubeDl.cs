@@ -5,10 +5,20 @@ using System.Threading.Tasks;
 
 namespace YtStream
 {
+    /// <summary>
+    /// Provides a youtube-dl interface
+    /// </summary>
     public class YoutubeDl
     {
+        /// <summary>
+        /// Youtube-dl executable
+        /// </summary>
         private readonly string executable;
 
+        /// <summary>
+        /// Creates a new instance
+        /// </summary>
+        /// <param name="Executable">ytdl executable path</param>
         public YoutubeDl(string Executable)
         {
             if (string.IsNullOrWhiteSpace(Executable))
@@ -23,6 +33,14 @@ namespace YtStream
             executable = Executable;
         }
 
+        /// <summary>
+        /// Gets information about the supplied id
+        /// </summary>
+        /// <param name="Id">Video id</param>
+        /// <returns>Video information</returns>
+        /// <remarks>
+        /// The information is biased towards the best audio URL
+        /// </remarks>
         public async Task<YoutubeDlResult> GetAudioDetails(string Id)
         {
             if (!Tools.IsYoutubeId(Id))
@@ -38,6 +56,12 @@ namespace YtStream
             }
         }
 
+        /// <summary>
+        /// Gets the audio URL for a video
+        /// </summary>
+        /// <param name="Id">Video id</param>
+        /// <returns>Audio URL</returns>
+        /// <remarks>Internally calls <see cref="GetAudioDetails(string)"/>.Url</remarks>
         public async Task<string> GetAudioUrl(string Id)
         {
             return (await GetAudioDetails(Id)).Url;
