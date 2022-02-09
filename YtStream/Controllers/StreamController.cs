@@ -93,7 +93,6 @@ namespace YtStream.Controllers
             return await PerformStream(Tools.Shuffle(PL));
         }
 
-
         public async Task<IActionResult> Order(string id)
         {
             return await PerformStream(SplitIds(id));
