@@ -34,9 +34,9 @@ namespace YtStream
         /// <param name="PreventStalling">
         /// Aborts conversion if set to true and speed falls below 1x playback speed
         /// </param>
-        public static void CutMp3(IEnumerable<TimeRange> Ranges, Stream Source, Stream Target, Stream UncutOutput = null, bool PreventStalling = false)
+        public static void CutMp3(IEnumerable<TimeRange> Ranges, Stream Source, MP3CutTargetStreamConfig Output)
         {
-            Task.WaitAll(CutMp3Async(Ranges, Source, Target, UncutOutput, PreventStalling));
+            Task.WaitAll(CutMp3Async(Ranges, Source, Output));
         }
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace YtStream
         /// <param name="PreventStalling">
         /// Aborts conversion if set to true and speed falls below 1x playback speed
         /// </param>
-        public static async Task CutMp3Async(IEnumerable<TimeRange> Ranges, Stream Source, Stream Target, Stream UncutOutput = null, bool PreventStalling = false)
+        public static async Task CutMp3Async(IEnumerable<TimeRange> Ranges, Stream Source, MP3CutTargetStreamConfig Output)
         {
             TimeRange[] R;
             double TimeMS = 0.0;
@@ -73,14 +73,9 @@ namespace YtStream
             {
                 R = Ranges.Where(m => m.IsValid).OrderBy(m => m.Start).ToArray();
             }
-            if (UncutOutput != null && !UncutOutput.CanWrite)
+            if (Output == null || Output.Streams.Length == 0)
             {
-                throw new ArgumentException($"If supplied, {nameof(UncutOutput)} must be writable");
-            }
-
-            if (Target == null)
-            {
-                throw new ArgumentNullException(nameof(Target));
+                throw new ArgumentNullException(nameof(Output));
             }
 
             byte[] Header = new byte[4];
@@ -134,20 +129,33 @@ namespace YtStream
                         //Stream too short for audio data
                         return;
                     }
-                    if (SW.IsRunning)
+                    var Skip = R.Any(m => m.IsInRange(TimeMS / 1000.0));
+                    var Streams = Output.Streams.Where(m => !m.Faulted).ToArray();
+                    //No more streams remaining to write to
+                    if (Streams.Length == 0)
                     {
-                        //Decide whether to output or discard it
-                        if (!R.Any(m => m.IsInRange(TimeMS / 1000.0)))
+                        return;
+                    }
+                    foreach (var Info in Streams)
+                    {
+                        if(Info.IsUncut || !Skip)
                         {
-                            await Target.WriteAsync(Header, 0, Header.Length);
-                            await Target.WriteAsync(Audio, 0, Audio.Length);
+                            try
+                            {
+                                await Info.Stream.WriteAsync(Header, 0, Header.Length);
+                                await Info.Stream.WriteAsync(Audio, 0, Audio.Length);
+                            }
+                            catch
+                            {
+                                Info.SetFaulted(true);
+                            }
                         }
                     }
-                    //Always output to uncut stream
-                    if (UncutOutput != null)
+
+                    if (SW.IsRunning && TimeMS > 1000.0 && TimeMS < SW.ElapsedMilliseconds)
                     {
-                        await UncutOutput.WriteAsync(Header, 0, Header.Length);
-                        await UncutOutput.WriteAsync(Audio, 0, Audio.Length);
+                        Output.SetTimeout(true);
+                        SW.Stop();
                     }
                     TimeMS += Parsed.AudioLengthMS;
                     //Read next header
@@ -155,16 +163,6 @@ namespace YtStream
                     {
                         //Stream too short for next header
                         return;
-                    }
-                    if (TimeMS > 1000.0 && TimeMS < SW.ElapsedMilliseconds)
-                    {
-                        //Conversion stalled. Stop writing to output
-                        SW.Stop();
-                        //Stop processing entirely if no output stream available anymore
-                        if (UncutOutput == null)
-                        {
-                            return;
-                        }
                     }
                 }
             }

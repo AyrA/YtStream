@@ -138,6 +138,8 @@ namespace YtStream.Controllers
                 {
                     break;
                 }
+                var OutputStreams = new MP3CutTargetStreamConfig();
+                OutputStreams.AddStream(new MP3CutTargetStreamInfo(Response.Body, false, true, true));
                 var setCache = true;
                 var filename = Tools.GetIdName(ytid) + ".mp3";
                 var ranges = await GetRanges(ytid);
@@ -162,7 +164,7 @@ namespace YtStream.Controllers
                         {
                             _logger.LogInformation("Using cache for {0}", filename);
                             Tools.SetAudioHeaders(Response);
-                            await Mp3Cut.CutMp3Async(ranges, CacheStream, Response.Body);
+                            await Mp3Cut.CutMp3Async(ranges, CacheStream, OutputStreams);
                             await Response.Body.FlushAsync();
                             continue;
                         }
@@ -185,6 +187,7 @@ namespace YtStream.Controllers
                 if (setCache)
                 {
                     CacheStream = MP3.WriteFile(filename);
+                    OutputStreams.AddStream(new MP3CutTargetStreamInfo(CacheStream, true, false, false));
                 }
                 using (var Mp3Data = converter.ConvertToMp3(url))
                 {
@@ -194,16 +197,26 @@ namespace YtStream.Controllers
                         _logger.LogInformation("Downloading {0} from YT and populate cache", ytid);
                         using (CacheStream)
                         {
-                            await Mp3Cut.CutMp3Async(ranges, Mp3Data, Response.Body, CacheStream, true);
+                            await Mp3Cut.CutMp3Async(ranges, Mp3Data, OutputStreams);
                         }
                     }
                     else
                     {
                         _logger.LogInformation("Downloading {0} from YT without populating cache", ytid);
-                        await Mp3Cut.CutMp3Async(ranges, Mp3Data, Response.Body, null, true);
+                        await Mp3Cut.CutMp3Async(ranges, Mp3Data, OutputStreams);
                     }
                     //Flush all data before attempting the next file
                     await Response.Body.FlushAsync();
+                }
+                if (OutputStreams.HasTimeout)
+                {
+                    _logger.LogWarning("An output stream had a timeout. Aborting processing");
+                    break;
+                }
+                if (OutputStreams.HasFaultedStreams())
+                {
+                    _logger.LogWarning("An output stream faulted. Aborting processing");
+                    break;
                 }
             }
             if (skipped == ids.Length)
@@ -211,7 +224,7 @@ namespace YtStream.Controllers
                 _logger.LogWarning("None of the ids yielded usable results");
                 return NotFound();
             }
-            _logger.LogInformation("Stream complete");
+            _logger.LogInformation("Stream request complete");
             return new EmptyResult();
         }
 
