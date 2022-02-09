@@ -1,9 +1,18 @@
-﻿@{
+﻿@model ConfigModel
+@{
     ViewData["Title"] = "Home Page";
 }
 
 <div>
     <h1>YtStream</h1>
+    @if (Model != null && !Model.HasPassword)
+    {
+        <div class="alert alert-danger">
+            Your configuration is not password protected.
+            <a asp-action="Config">Consider adding one</a>
+            if you're not the only one with access to this system.
+        </div>
+    }
     <p>
         This system allows you to directly stream Youtube videos to MP3.
         It has a few features that separate it from other systems.

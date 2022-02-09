@@ -1,12 +1,20 @@
 ﻿@model ConfigModel
 @{
     ViewData["Title"] = "Settings";
+    var ErrMsg = (string)ViewBag.ErrorMessage;
 }
-@if (!Model.IsValid())
+<h1>Settings</h1>
+@if (!Model.IsValid() || !string.IsNullOrEmpty(ErrMsg))
 {
+
+
     <div class="alert alert-danger">
         <p>Before you can properly use this application you need to fix the errors listed below</p>
         <ul>
+            @if (!string.IsNullOrEmpty(ErrMsg))
+            {
+                <li>@ErrMsg</li>
+            }
             @foreach (var Err in Model.GetValidationMessages())
             {
                 <li>@Err</li>
@@ -22,19 +30,44 @@ else
     <div class="row">
         <div class="col-md-6 form-group">
             <label>
+                New Password (min 8 chars)
+            </label>
+            <input type="password" asp-for="AdminPassword" minlength="8" class="form-control" />
+            <i>Leave blank to not @(Model.HasPassword?"change the":"set the") password</i>
+        </div>
+        <div class="col-md-6 form-group">
+            <label>
+                Verify Password
+            </label>
+            <input type="password" asp-for="AdminPasswordVerify" class="form-control" />
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6 form-group">
+            <label>
                 FFmpeg path
             </label>
             <input type="text" asp-for="FfmpegPath" class="form-control" />
             <a href="https://ffmpeg.org/download.html" target="_blank" rel="noreferrer nofollow noopener">Download</a>
         </div>
-    </div>
-    <div class="row">
         <div class="col-md-6 form-group">
             <label>
                 Youtube-dl path
             </label>
             <input type="text" asp-for="YoutubedlPath" class="form-control" />
             <a href="https://youtube-dl.org/" target="_blank" rel="noreferrer nofollow noopener">Download</a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 form-group">
+            <label>
+                Output buffer (in kb)
+            </label>
+            <input type="number" min="1" asp-for="OutputBufferKB" class="form-control" />
+            <i>
+                Output buffering prevents stalling of the converter by the client to some extent.
+                5000 kb is enough to hold an entire 3 minute song.
+            </i>
         </div>
     </div>
     <div class="row">
@@ -87,6 +120,18 @@ else
             <i>Zero indicates to cache forever</i>
         </div>
     </div>
+    @if (Model.HasPassword)
+    {
+        <div class="row">
+            <div class="col-md-6 form-group">
+                <label>
+                    Current Password
+                </label>
+                <input type="password" name="CurrentPassword" class="form-control" />
+                <i>A password has been set. Enter the current password to confirm your changes</i>
+            </div>
+        </div>
+    }
     <div class="row">
         <div class="col-md-4 form-group">
             <input type="submit" value="Send" class="btn btn-primary" />
