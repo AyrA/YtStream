@@ -108,13 +108,20 @@ namespace YtStream.Controllers
                 }
                 if (CacheStream != null)
                 {
-                    _logger.LogInformation("Using cache for {0}", filename);
                     using (CacheStream)
                     {
-                        Tools.SetAudioHeaders(Response);
-                        await Mp3Cut.CutMp3Async(ranges, CacheStream, Response.Body);
-                        await Response.Body.FlushAsync();
-                        continue;
+                        if (CacheStream.Length > 0)
+                        {
+                            _logger.LogInformation("Using cache for {0}", filename);
+                            Tools.SetAudioHeaders(Response);
+                            await Mp3Cut.CutMp3Async(ranges, CacheStream, Response.Body);
+                            await Response.Body.FlushAsync();
+                            continue;
+                        }
+                        else
+                        {
+                            _logger.LogWarning("{0} is empty. Falling back to stream from YT", filename);
+                        }
                     }
                 }
                 //At this point we need to go live to youtube to get the file
@@ -139,13 +146,13 @@ namespace YtStream.Controllers
                         _logger.LogInformation("Downloading {0} from YT and populate cache", ytid);
                         using (CacheStream)
                         {
-                            await Mp3Cut.CutMp3Async(ranges, Mp3Data, Response.Body, CacheStream);
+                            await Mp3Cut.CutMp3Async(ranges, Mp3Data, Response.Body, CacheStream, true);
                         }
                     }
                     else
                     {
                         _logger.LogInformation("Downloading {0} from YT without populating cache", ytid);
-                        await Mp3Cut.CutMp3Async(ranges, Mp3Data, Response.Body);
+                        await Mp3Cut.CutMp3Async(ranges, Mp3Data, Response.Body, null, true);
                     }
                     //Flush all data before attempting the next file
                     await Response.Body.FlushAsync();

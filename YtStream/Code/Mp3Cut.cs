@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -30,9 +31,12 @@ namespace YtStream
         /// Target stream for filtered only data.
         /// Can be null if not in use.
         /// </param>
-        public static void CutMp3(IEnumerable<TimeRange> Ranges, Stream Source, Stream Target, Stream UncutOutput = null)
+        /// <param name="PreventStalling">
+        /// Aborts conversion if set to true and speed falls below 1x playback speed
+        /// </param>
+        public static void CutMp3(IEnumerable<TimeRange> Ranges, Stream Source, Stream Target, Stream UncutOutput = null, bool PreventStalling = false)
         {
-            Task.WaitAll(CutMp3Async(Ranges, Source, Target, UncutOutput));
+            Task.WaitAll(CutMp3Async(Ranges, Source, Target, UncutOutput, PreventStalling));
         }
 
         /// <summary>
@@ -53,7 +57,10 @@ namespace YtStream
         /// Target stream for filtered only data.
         /// Can be null if not in use.
         /// </param>
-        public static async Task CutMp3Async(IEnumerable<TimeRange> Ranges, Stream Source, Stream Target, Stream UncutOutput = null)
+        /// <param name="PreventStalling">
+        /// Aborts conversion if set to true and speed falls below 1x playback speed
+        /// </param>
+        public static async Task CutMp3Async(IEnumerable<TimeRange> Ranges, Stream Source, Stream Target, Stream UncutOutput = null, bool PreventStalling = false)
         {
             TimeRange[] R;
             double TimeMS = 0.0;
@@ -83,6 +90,7 @@ namespace YtStream
                 //Stream not long enough for initial header material
                 return;
             }
+            var SW = Stopwatch.StartNew();
             while (true)
             {
                 Parsed = null;
@@ -126,13 +134,16 @@ namespace YtStream
                         //Stream too short for audio data
                         return;
                     }
-                    //Decide whether to output or discard it
-                    if (!R.Any(m => m.IsInRange(TimeMS / 1000.0)))
+                    if (SW.IsRunning)
                     {
-                        await Target.WriteAsync(Header, 0, Header.Length);
-                        await Target.WriteAsync(Audio, 0, Audio.Length);
+                        //Decide whether to output or discard it
+                        if (!R.Any(m => m.IsInRange(TimeMS / 1000.0)))
+                        {
+                            await Target.WriteAsync(Header, 0, Header.Length);
+                            await Target.WriteAsync(Audio, 0, Audio.Length);
+                        }
                     }
-                    //Always output to filter only stream
+                    //Always output to uncut stream
                     if (UncutOutput != null)
                     {
                         await UncutOutput.WriteAsync(Header, 0, Header.Length);
@@ -144,6 +155,16 @@ namespace YtStream
                     {
                         //Stream too short for next header
                         return;
+                    }
+                    if (TimeMS > 1000.0 && TimeMS < SW.ElapsedMilliseconds)
+                    {
+                        //Conversion stalled. Stop writing to output
+                        SW.Stop();
+                        //Stop processing entirely if no output stream available anymore
+                        if (UncutOutput == null)
+                        {
+                            return;
+                        }
                     }
                 }
             }
