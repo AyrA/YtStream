@@ -23,9 +23,13 @@ namespace YtStream
             return default;
         }
 
-        public static string ToJson(this object o)
+        public static string ToJson(this object o, bool Pretty = false)
         {
-            return JsonSerializer.Serialize(o);
+            var Opt = new JsonSerializerOptions()
+            {
+                WriteIndented = Pretty
+            };
+            return JsonSerializer.Serialize(o, Opt);
         }
     }
 }
