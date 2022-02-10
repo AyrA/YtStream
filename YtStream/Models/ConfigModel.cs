@@ -68,47 +68,6 @@ namespace YtStream.Models
         public string SponsorBlockServer { get; set; }
 
         /// <summary>
-        /// Encrypted password for the settings
-        /// </summary>
-        /// <remarks>
-        /// Not actually encrypted, but the result of a KDF
-        /// Format: Salt:Iterations:Bytes
-        /// </remarks>
-        public string EncryptedPassword { get; set; }
-
-        /// <summary>
-        /// Gets if a password has been set
-        /// </summary>
-        [JsonIgnore]
-        public bool HasPassword { get => !string.IsNullOrEmpty(EncryptedPassword); }
-
-        /// <summary>
-        /// Gets if the password should be set
-        /// </summary>
-        [JsonIgnore]
-        public bool ShouldChangePassword
-        {
-            get
-            {
-                return !string.IsNullOrEmpty(AdminPassword) &&
-                    AdminPassword.Length > 7 &&
-                    AdminPassword == AdminPasswordVerify;
-            }
-        }
-
-        /// <summary>
-        /// Gets the unencrypted admin password from the web UI
-        /// </summary>
-        [JsonIgnore]
-        public string AdminPassword { get; set; }
-
-        /// <summary>
-        /// Verification of <see cref="AdminPassword"/>
-        /// </summary>
-        [JsonIgnore]
-        public string AdminPasswordVerify { get; set; }
-
-        /// <summary>
         /// Initializes a configuration with defaults
         /// </summary>
         public ConfigModel()
@@ -126,48 +85,6 @@ namespace YtStream.Models
         }
 
         /// <summary>
-        /// Convert <see cref="AdminPassword"/> into <see cref="EncryptedPassword"/>
-        /// </summary>
-        public void EncryptPassword()
-        {
-            if (!ShouldChangePassword)
-            {
-                throw new InvalidOperationException(nameof(AdminPassword) + " not secure");
-            }
-            using (var Enc = new Rfc2898DeriveBytes(AdminPassword, 16, 100000, HashAlgorithmName.SHA256))
-            {
-                EncryptedPassword = Convert.ToBase64String(Enc.Salt) + ":100000:" + Convert.ToBase64String(Enc.GetBytes(16));
-            }
-        }
-
-        /// <summary>
-        /// Checks the supplied password against <see cref="EncryptedPassword"/>
-        /// </summary>
-        /// <param name="Password">Password</param>
-        /// <returns>true if password valid</returns>
-        /// <remarks>Will accept empty password if <see cref="HasPassword"/> is false</remarks>
-        public bool CheckPassword(string Password)
-        {
-            if (string.IsNullOrEmpty(Password))
-            {
-                return !HasPassword;
-            }
-            if (!string.IsNullOrEmpty(EncryptedPassword))
-            {
-                var Parts = EncryptedPassword.Split(':');
-                if (Parts.Length != 3)
-                {
-                    return false;
-                }
-                using (var Enc = new Rfc2898DeriveBytes(Password, Convert.FromBase64String(Parts[0]), int.Parse(Parts[1]), HashAlgorithmName.SHA256))
-                {
-                    return Parts[2] == Convert.ToBase64String(Enc.GetBytes(16));
-                }
-            }
-            return false;
-        }
-
-        /// <summary>
         /// Save this instance to the default configuration file
         /// </summary>
         public void Save()
@@ -179,17 +96,6 @@ namespace YtStream.Models
         public string[] GetValidationMessages()
         {
             var Messages = new List<string>();
-            if (!string.IsNullOrEmpty(AdminPassword) || !string.IsNullOrEmpty(AdminPasswordVerify))
-            {
-                if (AdminPassword == null || AdminPassword.Length < 8)
-                {
-                    Messages.Add("Password must be at least 8 characters");
-                }
-                else if (AdminPassword != AdminPasswordVerify)
-                {
-                    Messages.Add("Passwords do not match");
-                }
-            }
             if (CacheMp3Lifetime < 0 || CacheSBlockLifetime < 0)
             {
                 Messages.Add("Cache lifetime cannot be negative");

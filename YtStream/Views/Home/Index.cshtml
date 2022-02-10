@@ -25,18 +25,11 @@
             <p>
                 Your configuration is damaged.
                 Please fix <code>config.json</code> manually or delete it to reset the settings.
+                The streaming system is locked until you do this.
             </p>
             <p>
                 Error: <code>@ErrorMessage</code>
             </p>
-        </div>
-    }
-    else if (!Model.HasPassword)
-    {
-        <div class="alert alert-danger">
-            Your configuration is not password protected.
-            <a asp-action="Config">Consider adding one</a>
-            if you're not the only one with access to this system.
         </div>
     }
     <p>

@@ -1,0 +1,25 @@
+﻿@{
+    ViewData["Title"] = "Access denied";
+}
+<h1>Access denied</h1>
+<p>
+    You do not have access to the requested feature.
+</p>
+@if (User.Identity.IsAuthenticated)
+{
+    <p>
+        You are currently signed in as <b>@User.Identity.Name</b>.
+        You can sign into another account with the requested permissions.
+    </p>
+    <p>
+        Note: If you were just assigned new user rights,
+        you need to sign out and back in again to activate them.
+    </p>
+}
+else
+{
+    <p>
+        You are currently not signed in.
+        Consider <a asp-action="Login">signing in</a> and trying again.
+    </p>
+}

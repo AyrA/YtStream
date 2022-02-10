@@ -1,0 +1,11 @@
+﻿@model AccountInfo
+@{
+    ViewData["Title"] = "Account information";
+}
+<h1>Account information</h1>
+<p>
+    User name: @Model.Username
+</p>
+<p>
+    Permissions: @string.Join(", ", Model.GetRoleStrings())
+</p>

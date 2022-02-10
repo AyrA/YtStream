@@ -2,7 +2,6 @@
 @{
     ViewData["Title"] = "Settings";
     var ErrMsg = (string)ViewBag.ErrorMessage;
-    var HasPassword = false;
     if (Model == null)
     {
         try
@@ -15,10 +14,6 @@
         {
             ErrMsg = ex.Message;
         }
-    }
-    else
-    {
-        HasPassword = true;
     }
 }
 <h1>Settings</h1>
@@ -53,21 +48,6 @@ else
     </div>
 }
 <form asp-action="Config" method="post">
-    <div class="row">
-        <div class="col-md-6 form-group">
-            <label>
-                New Password (min 8 chars)
-            </label>
-            <input type="password" asp-for="AdminPassword" minlength="8" class="form-control" />
-            <i>Leave blank to not @(HasPassword?"change the":"set the") password</i>
-        </div>
-        <div class="col-md-6 form-group">
-            <label>
-                Verify Password
-            </label>
-            <input type="password" asp-for="AdminPasswordVerify" class="form-control" />
-        </div>
-    </div>
     <div class="row">
         <div class="col-md-6 form-group">
             <label>
@@ -134,18 +114,6 @@ else
             <i>Zero indicates to cache forever</i>
         </div>
     </div>
-    @if (HasPassword)
-    {
-        <div class="row">
-            <div class="col-md-6 form-group">
-                <label>
-                    Current Password
-                </label>
-                <input type="password" name="CurrentPassword" class="form-control" />
-                <i>A password has been set. Enter the current password to confirm your changes</i>
-            </div>
-        </div>
-    }
     <div class="row">
         <div class="col-md-4 form-group">
             <input type="submit" value="Send" class="btn btn-primary" />

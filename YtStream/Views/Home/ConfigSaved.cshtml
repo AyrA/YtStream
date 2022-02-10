@@ -2,10 +2,3 @@
 <h1>Configuration saved</h1>
 <p><a asp-action="Index">Back to the main page</a></p>
 <p><a asp-action="Config">Change more settings</a></p>
-@if (Model != null && !Model.HasPassword)
-{
-    <div class="alert alert-danger">
-        Your configuration is not password protected.
-        Consider adding one if you're not the only one with access to this system.
-    </div>
-}

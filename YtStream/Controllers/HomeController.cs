@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using YtStream.Models;
@@ -35,19 +36,20 @@ namespace YtStream.Controllers
             return View(settings);
         }
 
+        [Authorize(Roles = "Administrator")]
         public IActionResult ConfigSaved()
         {
             return View(settings);
         }
 
-        [HttpGet, ActionName("Config")]
+        [Authorize(Roles = "Administrator"), HttpGet, ActionName("Config")]
         public IActionResult ConfigGet()
         {
             return View(settings);
         }
 
-        [HttpPost, ActionName("Config"), ValidateAntiForgeryToken]
-        public IActionResult ConfigPost(ConfigModel model, [FromForm]string CurrentPassword)
+        [Authorize(Roles = "Administrator"), HttpPost, ActionName("Config"), ValidateAntiForgeryToken]
+        public IActionResult ConfigPost(ConfigModel model)
         {
             ViewBag.ErrorMessage = "";
             if (model == null)
@@ -57,24 +59,6 @@ namespace YtStream.Controllers
             if (!model.IsValid())
             {
                 return View(model);
-            }
-            //The encrypted password comes from the existing configuration (if any)
-            if (settings != null)
-            {
-                model.EncryptedPassword = settings.EncryptedPassword;
-            }
-
-            if (model.HasPassword)
-            {
-                if (!model.CheckPassword(CurrentPassword))
-                {
-                    ViewBag.ErrorMessage = "Your password is incorrect";
-                    return View(model);
-                }
-            }
-            if (model.ShouldChangePassword)
-            {
-                model.EncryptPassword();
             }
             model.Save();
             if (model.UseCache)
