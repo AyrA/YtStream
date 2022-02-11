@@ -32,6 +32,11 @@ namespace YtStream.Models
         public bool UseSponsorBlock { get; set; }
 
         /// <summary>
+        /// Require an account for streaming functionality
+        /// </summary>
+        public bool RequireAccount { get; set; }
+
+        /// <summary>
         /// Maximum age for MP3 files in seconds
         /// </summary>
         /// <remarks>

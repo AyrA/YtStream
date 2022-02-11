@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace YtStream.Controllers
 {
-    public class AccountController : Controller
+    public class AccountController : BaseController
     {
         [Authorize]
         public async Task<IActionResult> Index()

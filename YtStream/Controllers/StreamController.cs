@@ -8,15 +8,13 @@ using YtStream.Models;
 
 namespace YtStream.Controllers
 {
-    public class StreamController : Controller
+    public class StreamController : BaseController
     {
-        private readonly ConfigModel Settings;
         private readonly ILogger _logger;
 
         public StreamController(ILogger<StreamController> Logger)
         {
             _logger = Logger;
-            Settings = ConfigModel.Load();
         }
 
         private static string[] SplitIds(string id)
@@ -32,15 +30,19 @@ namespace YtStream.Controllers
                 context.HttpContext.Response.StatusCode = 503;
                 context.Result = View("Locked");
                 await base.OnActionExecutionAsync(context, next);
+                return;
             }
-            else if (!Settings.IsValid())
+            if (Settings == null || !Settings.IsValid())
             {
                 context.Result = StatusCode(500, "Misconfiguration. Please check the application settings");
+                return;
             }
-            else
+            if (Settings.RequireAccount && !User.Identity.IsAuthenticated)
             {
-                await base.OnActionExecutionAsync(context, next);
+                context.Result = RedirectToAction("Login", "Account", new { returnUrl = HttpContext.Request.Path });
+                return;
             }
+            await base.OnActionExecutionAsync(context, next);
         }
 
         public IActionResult Locked()

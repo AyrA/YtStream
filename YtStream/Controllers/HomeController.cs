@@ -6,46 +6,47 @@ using YtStream.Models;
 
 namespace YtStream.Controllers
 {
-    public class HomeController : Controller
+    public class HomeController : BaseController
     {
-        private readonly ConfigModel settings;
         private readonly ILogger<HomeController> _logger;
 
         public HomeController(ILogger<HomeController> logger)
         {
-            try
-            {
-                settings = ConfigModel.Load();
-            }
-            catch
-            {
-                settings = null;
-            }
             _logger = logger;
         }
 
         public IActionResult Index()
         {
-            return View(settings);
+            return View(Settings);
         }
 
         public IActionResult Info()
         {
             var Base = string.Format("http{0}://{1}", Request.IsHttps ? "s" : "", Request.Host);
             ViewBag.Host = Base;
-            return View(settings);
+            return View(Settings);
+        }
+
+        [Authorize(Roles = "Administrator"), HttpPost, ValidateAntiForgeryToken]
+        public IActionResult ChangeLock()
+        {
+            if (Settings != null)
+            {
+                Startup.Locked = !Startup.Locked;
+            }
+            return RedirectToAction("Config");
         }
 
         [Authorize(Roles = "Administrator")]
         public IActionResult ConfigSaved()
         {
-            return View(settings);
+            return View(Settings);
         }
 
         [Authorize(Roles = "Administrator"), HttpGet, ActionName("Config")]
         public IActionResult ConfigGet()
         {
-            return View(settings);
+            return View(Settings);
         }
 
         [Authorize(Roles = "Administrator"), HttpPost, ActionName("Config"), ValidateAntiForgeryToken]
