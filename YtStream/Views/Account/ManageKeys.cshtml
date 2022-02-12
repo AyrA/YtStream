@@ -10,7 +10,8 @@
     {
         <p>
             Stream keys can be used to stream media on devices that don't support logging into this application,
-            for example an internet radio device.
+            for example an internet radio device.<br />
+            <a asp-action="Info" asp-controller="Home">Click here to see how to use stream keys</a>
         </p>
     }
     else
@@ -35,13 +36,13 @@
         @foreach (var K in User.ApiKeys)
         {
             <tr>
-                <td>@K.Key</td>
+                <td class="copy-on-click" title="Click to copy"><code>@K.Key</code></td>
                 <td>@K.CreatedAt</td>
                 <td>@K.Name</td>
                 <td>
                     <form method="post" class="form-inline" asp-action="DeleteKey">
                         <input type="hidden" name="Key" value="@K.Key" />
-                        <input type="submit" value="DEL" />
+                        <input type="submit" class="btn btn-danger" title="Delete" value="&#128465;&#65039;" />
                     </form>
                 </td>
             </tr>

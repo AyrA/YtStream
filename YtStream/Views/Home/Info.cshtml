@@ -1,4 +1,7 @@
-﻿@{ViewData["Title"] = "Usage instructions";}
+﻿@{
+    ViewData["Title"] = "Usage instructions";
+    var Settings = (ConfigModel)ViewBag.Settings;
+}
 <h1>Usage instructions</h1>
 <p>
     This system operates on the video ids or playlist ids.
@@ -10,6 +13,19 @@
     The administrator of this system may also put restrictions in place
     about the video length or the number of videos in a single stream.
 </p>
+@if (Settings.RequireAccount)
+{
+    <h2>Stream keys</h2>
+    <p>
+        The operator of this system has disabled anonymous streaming.
+        For the stream URLs to work you either have to be logged in,
+        or add a stream key to the URL.
+        Visit your <a asp-action="Index" asp-controller="Account">key management page</a> to get keys.
+    </p>
+    <p>
+        You can use a key by adding <code>?key=&lt;stream_key_here&gt;</code> to the stream URL.
+    </p>
+}
 <h2>Video id</h2>
 <p>
     The video id is an 11 character string following the <code>v=</code> of a video URL.<br />
@@ -73,4 +89,3 @@
         </tr>
     </tbody>
 </table>
- 
