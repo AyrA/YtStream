@@ -17,31 +17,33 @@ namespace YtStream
         private static readonly AccountInfo Dummy;
         private static readonly List<AccountInfo> Accounts;
 
+        public static readonly UserPasswordRules Rules;
+
         public static bool HasUsers { get => Accounts.Count > 0; }
 
         static UserManager()
         {
             var D = new AccountInfo() { Username = "" };
-            D.SetPassword("1234");
+            D.SetPassword("1234"); //The actual value doesn't matters as the dummy account is hardcoded to fail.
             Dummy = D;
             Accounts = new List<AccountInfo>();
             AccountFile = Path.Combine(Startup.BasePath, FileName);
             if (File.Exists(AccountFile))
             {
-                try
-                {
-                    Accounts.AddRange(File.ReadAllText(AccountFile).FromJson<AccountInfo[]>(true));
-                }
-                catch
-                {
-
-                }
+                Accounts.AddRange(File.ReadAllText(AccountFile).FromJson<AccountInfo[]>(true));
             }
+            ValidateAccounts();
+            Rules = new UserPasswordRules();
         }
 
         public static AccountInfo GetUser(string Username)
         {
             return Accounts.FirstOrDefault(m => m.Username.ToLower() == Username.ToLower());
+        }
+
+        public static AccountInfo GetUser(Guid ApiKey)
+        {
+            return Accounts.FirstOrDefault(m => m.HasKey(ApiKey));
         }
 
         public static void AddUser(string Username, string Password, UserRoles Role = UserRoles.User)
@@ -53,9 +55,9 @@ namespace YtStream
                     throw new ArgumentException($"'{nameof(Username)}' cannot be null or whitespace.", nameof(Username));
                 }
 
-                if (!IsComplexPassword(Password))
+                if (!Rules.IsComplexPassword(Password))
                 {
-                    throw new ArgumentException($"'{nameof(Password)}' cannot be null or empty.", nameof(Password));
+                    throw new ArgumentException($"'{nameof(Password)}' fails complexity criteria.", nameof(Password));
                 }
 
                 if (GetUser(Username) != null)
@@ -88,10 +90,7 @@ namespace YtStream
         {
             lock (Accounts)
             {
-                if (Accounts.Any(m => !m.IsValid()))
-                {
-                    throw new InvalidOperationException("Account list is in an invalid state.");
-                }
+                ValidateAccounts();
                 File.WriteAllText(AccountFile, Accounts.ToJson(true));
             }
         }
@@ -108,33 +107,128 @@ namespace YtStream
             {
                 User = Dummy;
             }
+            //Always fail dummy but still perform password authentication (time based attacks)
             return User.CheckPassword(Password) && User != Dummy;
         }
 
-        public static bool IsComplexPassword(string Password)
+        private static void ValidateAccounts()
         {
-            if (Password == null || Password.Length < PasswordMinLength)
+            if (Accounts.Any(m => !m.IsValid()))
+            {
+                throw new InvalidOperationException("Account list is in an invalid state.");
+            }
+            //Prevent duplicste user names
+            if (Accounts.Count != Accounts.Select(m => m.Username.ToLower()).Distinct().Count())
+            {
+                throw new InvalidOperationException("Duplicate user name in list");
+            }
+            //Prevent duplicate keys
+            var Keys = Accounts.SelectMany(m => m.ApiKeys).ToArray();
+            if (Keys.Length != Keys.Distinct().Count())
+            {
+                throw new InvalidOperationException("Duplicate key in list");
+            }
+        }
+    }
+
+    public class UserPasswordRules
+    {
+        public int MinimumLength { get; set; }
+
+        public bool Uppercase { get; set; }
+
+        public bool Lowercase { get; set; }
+
+        public bool Digits { get; set; }
+
+        public bool Symbols { get; set; }
+
+        public int RuleCount { get; set; }
+
+        public UserPasswordRules()
+        {
+            MinimumLength = UserManager.PasswordMinLength;
+            Uppercase = Lowercase = Digits = Symbols = false;
+            RuleCount = 3;
+        }
+
+        public bool IsComplexPassword(string Password)
+        {
+            if (Password == null || Password.Length < MinimumLength)
             {
                 return false;
             }
+            var matches = new
+            {
+                Upper = Regex.IsMatch(Password, @"[A-Z]"),
+                Lower = Regex.IsMatch(Password, @"[a-z]"),
+                Digits = Regex.IsMatch(Password, @"\d"),
+                Symbols = Regex.IsMatch(Password, @"[^a-zA-Z\d]")
+            };
             int Complexity = 0;
-            Complexity += Regex.IsMatch(Password, @"[a-z]") ? 1 : 0;
-            Complexity += Regex.IsMatch(Password, @"[A-Z]") ? 1 : 0;
-            Complexity += Regex.IsMatch(Password, @"\d") ? 1 : 0;
-            Complexity += Regex.IsMatch(Password, @"[^a-zA-Z\d]") ? 1 : 0;
-            return Complexity >= 3;
+
+            Complexity += matches.Lower ? 1 : 0;
+            Complexity += matches.Upper ? 1 : 0;
+            Complexity += matches.Digits ? 1 : 0;
+            Complexity += matches.Symbols ? 1 : 0;
+
+            if (Uppercase && !matches.Upper)
+            {
+                return false;
+            }
+            if (Lowercase && !matches.Lower)
+            {
+                return false;
+            }
+            if (Digits && !matches.Digits)
+            {
+                return false;
+            }
+            if (Symbols && !matches.Symbols)
+            {
+                return false;
+            }
+            return Complexity >= RuleCount;
         }
+
     }
 
     public class AccountInfo : IValidateable
     {
-        public bool Enabled { get; set; } = true;
+        private List<UserApiKey> _keys;
+
+        public bool Enabled { get; set; }
 
         public string Username { get; set; }
 
         public string Password { get; set; }
 
-        public UserRoles Roles { get; set; } = UserRoles.User;
+        public UserRoles Roles { get; set; }
+
+        public UserApiKey[] ApiKeys
+        {
+            get
+            {
+                return _keys?.ToArray();
+            }
+            set
+            {
+                if (value != null)
+                {
+                    _keys = new List<UserApiKey>(value);
+                }
+                else
+                {
+                    _keys = null;
+                }
+            }
+        }
+
+        public AccountInfo()
+        {
+            Enabled = true;
+            Roles = UserRoles.User;
+        }
 
         public string[] GetRoleStrings()
         {
@@ -201,6 +295,54 @@ namespace YtStream
             return true;
         }
 
+        public int RemoveKey(UserApiKey Key)
+        {
+            if (Key == null)
+            {
+                throw new ArgumentNullException(nameof(Key));
+            }
+            if (_keys != null)
+            {
+                return _keys.Remove(Key) ? 1 : 0;
+            }
+            return 0;
+        }
+
+        public int RemoveKey(Guid G)
+        {
+            if (_keys != null)
+            {
+                return _keys.RemoveAll(m => m.Key == G);
+            }
+            return 0;
+        }
+
+        public void AddKey(UserApiKey Key)
+        {
+            if (Key == null)
+            {
+                throw new ArgumentNullException(nameof(Key));
+            }
+            if (!Key.IsValid())
+            {
+                throw new ArgumentException("Key is invalid");
+            }
+            if (_keys == null)
+            {
+                _keys = new List<UserApiKey>();
+            }
+            else if (_keys.Any(m => m.Key == Key.Key))
+            {
+                throw new ArgumentException($"Duplicate key: {Key.Key}");
+            }
+            _keys.Add(Key);
+        }
+
+        public bool HasKey(Guid Key)
+        {
+            return _keys != null && _keys.Any(m => m.Key == Key);
+        }
+
         public bool IsValid()
         {
             return GetValidationMessages().Length == 0;
@@ -213,6 +355,10 @@ namespace YtStream
             {
                 Messages.Add("Username must be set and not consist of whitespace");
             }
+            else if (Username.Length > 20)
+            {
+                Messages.Add("Username must not be longer than 20 characters");
+            }
             if (string.IsNullOrWhiteSpace(Password))
             {
                 Messages.Add("Password must be set and not consist of whitespace");
@@ -221,7 +367,53 @@ namespace YtStream
             {
                 Messages.Add("Password not set or invalid");
             }
+            if (_keys != null && _keys.Any(m => m == null || !m.IsValid()))
+            {
+                Messages.Add(_keys.Count(m => m == null || m.IsValid()) + " invalid API key(s)");
+            }
             return Messages.ToArray();
+        }
+    }
+
+    public class UserApiKey : IValidateable
+    {
+        public Guid Key { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        public string Name { get; set; }
+
+        public UserApiKey()
+        {
+            Key = Guid.NewGuid();
+            CreatedAt = DateTime.UtcNow;
+        }
+
+        public string[] GetValidationMessages()
+        {
+            var Msg = new List<string>();
+            if (string.IsNullOrWhiteSpace(Name))
+            {
+                Msg.Add("Name is required");
+            }
+            else if (Name.Length > 20)
+            {
+                Msg.Add("Name must not be longer than 20 characters");
+            }
+            if (Key == Guid.Empty)
+            {
+                Msg.Add("Key has not been set");
+            }
+            if (CreatedAt > DateTime.UtcNow || CreatedAt < new DateTime(2020, 1, 1))
+            {
+                Msg.Add("Invalid date range");
+            }
+            return Msg.ToArray();
+        }
+
+        public bool IsValid()
+        {
+            return GetValidationMessages().Length == 0;
         }
     }
 

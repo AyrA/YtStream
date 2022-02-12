@@ -8,7 +8,8 @@ namespace YtStream
 {
     public class BaseController : Controller
     {
-        public readonly ConfigModel Settings;
+        public ConfigModel Settings { get; }
+        public AccountInfo CurrentUser { get; private set; }
 
         public BaseController()
         {
@@ -26,15 +27,17 @@ namespace YtStream
         {
             if (User.Identity.IsAuthenticated)
             {
-                var Acc = UserManager.GetUser(User.Identity.Name);
+                CurrentUser = UserManager.GetUser(User.Identity.Name);
                 //Terminate user session if the user is no longer existing or enabled
-                if (Acc == null || !Acc.Enabled)
+                if (CurrentUser == null || !CurrentUser.Enabled)
                 {
                     await HttpContext.SignOutAsync();
                     context.Result = RedirectToAction("Index", "Home");
                     return;
                 }
             }
+            ViewBag.User = CurrentUser;
+            ViewBag.Settings = Settings;
             await base.OnActionExecutionAsync(context, next);
         }
     }

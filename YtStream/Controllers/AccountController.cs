@@ -5,21 +5,73 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using YtStream.Models;
 
 namespace YtStream.Controllers
 {
     public class AccountController : BaseController
     {
         [Authorize]
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            var Acc = UserManager.GetUser(User.Identity.Name);
-            if (Acc == null)
+            return View(CurrentUser);
+        }
+
+        [Authorize, HttpPost, ValidateAntiForgeryToken]
+        public IActionResult ChangePassword(PasswordChangeModel model)
+        {
+            if (CurrentUser.CheckPassword(model.OldPassword))
             {
-                await HttpContext.SignOutAsync();
-                return RedirectToAction("Login");
+                if (UserManager.Rules.IsComplexPassword(model.NewPassword))
+                {
+                    if (model.NewPassword == model.OldPassword)
+                    {
+                        CurrentUser.SetPassword(model.NewPassword);
+                        return View();
+                    }
+                    else
+                    {
+                        ViewBag.ErrMsg = "New passwords do not match";
+                    }
+                }
+                else
+                {
+                    ViewBag.ErrMsg = "New password is not long and complex enough";
+                }
             }
-            return View(Acc);
+            else
+            {
+                ViewBag.ErrMsg = "Old password did not match";
+            }
+            return View("Index", CurrentUser);
+        }
+
+        [Authorize, HttpPost, ValidateAntiForgeryToken]
+        public IActionResult DeleteKey(Guid Key)
+        {
+            if (Key != Guid.Empty)
+            {
+                CurrentUser.RemoveKey(Key);
+                UserManager.Save();
+            }
+            return RedirectToAction("ManageKeys");
+        }
+
+        [Authorize, HttpPost, ValidateAntiForgeryToken]
+        public IActionResult CreateKey(string KeyName)
+        {
+            if (!string.IsNullOrEmpty(KeyName))
+            {
+                CurrentUser.AddKey(new UserApiKey() { Name = KeyName });
+                UserManager.Save();
+            }
+            return RedirectToAction("ManageKeys");
+        }
+
+        [Authorize]
+        public IActionResult ManageKeys()
+        {
+            return View();
         }
 
         [HttpPost, ActionName("Register"), ValidateAntiForgeryToken]

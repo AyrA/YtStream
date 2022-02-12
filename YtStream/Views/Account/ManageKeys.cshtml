@@ -1,0 +1,64 @@
+﻿<h1>Stream key management</h1>
+@{
+    ViewData["Title"] = "Stream key management";
+    var Settings = (ConfigModel)ViewBag.Settings;
+    var User = (AccountInfo)ViewBag.User;
+}
+@if (Settings != null)
+{
+    if (Settings.RequireAccount)
+    {
+        <p>
+            Stream keys can be used to stream media on devices that don't support logging into this application,
+            for example an internet radio device.
+        </p>
+    }
+    else
+    {
+        <p>
+            Anonymous streaming is enabled.
+            Stream keys are not needed on this system.
+        </p>
+    }
+}
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Key</th>
+            <th>Creation date</th>
+            <th>Name</th>
+            <th>Options</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var K in User.ApiKeys)
+        {
+            <tr>
+                <td>@K.Key</td>
+                <td>@K.CreatedAt</td>
+                <td>@K.Name</td>
+                <td>
+                    <form method="post" class="form-inline" asp-action="DeleteKey">
+                        <input type="hidden" name="Key" value="@K.Key" />
+                        <input type="submit" value="DEL" />
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<h2>Create a key</h2>
+<form method="post" asp-action="CreateKey">
+    <div class="row form-group">
+        <div class="col-md-4">
+            <label>Name</label>
+            <input type="text" required name="KeyName" maxlength="20" class="form-control" />
+        </div>
+    </div>
+    <div class="row form-group">
+        <div class="col-md-4">
+            <input type="submit" class="btn btn-primary" value="Create" />
+        </div>
+    </div>
+</form>
