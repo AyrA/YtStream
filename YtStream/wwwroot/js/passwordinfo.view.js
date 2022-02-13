@@ -48,6 +48,14 @@
         e1.addEventListener("change", function () {
             checkPassword(e1.value, e2 ? e2.value : null, btn);
         });
+        if (e2) {
+            e2.addEventListener("input", function () {
+                checkPassword(e1.value, e2.value, btn);
+            });
+            e2.addEventListener("change", function () {
+                checkPassword(e1.value, e2.value, btn);
+            });
+        }
         checkPassword(e1.value, e2 ? e2.value : null, btn);
     }
 })(document.querySelector.bind(document), document.querySelectorAll.bind(document));
