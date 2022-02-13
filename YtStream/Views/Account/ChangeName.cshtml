@@ -1,0 +1,35 @@
+﻿@{
+	ViewData["Title"] = "Change user name";
+	var Changed = ViewBag.Changed != null && (bool)ViewBag.Changed;
+}
+@if (Changed)
+{
+	<div class="alert alert-success">
+		Your name was changed.
+		The change will be reflected on the next time you navigate.
+	</div>
+
+	<a asp-action="Index" class="btn btn-primary">OK</a>
+}
+@if (ViewBag.ErrMsg != null)
+{
+    <div class="alert alert-danger">@ViewBag.ErrMsg</div>
+}
+<h1>Change user name</h1>
+<form method="post" asp-action="ChangeName">
+	<div class="row form-group">
+		<div class="col-md-4">
+			<label>New user name</label>
+			<input type="text" name="Username" required value="@User.Identity.Name"
+				class="form-control" pattern="@UserManager.NamePattern" />
+		</div>
+	</div>
+	<div class="row form-group">
+		<div class="col-md-4">
+			<input type="submit" class="btn btn-primary" value="Change" />
+		</div>
+	</div>
+</form>
+<p>
+    <a asp-action="Index" class="btn btn-link">Go back</a>
+</p>

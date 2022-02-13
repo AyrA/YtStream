@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -39,6 +40,21 @@ namespace YtStream.Controllers
             }
             if (Settings.RequireAccount && !User.Identity.IsAuthenticated)
             {
+                //Check if streaming key was supplied
+                var key = context.HttpContext.Request.Query["key"];
+                if (key.Count == 1)
+                {
+                    if (Guid.TryParse(key.ToString(), out Guid StreamKey))
+                    {
+                        SetApiUser(StreamKey);
+                        if (CurrentUser != null)
+                        {
+                            _logger.LogInformation("User {0}: Key based authentication success", CurrentUser.Username);
+                            await base.OnActionExecutionAsync(context, next);
+                            return;
+                        }
+                    }
+                }
                 context.Result = RedirectToAction("Login", "Account", new { returnUrl = HttpContext.Request.Path });
                 return;
             }

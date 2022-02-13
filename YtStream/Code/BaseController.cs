@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using System;
 using System.Threading.Tasks;
 using YtStream.Models;
 
@@ -39,6 +40,11 @@ namespace YtStream
             ViewBag.User = CurrentUser;
             ViewBag.Settings = Settings;
             await base.OnActionExecutionAsync(context, next);
+        }
+
+        public void SetApiUser(Guid ApiKey)
+        {
+            CurrentUser = UserManager.GetUser(ApiKey);
         }
     }
 }

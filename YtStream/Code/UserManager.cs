@@ -1,7 +1,9 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -11,6 +13,7 @@ namespace YtStream
     public static class UserManager
     {
         public const int PasswordMinLength = 8;
+        public const string NamePattern = @"^[A-Za-z\d]{3,}$";
         private const string FileName = "accounts.json";
         private static readonly string AccountFile;
         private static readonly object Locker = new object();
@@ -343,6 +346,23 @@ namespace YtStream
             return _keys != null && _keys.Any(m => m.Key == Key);
         }
 
+        /// <summary>
+        /// Create .NET Core identity for HttpContext.SignInAsync()
+        /// </summary>
+        public ClaimsPrincipal GetIdentity()
+        {
+            var Claims = new Claim[]
+            {
+                new Claim(ClaimTypes.Name, Username)
+            };
+            var identity = new ClaimsIdentity(Claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            foreach (var Role in GetRoleStrings())
+            {
+                identity.AddClaim(new Claim(ClaimTypes.Role, Role));
+            }
+            return new ClaimsPrincipal(identity);
+        }
+
         public bool IsValid()
         {
             return GetValidationMessages().Length == 0;
@@ -358,6 +378,10 @@ namespace YtStream
             else if (Username.Length > 20)
             {
                 Messages.Add("Username must not be longer than 20 characters");
+            }
+            else if(!Regex.IsMatch(Username, UserManager.NamePattern))
+            {
+                Messages.Add("Username may only contain alphanumeric characters");
             }
             if (string.IsNullOrWhiteSpace(Password))
             {
