@@ -25,6 +25,22 @@ namespace YtStream
         public static volatile bool Locked;
 
         /// <summary>
+        /// Applies Settings from the supplied model to the appropriate classes
+        /// </summary>
+        /// <param name="Settings">Settings</param>
+        public static void ApplySettings(ConfigModel Settings)
+        {
+            if (Settings != null && Settings.IsValid())
+            {
+                Accounts.UserManager.MaxKeysPerUser = Settings.MaxKeysPerUser;
+                if (Settings.UseCache)
+                {
+                    Cache.SetBaseDirectory(Settings.CachePath);
+                }
+            }
+        }
+
+        /// <summary>
         /// Creates this instance
         /// </summary>
         /// <param name="configuration">Base configuration</param>
@@ -38,11 +54,6 @@ namespace YtStream
             try
             {
                 C = ConfigModel.Load();
-                Accounts.UserManager.MaxKeysPerUser = C.MaxKeysPerUser;
-                if (C.UseCache)
-                {
-                    Cache.SetBaseDirectory(C.CachePath);
-                }
             }
             catch
             {
@@ -51,6 +62,10 @@ namespace YtStream
             if (C == null)
             {
                 Locked = true;
+            }
+            else
+            {
+                ApplySettings(C);
             }
         }
 

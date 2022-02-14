@@ -109,6 +109,10 @@ namespace YtStream.Models
             {
                 Messages.Add("Cache lifetime cannot be negative");
             }
+            if (MaxKeysPerUser < 0)
+            {
+                Messages.Add(nameof(MaxKeysPerUser) + " cannot be negative");
+            }
             if (UseCache)
             {
                 if (string.IsNullOrWhiteSpace(CachePath))

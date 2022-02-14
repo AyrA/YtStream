@@ -11,6 +11,10 @@
         <p>
             Stream keys can be used to stream media on devices that don't support logging into this application,
             for example an internet radio device.<br />
+            @if(UserManager.MaxKeysPerUser > 0)
+            {
+                <span>You can create up to @UserManager.MaxKeysPerUser keys</span><br />
+            }
             <a asp-action="Info" asp-controller="Home">Click here to see how to use stream keys</a>
         </p>
     }
@@ -50,19 +54,29 @@
     </tbody>
 </table>
 <h2>Create a key</h2>
-<form method="post" asp-action="CreateKey">
-    <div class="row form-group">
-        <div class="col-md-4">
-            <label>Name</label>
-            <input type="text" required name="KeyName" maxlength="20" class="form-control" />
+@if (User.ApiKeys.Length < UserManager.MaxKeysPerUser)
+{
+    <form method="post" asp-action="CreateKey">
+        <div class="row form-group">
+            <div class="col-md-4">
+                <label>Name</label>
+                <input type="text" required name="KeyName" maxlength="20" class="form-control" />
+            </div>
         </div>
-    </div>
-    <div class="row form-group">
-        <div class="col-md-4">
-            <input type="submit" class="btn btn-primary" value="Create" />
+        <div class="row form-group">
+            <div class="col-md-4">
+                <input type="submit" class="btn btn-primary" value="Create" />
+            </div>
         </div>
+    </form>
+    <p>
+        <a asp-action="Index" class="btn btn-link">Go back</a>
+    </p>
+}
+else
+{
+    <div class="alert alert-warning">
+        You've used up all key slots.
+        To create a new key you must delete a key first.
     </div>
-</form>
-<p>
-    <a asp-action="Index" class="btn btn-link">Go back</a>
-</p>
+}

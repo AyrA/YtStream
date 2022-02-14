@@ -97,8 +97,11 @@ namespace YtStream.Controllers
         {
             if (!string.IsNullOrEmpty(KeyName))
             {
-                CurrentUser.AddKey(new UserApiKey() { Name = KeyName });
-                UserManager.Save();
+                if (CurrentUser.ApiKeys.Length < UserManager.MaxKeysPerUser)
+                {
+                    CurrentUser.AddKey(new UserApiKey() { Name = KeyName });
+                    UserManager.Save();
+                }
             }
             return RedirectToAction("ManageKeys");
         }

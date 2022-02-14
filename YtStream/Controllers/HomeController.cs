@@ -62,10 +62,7 @@ namespace YtStream.Controllers
                 return View(model);
             }
             model.Save();
-            if (model.UseCache)
-            {
-                Cache.SetBaseDirectory(model.CachePath);
-            }
+            Startup.ApplySettings(model);
             return RedirectToAction("ConfigSaved");
         }
 
