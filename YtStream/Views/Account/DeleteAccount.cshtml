@@ -1,5 +1,6 @@
 ﻿@{
 	ViewData["Title"] = "Delete account";
+    var Settings = (ConfigModel)ViewBag.Settings;
 }
 <div class="alert alert-danger">
 	<h1>Delete account</h1>
@@ -9,6 +10,15 @@
             You are about to delete your account.
             To confirm this action, please enter your password.
         </p>
+        @if(!Settings.PublicRegistration)
+        {
+            <p>
+                <b>
+                    CAUTION! Public user registration is disabled.
+                    You will not be able to register again by yourself.
+                </b>
+            </p>
+        }
         <form method="post">
 		    <div class="row form-group">
 			    <div class="col-md-4">
