@@ -141,6 +141,15 @@ else
     </div>
     <div class="row">
         <div class="col-md-4 form-group">
+            <label>
+                Maximum number of streaming keys per user
+            </label>
+            <input type="number" min="0" asp-for="MaxKeysPerUser" class="form-control" />
+            <i>Zero indicates to not impose a limit</i>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 form-group">
             <input type="submit" value="Send" class="btn btn-primary" />
         </div>
     </div>

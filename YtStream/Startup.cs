@@ -38,6 +38,11 @@ namespace YtStream
             try
             {
                 C = ConfigModel.Load();
+                Accounts.UserManager.MaxKeysPerUser = C.MaxKeysPerUser;
+                if (C.UseCache)
+                {
+                    Cache.SetBaseDirectory(C.CachePath);
+                }
             }
             catch
             {
@@ -46,10 +51,6 @@ namespace YtStream
             if (C == null)
             {
                 Locked = true;
-            }
-            else if (C.UseCache)
-            {
-                Cache.SetBaseDirectory(C.CachePath);
             }
         }
 

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography;
-using System.Text.Json.Serialization;
 
 namespace YtStream.Models
 {
@@ -55,6 +53,11 @@ namespace YtStream.Models
         public int CacheSBlockLifetime { get; set; }
 
         /// <summary>
+        /// Maximum allowed number of keys per user
+        /// </summary>
+        public int MaxKeysPerUser { get; set; }
+
+        /// <summary>
         /// Path to youtube-dl executable
         /// </summary>
         public string YoutubedlPath { get; set; }
@@ -87,6 +90,7 @@ namespace YtStream.Models
             CacheMp3Lifetime = 0;
             //7 days
             CacheSBlockLifetime = Tools.SponsorBlockCacheTime;
+            MaxKeysPerUser = 10;
         }
 
         /// <summary>

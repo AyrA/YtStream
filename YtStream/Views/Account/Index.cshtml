@@ -6,14 +6,14 @@
 }
 <h1>Account information</h1>
 <p>
-    User name: @Model.Username [<a asp-action="ChangeName">Change</a>]
+    User name: <b>@Model.Username</b> [<a asp-action="ChangeName">Change</a>]
 </p>
 <p>
-    Password: [<a asp-action="ChangePassword">Change</a>]
+    Password: <b>*set*</b>[<a asp-action="ChangePassword">Change</a>]
 </p>
 <p>
-    Streaming keys: @Model.ApiKeys.Length [<a asp-action="ManageKeys">Manage</a>]
+    Streaming keys: <b>@Model.ApiKeys.Length</b> [<a asp-action="ManageKeys">Manage</a>]
 </p>
 <p>
-    Permissions: @string.Join(", ", Model.GetRoleStrings())
+    Permissions: <b>@string.Join(", ", Model.GetRoleStrings())</b>
 </p>
