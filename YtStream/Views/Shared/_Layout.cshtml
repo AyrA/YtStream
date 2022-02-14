@@ -31,7 +31,7 @@
                         @if (User.Identity.IsAuthenticated && Acc.Roles.HasFlag(UserRoles.Administrator))
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Home" asp-action="Config">Settings</a>
+                                <a class="nav-link text-dark" asp-controller="Manage" asp-action="Index">Settings</a>
                             </li>
                         }
                     </ul>
@@ -72,7 +72,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2022 - <a href="https://github.com/AyrA/YtStream" target="_blank" rel="noreferrer nofollow noopener">Kevin Gut</a>
+            YtStream &copy; 2022 - <a href="https://github.com/AyrA/YtStream" target="_blank" rel="noreferrer nofollow noopener">Kevin Gut</a>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js" defer></script>

@@ -27,45 +27,6 @@ namespace YtStream.Controllers
             return View(Settings);
         }
 
-        [Authorize(Roles = "Administrator"), HttpPost, ValidateAntiForgeryToken]
-        public IActionResult ChangeLock()
-        {
-            if (Settings != null)
-            {
-                Startup.Locked = !Startup.Locked;
-            }
-            return RedirectToAction("Config");
-        }
-
-        [Authorize(Roles = "Administrator")]
-        public IActionResult ConfigSaved()
-        {
-            return View(Settings);
-        }
-
-        [Authorize(Roles = "Administrator"), HttpGet, ActionName("Config")]
-        public IActionResult ConfigGet()
-        {
-            return View(Settings);
-        }
-
-        [Authorize(Roles = "Administrator"), HttpPost, ActionName("Config"), ValidateAntiForgeryToken]
-        public IActionResult ConfigPost(ConfigModel model)
-        {
-            ViewBag.ErrorMessage = "";
-            if (model == null)
-            {
-                return RedirectToAction("Config");
-            }
-            if (!model.IsValid())
-            {
-                return View(model);
-            }
-            model.Save();
-            Startup.ApplySettings(model);
-            return RedirectToAction("ConfigSaved");
-        }
-
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
