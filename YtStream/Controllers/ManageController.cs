@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using YtStream.Accounts;
 using YtStream.Models;
 
 namespace YtStream.Controllers
@@ -12,14 +14,37 @@ namespace YtStream.Controllers
             return View();
         }
 
+        public IActionResult AccountList()
+        {
+            return View(UserManager.GetUsers());
+        }
+
         [HttpPost, ValidateAntiForgeryToken]
-        public IActionResult ChangeLock()
+        public IActionResult AccountDisable(string Username)
+        {
+            return ChangeUserEnabled(UserManager.GetUser(Username), false);
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public IActionResult AccountEnable(string Username)
+        {
+            return ChangeUserEnabled(UserManager.GetUser(Username), true);
+        }
+
+        [HttpPost, ActionName("ChangeLock"), ValidateAntiForgeryToken]
+        public IActionResult ChangeLockPost()
         {
             if (Settings != null)
             {
                 Startup.Locked = !Startup.Locked;
             }
-            return RedirectToAction("Config");
+            return RedirectToAction("ChangeLock");
+        }
+
+        [HttpGet, ActionName("ChangeLock")]
+        public IActionResult ChangeLockGet()
+        {
+            return View();
         }
 
         public IActionResult ConfigSaved()
@@ -48,6 +73,28 @@ namespace YtStream.Controllers
             model.Save();
             Startup.ApplySettings(model);
             return RedirectToAction("ConfigSaved");
+        }
+
+        private IActionResult ChangeUserEnabled(AccountInfo Acc, bool State)
+        {
+            try
+            {
+                if (Acc == null)
+                {
+                    throw new ArgumentNullException(nameof(Acc), "User not found");
+                }
+                if (Acc == CurrentUser)
+                {
+                    throw new InvalidOperationException($"Cannot {(State ? "enable" : "disable")} current user");
+                }
+            }
+            catch (Exception ex)
+            {
+                return View("Error", new ErrorViewModel(ex));
+            }
+            Acc.Enabled = State;
+            UserManager.Save();
+            return RedirectToAction("AccountList");
         }
     }
 }

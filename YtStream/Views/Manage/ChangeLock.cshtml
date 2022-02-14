@@ -1,0 +1,29 @@
+﻿@{
+    ViewData["Title"] = "Change application lock";
+    var HasSettings = null != (ConfigModel)ViewBag.Settings;
+    var LockMsg = Startup.Locked || !HasSettings ? "Locked. Streaming functionality unavailable" : "Unlocked. Streaming functionality available";
+    var divClass = Startup.Locked || !HasSettings ? "danger" : "success";
+    var btnClass = Startup.Locked || !HasSettings ? "success" : "danger";
+    var btnValue = Startup.Locked || !HasSettings ? "Unlock" : "Lock";
+}
+<form method="post" asp-action="ChangeLock">
+    <div class="form-group alert alert-@divClass">
+        <p>Application status: <b>@LockMsg</b>.</p>
+        <input type="submit" class="btn btn-@btnClass"
+               value="@btnValue" disabled="@(!HasSettings)" />
+        @if (!HasSettings)
+        {
+            <b>You cannot change operation mode until the configuration issue is resolved</b><br />
+            <a asp-action="Config">Click here for details</a>
+        }
+    </div>
+</form>
+<p>
+    <i>
+        Lock status is not retained across restarts.
+        The application always starts in unlocked state unless there's a problem deserializing the configuration file.
+    </i>
+</p>
+<p>
+    <a asp-action="Index" class="btn btn-link">Go back</a>
+</p>

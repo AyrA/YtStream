@@ -1,3 +1,5 @@
+using System;
+
 namespace YtStream.Models
 {
     /// <summary>
@@ -5,6 +7,15 @@ namespace YtStream.Models
     /// </summary>
     public class ErrorViewModel
     {
+        public static bool DefaultDetailOption = false;
+
+        public bool ShowDetails { get; set; }
+
+        /// <summary>
+        /// Exception that is displayed
+        /// </summary>
+        public Exception Error { get; set; }
+
         /// <summary>
         /// Random id of the request
         /// </summary>
@@ -14,5 +25,13 @@ namespace YtStream.Models
         /// True if RequestId passes <see cref="string.IsNullOrEmpty"/>
         /// </summary>
         public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+        public ErrorViewModel() : this(null) { }
+
+        public ErrorViewModel(Exception ex)
+        {
+            ShowDetails = DefaultDetailOption;
+            Error = ex;
+        }
     }
 }

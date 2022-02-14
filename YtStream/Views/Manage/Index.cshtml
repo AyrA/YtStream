@@ -1,0 +1,16 @@
+﻿@{
+    ViewData["Title"] = "Settings overview";
+    var label = Startup.Locked ? "locked" : "unlocked";
+    var labelClass = Startup.Locked ? "danger" : "success";
+}
+<h1>Management</h1>
+<p>
+    <a asp-action="ChangeLock">Change Lock</a>
+    (Application is currently <span class="alert-@labelClass">@label</span>)
+</p>
+<p>
+    <a asp-action="Config">Change settings</a>
+</p>
+<p>
+    <a asp-action="AccountList">Edit Accounts</a>
+</p>

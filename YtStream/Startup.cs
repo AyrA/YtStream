@@ -48,6 +48,7 @@ namespace YtStream
         public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
             ConfigModel C;
+            ErrorViewModel.DefaultDetailOption = env.IsDevelopment();
             Locked = false;
             Configuration = configuration;
             BasePath = env.ContentRootPath;

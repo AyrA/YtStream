@@ -55,6 +55,11 @@ namespace YtStream.Accounts
             return Accounts.Count(m => m.Enabled && m.Roles.HasFlag(UserRoles.Administrator)) > 1;
         }
 
+        public static AccountInfo[] GetUsers()
+        {
+            return Accounts.ToArray();
+        }
+
         public static AccountInfo GetUser(string Username)
         {
             return Accounts.FirstOrDefault(m => m.Username.ToLower() == Username.ToLower());

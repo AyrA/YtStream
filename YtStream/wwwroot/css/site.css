@@ -1,14 +1,20 @@
 ﻿.copy-on-click {
     cursor:pointer;
 }
-
+.link:hover {
+    text-decoration: underline;
+}
+.link {
+    border:none;
+    background:transparent;
+    color:#0366d6;
+}
 
 /* == Automatically generated rules == */
-
 a.navbar-brand {
-  white-space: normal;
-  text-align: center;
-  word-break: break-all;
+    white-space: normal;
+    text-align: center;
+    word-break: break-all;
 }
 
 /* Provide sufficient contrast against white background */

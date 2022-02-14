@@ -1,0 +1,34 @@
+﻿@model AccountInfo[]
+@{
+    ViewData["Title"] = "Manage accounts";
+}
+<h1>Manage accounts</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Enabled</th>
+            <th>Access</th>
+            <th>Options</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach(var Acc in Model)
+        {
+            var Enabled = Acc.Enabled ? "Yes" : "No";
+            var ChgLink = Acc.Enabled ? "AccountDisable" : "AccountEnable";
+            <tr>
+                <td>@Acc.Username</td>
+                <td>
+                    <form asp-action="@ChgLink" method="post" class="form-inline">
+                        <input type="hidden" name="Username" value="@Acc.Username" />
+                        <input type="submit" class="link" title="Click to change" value="@Enabled" />
+                    </form>
+                </td>
+                <td>@string.Join(", ",Acc.GetRoleStrings())</td>
+                <td>TODO</td>
+            </tr>
+        }
+    </tbody>
+</table>

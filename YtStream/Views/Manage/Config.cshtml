@@ -15,20 +15,8 @@
             ErrMsg = ex.Message;
         }
     }
-    var LockMsg = Startup.Locked ? "Locked. Streaming functionality unavailable" : "Unlocked. Streaming functionality available";
 }
 <h1>Settings</h1>
-<form method="post" asp-action="ChangeLock">
-    <div class="form-group alert alert-@(Startup.Locked?"danger":"success")">
-        <p>Application status: <b>@LockMsg</b>.</p>
-        <input type="submit" class="btn btn-@(Startup.Locked?"success":"danger")"
-               value="@(Startup.Locked?"Unlock":"Lock") now" disabled="@(Model==null)" />
-        @if (Model == null)
-        {
-            <b>You cannot change operation mode until the configuration issue is resolved</b>
-        }
-    </div>
-</form>
 
 @if (Model != null)
 {
@@ -164,6 +152,9 @@ else
         </div>
     </div>
 </form>
+<p>
+    <a asp-action="Index" class="btn btn-link">Go back</a>
+</p>
 @section Scripts
 {
     <script src="~/js/config.view.js" asp-append-version="true" defer></script>

@@ -59,4 +59,10 @@
     Array.from(qa(".copy-on-click")).forEach(function (v) {
         v.addEventListener("click", copyTextEvent);
     });
+    Array.from(qa(".backlink").forEach(function (v) {
+        v.addEventListener("click", function (e) {
+            e.preventDefault();
+            history.back();
+        });
+    }));
 })(document.querySelector.bind(document), document.querySelectorAll.bind(document));
