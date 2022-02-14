@@ -76,6 +76,15 @@ namespace YtStream.Models
         public string SponsorBlockServer { get; set; }
 
         /// <summary>
+        /// Enable public registration of new accounts
+        /// </summary>
+        /// <remarks>
+        /// Only the admin can create new accounts if this is disabled.
+        /// Registration is always permitted if no user account exists.
+        /// </remarks>
+        public bool PublicRegistration { get; set; }
+
+        /// <summary>
         /// Initializes a configuration with defaults
         /// </summary>
         public ConfigModel()

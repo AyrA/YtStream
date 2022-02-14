@@ -1,0 +1,32 @@
+﻿@{
+	ViewData["Title"] = "Delete account";
+}
+<div class="alert alert-danger">
+	<h1>Delete account</h1>
+    @if (ViewBag.CanDelete)
+    {
+        <p>
+            You are about to delete your account.
+            To confirm this action, please enter your password.
+        </p>
+        <form method="post">
+		    <div class="row form-group">
+			    <div class="col-md-4">
+				    <input type="password" class="form-control" name="Password" required placeholder="Password" />
+			    </div>
+		    </div>
+		    <div class="row form-group">
+			    <div class="col-md-4">
+				    <input type="submit" class="btn btn-danger" value="Delete account" />
+			    </div>
+		    </div>
+	    </form>
+    }
+    else
+    {
+        <p>Cannot delete the last remaining administrator account</p>
+    }
+</div>
+<p>
+    <a asp-action="Index" class="btn btn-link">Go back</a>
+</p>

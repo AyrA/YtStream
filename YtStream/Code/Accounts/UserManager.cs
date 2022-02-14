@@ -30,9 +30,29 @@ namespace YtStream.Accounts
             if (File.Exists(AccountFile))
             {
                 Accounts.AddRange(File.ReadAllText(AccountFile).FromJson<AccountInfo[]>(true));
+                foreach (var Acc in Accounts.Where(m => m.ApiKeys == null))
+                {
+                    Acc.ApiKeys = new UserApiKey[0];
+                }
             }
             ValidateAccounts();
             Rules = new UserPasswordRules();
+        }
+
+        public static bool CanDeleteOrDisable(string Username)
+        {
+            var Acc = GetUser(Username);
+            if (Acc == null)
+            {
+                throw new ArgumentException("Specified user could not be found");
+            }
+            //Can always delete regular users
+            if (!Acc.Roles.HasFlag(UserRoles.Administrator))
+            {
+                return true;
+            }
+            //Can only delete administrator if at least another active admin exists
+            return Accounts.Count(m => m.Enabled && m.Roles.HasFlag(UserRoles.Administrator)) > 1;
         }
 
         public static AccountInfo GetUser(string Username)
@@ -45,7 +65,7 @@ namespace YtStream.Accounts
             return Accounts.FirstOrDefault(m => m.HasKey(ApiKey));
         }
 
-        public static void AddUser(string Username, string Password, UserRoles Role = UserRoles.User)
+        public static AccountInfo AddUser(string Username, string Password, UserRoles Role = UserRoles.User)
         {
             lock (Locker)
             {
@@ -68,6 +88,7 @@ namespace YtStream.Accounts
                 AI.SetPassword(Password);
                 Accounts.Add(AI);
                 Save();
+                return AI;
             }
         }
 
@@ -89,6 +110,10 @@ namespace YtStream.Accounts
         {
             lock (Accounts)
             {
+                foreach (var Acc in Accounts.Where(m => m.ApiKeys == null))
+                {
+                    Acc.ApiKeys = new UserApiKey[0];
+                }
                 ValidateAccounts();
                 File.WriteAllText(AccountFile, Accounts.ToJson(true));
             }

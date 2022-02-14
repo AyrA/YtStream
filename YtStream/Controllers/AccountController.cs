@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
 using YtStream.Accounts;
@@ -12,9 +13,50 @@ namespace YtStream.Controllers
     [Authorize]
     public class AccountController : BaseController
     {
+        private readonly ILogger _logger;
+
+        public AccountController(ILogger<StreamController> Logger)
+        {
+            _logger = Logger;
+        }
+
         public IActionResult Index()
         {
             return View(CurrentUser);
+        }
+
+
+        [HttpPost, ActionName("DeleteAccount"), ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteAccountPost(string Password)
+        {
+            if (CurrentUser.CheckPassword(Password))
+            {
+                var CanDelete = UserManager.CanDeleteOrDisable(CurrentUser.Username);
+                if (CanDelete)
+                {
+                    UserManager.DeleteUser(CurrentUser.Username);
+                    UserManager.Save();
+                    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    _logger.LogInformation("User deleted: {0}", CurrentUser.Username);
+                    return RedirectToAction("Index", "Home");
+                }
+                else
+                {
+                    ViewBag.ErrMsg = "Cannot delete the last administrator";
+                }
+            }
+            else
+            {
+                ViewBag.ErrMsg = "Invalid password";
+            }
+            return View();
+        }
+
+        [HttpGet, ActionName("DeleteAccount")]
+        public IActionResult DeleteAccountGet()
+        {
+            ViewBag.CanDelete = UserManager.CanDeleteOrDisable(CurrentUser.Username);
+            return View();
         }
 
         [HttpPost, ActionName("ChangePassword"), ValidateAntiForgeryToken]
@@ -29,6 +71,7 @@ namespace YtStream.Controllers
                     {
                         CurrentUser.SetPassword(model.NewPassword);
                         ViewBag.Changed = true;
+                        _logger.LogInformation("Password change for {0}", CurrentUser.Username);
                         return View();
                     }
                     else
@@ -58,12 +101,14 @@ namespace YtStream.Controllers
         public async Task<IActionResult> ChangeNamePost(string Username)
         {
             ViewBag.Changed = false;
-            var NewUser = UserManager.GetUser(Username);
-            if (NewUser == null)
+            var TestUser = UserManager.GetUser(Username);
+            if (TestUser == null)
             {
+                var OldUser = CurrentUser.Username;
                 ViewBag.Changed = true;
                 CurrentUser.Username = Username;
                 UserManager.Save();
+                _logger.LogInformation("Username change: {0} --> {1}", OldUser, Username);
                 //Change username by signing in again
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, CurrentUser.GetIdentity());
@@ -112,32 +157,42 @@ namespace YtStream.Controllers
         }
 
         [AllowAnonymous, HttpPost, ActionName("Register"), ValidateAntiForgeryToken]
-        public IActionResult RegisterPost(string userName, string password, string passwordRepeat)
+        public async Task<IActionResult> RegisterPost(string userName, string password, string passwordRepeat)
         {
-            if (password == passwordRepeat)
+            if (AllowRegister())
             {
-                try
+                if (password == passwordRepeat)
                 {
-                    UserManager.AddUser(userName, password, UserManager.HasUsers ? UserRoles.User : UserRoles.User | UserRoles.Administrator);
+                    AccountInfo NewUser;
+                    try
+                    {
+                        NewUser = UserManager.AddUser(userName, password, UserManager.HasUsers ? UserRoles.User : UserRoles.User | UserRoles.Administrator);
+                    }
+                    catch (Exception ex)
+                    {
+                        ViewBag.ErrMsg = ex.Message;
+                        return View();
+                    }
+                    _logger.LogInformation("User registered: {0}", NewUser.Username);
+                    if (!User.Identity.IsAuthenticated)
+                    {
+                        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, NewUser.GetIdentity());
+                    }
+                    return RedirectToAction("Index");
                 }
-                catch (Exception ex)
+                else
                 {
-                    ViewBag.ErrMsg = ex.Message;
-                    return View();
+                    ViewBag.ErrMsg = "Passwords do not match";
                 }
-                return RedirectToAction("Login");
+                return View();
             }
-            else
-            {
-                ViewBag.ErrMsg = "Passwords do not match";
-            }
-            return View();
+            return RedirectToAction("Login");
         }
 
         [AllowAnonymous, HttpGet, ActionName("Register")]
         public IActionResult RegisterGet()
         {
-            if ((User.Identity.IsAuthenticated && User.IsInRole(UserRoles.Administrator.ToString())) || !UserManager.HasUsers)
+            if (AllowRegister())
             {
                 return View();
             }
@@ -172,6 +227,7 @@ namespace YtStream.Controllers
             var Account = UserManager.GetUser(userName);
             if (Account != null && Account.Enabled && Account.CheckPassword(password))
             {
+                _logger.LogInformation("User authenticated: {0}", Account.Username);
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, Account.GetIdentity());
                 return RedirectToAction("Index", "Home");
             }
@@ -182,6 +238,10 @@ namespace YtStream.Controllers
         [Authorize, HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
+            if (CurrentUser != null)
+            {
+                _logger.LogInformation("User logout: {0}", CurrentUser.Username);
+            }
             await HttpContext.SignOutAsync();
             return RedirectToAction("Index", "Home");
         }
@@ -190,6 +250,13 @@ namespace YtStream.Controllers
         public IActionResult AccessDenied()
         {
             return View();
+        }
+
+        private bool AllowRegister()
+        {
+            return Settings.PublicRegistration ||
+                !UserManager.HasUsers ||
+                (User.Identity.IsAuthenticated && User.IsInRole(UserRoles.Administrator.ToString()));
         }
     }
 }
