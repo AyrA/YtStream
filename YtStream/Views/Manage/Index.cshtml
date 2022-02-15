@@ -5,12 +5,15 @@
 }
 <h1>Management</h1>
 <p>
-    <a asp-action="ChangeLock">Change Lock</a>
+    <a asp-action="ChangeLock" class="btn btn-link">Change application lock</a>
     (Application is currently <span class="alert-@labelClass">@label</span>)
 </p>
 <p>
-    <a asp-action="Config">Change settings</a>
+    <a asp-action="Config" class="btn btn-link">Change settings</a>
 </p>
 <p>
-    <a asp-action="AccountList">Edit Accounts</a>
+    <a asp-action="AccountList" class="btn btn-link">Edit accounts</a>
+</p>
+<p>
+    <a asp-action="Backup" class="btn btn-link">Backup and restore</a>
 </p>

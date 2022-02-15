@@ -1,0 +1,37 @@
+﻿@{
+    ViewData["Title"] = "Backup and restore";
+    var Msg = (string)ViewBag.Msg;
+}
+<h1>Backup</h1>
+@if (!string.IsNullOrEmpty(Msg))
+{
+    <div class="alert alert-success">@Msg</div>
+}
+<p>
+    <a asp-action="Backup" asp-route-id="config" class="btn btn-primary">Backup configuration</a>
+</p>
+<p>
+    <a asp-action="Backup" asp-route-id="accounts" class="btn btn-primary">Backup user accounts</a>
+</p>
+
+<h1>Restore configuration</h1>
+<div class="form-group">
+    <form asp-action="Restore" asp-route-id="config" enctype="multipart/form-data" class="form-inline">
+        <label class="btn btn-success">
+            <input type="file" style="display:none" name="file" required accept=".ytconf" data-file-label="#lblConf" />
+            <span id="lblConf">Select file</span>
+        </label>&nbsp;
+        <input type="submit" class="btn btn-primary" value="Restore configuration" />
+    </form>
+</div>
+<h1>Restore accounts</h1>
+<div class="form-group">
+    <form asp-action="Restore" asp-route-id="accounts" enctype="multipart/form-data" class="form-inline">
+        <label class="btn btn-success">
+            <input type="file" style="display:none" name="file" required accept=".ytacc" data-file-label="#lblAcc" />
+            <span id="lblAcc">Select file</span>
+        </label>&nbsp;
+        <input type="submit" class="btn btn-primary" value="Restore accounts" />
+    </form>
+    <i>Importing accounts will log you out if your account no longer exists</i>
+</div>

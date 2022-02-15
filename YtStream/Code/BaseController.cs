@@ -11,7 +11,10 @@ namespace YtStream
     public class BaseController : Controller
     {
         public ConfigModel Settings { get; }
+
         public AccountInfo CurrentUser { get; private set; }
+
+        public string CookieMessage { get; private set; }
 
         public BaseController()
         {
@@ -27,6 +30,7 @@ namespace YtStream
 
         public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
+            CookieMessage = null;
             if (User.Identity.IsAuthenticated)
             {
                 CurrentUser = UserManager.GetUser(User.Identity.Name);
@@ -40,12 +44,29 @@ namespace YtStream
             }
             ViewBag.User = CurrentUser;
             ViewBag.Settings = Settings;
+            CookieMessage = HttpContext.Request.Cookies["status"];
+            if (!string.IsNullOrEmpty(CookieMessage))
+            {
+                HttpContext.Response.Cookies.Delete("status");
+            }
             await base.OnActionExecutionAsync(context, next);
         }
 
         public void SetApiUser(Guid ApiKey)
         {
             CurrentUser = UserManager.GetUser(ApiKey);
+        }
+
+        public IActionResult RedirectWithMessage(string Action, string Message)
+        {
+            HttpContext.Response.Cookies.Append("status", Message);
+            return RedirectToAction(Action);
+        }
+
+        public IActionResult RedirectWithMessage(string Action, string Controller, string Message)
+        {
+            HttpContext.Response.Cookies.Append("status", Message);
+            return RedirectToAction(Action, Controller);
         }
     }
 }

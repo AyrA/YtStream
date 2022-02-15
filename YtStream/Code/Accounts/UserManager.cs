@@ -10,7 +10,7 @@ namespace YtStream.Accounts
     {
         public const int PasswordMinLength = 8;
         public const string NamePattern = @"^[A-Za-z\d]{3,}$";
-        private const string FileName = "accounts.json";
+        public const string FileName = "accounts.json";
         private static readonly string AccountFile;
         private static readonly object Locker = new object();
         private static readonly AccountInfo Dummy;
@@ -28,16 +28,23 @@ namespace YtStream.Accounts
             Dummy = D;
             Accounts = new List<AccountInfo>();
             AccountFile = Path.Combine(Startup.BasePath, FileName);
+            Reload();
+            Rules = new UserPasswordRules();
+        }
+
+        public static void Reload()
+        {
             if (File.Exists(AccountFile))
             {
-                Accounts.AddRange(File.ReadAllText(AccountFile).FromJson<AccountInfo[]>(true));
+                var FileAccounts = File.ReadAllText(AccountFile).FromJson<AccountInfo[]>(true);
+                ValidateAccounts(FileAccounts);
+                Accounts.Clear();
+                Accounts.AddRange(FileAccounts);
                 foreach (var Acc in Accounts.Where(m => m.ApiKeys == null))
                 {
                     Acc.ApiKeys = new UserApiKey[0];
                 }
             }
-            ValidateAccounts();
-            Rules = new UserPasswordRules();
         }
 
         public static bool CanDeleteOrDisable(string Username)
@@ -134,7 +141,7 @@ namespace YtStream.Accounts
                 {
                     Acc.ApiKeys = new UserApiKey[0];
                 }
-                ValidateAccounts();
+                ValidateAccounts(Accounts.ToArray());
                 File.WriteAllText(AccountFile, Accounts.ToJson(true));
             }
         }
@@ -155,7 +162,7 @@ namespace YtStream.Accounts
             return User.CheckPassword(Password) && User != Dummy;
         }
 
-        private static void ValidateAccounts()
+        private static void ValidateAccounts(AccountInfo[] Accounts)
         {
             if (Accounts.Any(m => !m.IsValid()))
             {
@@ -166,7 +173,7 @@ namespace YtStream.Accounts
                 throw new InvalidOperationException($"At least one account has more than {MaxKeysPerUser} keys");
             }
             //Prevent duplicste user names
-            if (Accounts.Count != Accounts.Select(m => m.Username.ToLower()).Distinct().Count())
+            if (Accounts.Length != Accounts.Select(m => m.Username.ToLower()).Distinct().Count())
             {
                 throw new InvalidOperationException("Duplicate user name in list");
             }

@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Linq;
+using System.Threading.Tasks;
 using YtStream.Accounts;
 using YtStream.Models;
 
@@ -21,6 +24,76 @@ namespace YtStream.Controllers
         public IActionResult Index()
         {
             return View();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Backup(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                ViewBag.Msg = CookieMessage;
+                return View();
+            }
+            string Filename, Fakename;
+            try
+            {
+                switch (id)
+                {
+                    case "accounts":
+                        Filename = System.IO.Path.Combine(Startup.BasePath, UserManager.FileName);
+                        Fakename = "backup.ytacc";
+                        break;
+                    case "config":
+                        Filename = System.IO.Path.Combine(Startup.BasePath, ConfigModel.ConfigFileName);
+                        Fakename = "backup.ytconf";
+                        break;
+                    default:
+                        throw new ArgumentException("Unknown backup type");
+                }
+            }
+            catch (Exception ex)
+            {
+                return View("Error", new ErrorViewModel(ex));
+            }
+            if (!string.IsNullOrEmpty(Filename))
+            {
+                using (var FS = System.IO.File.OpenRead(Filename))
+                {
+                    byte[] Result = await Brotli.Compress(FS);
+                    HttpContext.Response.Headers.Add("Content-Disposition", $"attachment; filename=\"{Fakename}\"");
+                    return File(Result, "application/octet-stream");
+                }
+            }
+            return NotFound();
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Restore(string id)
+        {
+            try
+            {
+                if (Request.Form.Files.Count != 1)
+                {
+                    throw new Exception($"Expected 1 file, but got {Request.Form.Files.Count}");
+                }
+                if (id == null)
+                {
+                    throw new Exception("No upload type specified");
+                }
+                switch (id)
+                {
+                    case "accounts":
+                        return await RestoreAccounts(Request.Form.Files[0]);
+                    case "config":
+                        return await RestoreConfig(Request.Form.Files[0]);
+                    default:
+                        throw new Exception("Unknown upload type");
+                }
+            }
+            catch (Exception ex)
+            {
+                return View("Error", new ErrorViewModel(ex));
+            }
         }
 
         [HttpGet]
@@ -252,6 +325,46 @@ namespace YtStream.Controllers
                     "To edit the current account, click on the user name in the top right corner.");
             }
             return Acc;
+        }
+
+        private async Task<IActionResult> RestoreConfig(IFormFile formFile)
+        {
+            using (var S = formFile.OpenReadStream())
+            {
+                var data = (await Brotli.Decompress(S)).Utf8().FromJson<ConfigModel>(true);
+                if (!data.IsValid())
+                {
+                    throw new Exception(string.Join("\r\n", data.GetValidationMessages()));
+                }
+                data.Save();
+                Startup.ApplySettings(data);
+            }
+            return RedirectWithMessage("Backup", "Settings imported");
+        }
+
+        private async Task<IActionResult> RestoreAccounts(IFormFile formFile)
+        {
+            using (var S = formFile.OpenReadStream())
+            {
+                var data = (await Brotli.Decompress(S)).Utf8().FromJson<AccountInfo[]>(true);
+                if (data.Length < 1)
+                {
+                    throw new Exception("Imported user list is empty");
+                }
+                if (!data.Any(m => m.Enabled && m.Roles.HasFlag(UserRoles.Administrator)))
+                {
+                    throw new Exception("Imported user list has no enabled administrator");
+                }
+                var Invalid = data.FirstOrDefault(m => !m.IsValid());
+                if (Invalid != null)
+                {
+                    throw new Exception("Imported user list has invalid entries. " +
+                        $"First invalid user is '{Invalid.Username}'. Error: '{Invalid.GetValidationMessages()[0]}'");
+                }
+                await System.IO.File.WriteAllTextAsync(System.IO.Path.Combine(Startup.BasePath, UserManager.FileName), data.ToJson(true));
+                UserManager.Reload();
+            }
+            return RedirectWithMessage("Backup", "User accounts imported");
         }
     }
 }

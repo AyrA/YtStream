@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Text;
+using System.Text.Json;
 
 namespace YtStream
 {
@@ -48,6 +49,29 @@ namespace YtStream
                 WriteIndented = Pretty
             };
             return JsonSerializer.Serialize(o, Opt);
+        }
+
+        /// <summary>
+        /// Convert byte array into UTF8 string
+        /// </summary>
+        /// <param name="data">Byte array</param>
+        /// <returns>UTF8 string</returns>
+        /// <remarks>
+        /// <paramref name="data"/> should be valid UTF-8
+        /// </remarks>
+        public static string Utf8(this byte[] data)
+        {
+            return Encoding.UTF8.GetString(data);
+        }
+
+        /// <summary>
+        /// Convert string into UTF8 byte array
+        /// </summary>
+        /// <param name="data">String</param>
+        /// <returns>UTF8 byte array</returns>
+        public static byte[] Utf8(this string data)
+        {
+            return Encoding.UTF8.GetBytes(data);
         }
     }
 }

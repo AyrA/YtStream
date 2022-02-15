@@ -56,13 +56,28 @@
             alert("Copying of text was rejected by your browser");
         }
     };
+    var updateFileLabel = function () {
+        var lbl = this.dataset.fileLabel;
+        if (lbl) {
+            var e = q(lbl);
+            if (e) {
+                e.textContent = this.files[0].name;
+            }
+        }
+    };
+
     Array.from(qa(".copy-on-click")).forEach(function (v) {
         v.addEventListener("click", copyTextEvent);
     });
-    Array.from(qa(".backlink").forEach(function (v) {
+    Array.from(qa(".backlink")).forEach(function (v) {
         v.addEventListener("click", function (e) {
             e.preventDefault();
             history.back();
         });
-    }));
+    });
+    Array.from(qa("[type=file]")).forEach(function (v) {
+        if (v.dataset.fileLabel) {
+            v.addEventListener("change", updateFileLabel);
+        }
+    });
 })(document.querySelector.bind(document), document.querySelectorAll.bind(document));
