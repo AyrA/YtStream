@@ -67,6 +67,10 @@ namespace YtStream.Controllers
 
         public async Task<IActionResult> List(string id)
         {
+            if (IsHead())
+            {
+                return Json(null);
+            }
             if (!Tools.IsYoutubePlaylist(id))
             {
                 return BadRequest("Supplied argument is not a valid playlist identifier");
@@ -86,6 +90,11 @@ namespace YtStream.Controllers
             {
                 return BadRequest("Supplied argument is not a valid playlist identifier");
             }
+            if (IsHead())
+            {
+                Tools.SetAudioHeaders(Response);
+                return new EmptyResult();
+            }
             var ytdl = new YoutubeDl(Settings.YoutubedlPath);
             var PL = await ytdl.GetPlaylist(id);
             if (PL == null || PL.Length == 0)
@@ -100,6 +109,11 @@ namespace YtStream.Controllers
             if (!Tools.IsYoutubePlaylist(id))
             {
                 return BadRequest("Supplied argument is not a valid playlist identifier");
+            }
+            if (IsHead())
+            {
+                Tools.SetAudioHeaders(Response);
+                return new EmptyResult();
             }
             var ytdl = new YoutubeDl(Settings.YoutubedlPath);
             var PL = await ytdl.GetPlaylist(id);
@@ -123,6 +137,10 @@ namespace YtStream.Controllers
             }
             if (Tools.IsYoutubeId(id))
             {
+                if (IsHead())
+                {
+                    return Json(null);
+                }
                 return Json(await GetRanges(id));
             }
             return BadRequest("Invalid youtube id");
@@ -143,6 +161,12 @@ namespace YtStream.Controllers
             if (inv != null)
             {
                 return BadRequest($"Invalid id: {inv}");
+            }
+            if (IsHead())
+            {
+                _logger.LogInformation("Early termination on HEAD request");
+                Tools.SetAudioHeaders(Response);
+                return new EmptyResult();
             }
             var MP3 = Cache.GetHandler(Cache.CacheType.MP3, Settings.CacheMp3Lifetime);
             var skipped = 0;
@@ -275,6 +299,11 @@ namespace YtStream.Controllers
                 return Ranges;
             }
             return new TimeRange[0];
+        }
+
+        private bool IsHead()
+        {
+            return HttpContext.Request.Method.ToUpper() == "HEAD";
         }
     }
 }
