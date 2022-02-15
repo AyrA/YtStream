@@ -1,0 +1,64 @@
+﻿@model AccountInfo
+@{
+    ViewData["Title"] = "Edit account";
+    var Status = (string)ViewBag.Status;
+    var PermText = new Dictionary<UserRoles, string>();
+    PermText[UserRoles.User] = "Can stream content";
+    PermText[UserRoles.Administrator] = "Can change application settings and manage users";
+}
+@if (!string.IsNullOrEmpty(Status))
+{
+    <div class="alert alert-success">@Status</div>
+}
+<h1>Change user name</h1>
+<form asp-action="AccountRename" asp-route-id="@Model.Username">
+    <div class="row">
+        <div class="col-md-4">
+            <input type="text" pattern="@UserManager.NamePattern" required
+                   name="username" class="form-control" value="@Model.Username" />
+        </div>
+        <div class="col-md-4">
+            <input type="submit" class="btn btn-primary" value="Apply" />&nbsp;
+            <input type="reset" class="btn btn-danger" value="Reset" />
+        </div>
+    </div>
+</form>
+<h1>Change password</h1>
+<form asp-action="AccountPasswordChange" asp-route-id="@Model.Username">
+    <div class="row form-group">
+        <div class="col-md-4">
+            <label>Password</label>
+            <input type="password" class="form-control password-check" name="password" id="password"
+                   minlength="@UserManager.PasswordMinLength"
+                   required placeholder="Password" />
+        </div>
+        <div class="col-md-4">
+            <label>Password</label>
+            <input type="password" class="form-control password-match" name="passwordRepeat" id="passwordRepeat"
+                   minlength="@UserManager.PasswordMinLength"
+                   required placeholder="Password" />
+        </div>
+    </div>
+    <div class="row form-group">
+        <div class="col-md-4">
+            <input type="submit" class="btn btn-primary password-validate" value="Change" />
+        </div>
+    </div>
+</form>
+@await Html.PartialAsync("_PasswordInfo")
+<h2>Set permissions</h2>
+<div class="form-group">
+    <form asp-action="AccountPermission" asp-route-id="@Model.Username" method="post">
+        @foreach (var Perm in Enum.GetValues(typeof(UserRoles)).OfType<UserRoles>())
+        {
+            <p>
+                <label>
+                    <input type="checkbox" name="permission" value="@Perm" checked="@Model.Roles.HasFlag(Perm)" />
+                    <b>@Perm:</b> @PermText[Perm]
+                </label>
+            </p>
+        }
+        <input type="submit" class="btn btn-primary" value="Save" />
+    </form>
+</div>
+<a asp-action="AccountList" class="btn btn-link">Go back</a>

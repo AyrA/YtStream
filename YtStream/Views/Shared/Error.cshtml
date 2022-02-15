@@ -18,13 +18,45 @@
     <p>@Model.Error.Message</p>
     if (Model.ShowDetails)
     {
+        var Trace = Model.ParseStackTrace();
         <div>
             <h2>Type</h2>
             <pre>@Model.Error.GetType().Name</pre>
         </div>
         <div>
             <h2>Stack trace</h2>
-            <pre>@Model.Error.StackTrace</pre>
+            <table class="table">
+                <tr>
+                    <th>Function</th>
+                    <th>Arguments</th>
+                    <th>Filename</th>
+                    <th>Line</th>
+                </tr>
+                @foreach (var T in Trace)
+                {
+                    <tr>
+                        @if (T.Function != null)
+                        {
+                            <td>
+                                @T.Function
+                            </td>
+                            <td>
+                                @T.Arguments
+                            </td>
+                            <td>
+                                @T.Filename
+                            </td>
+                            <td>
+                                @T.Line
+                            </td>
+                        }
+                        else
+                        {
+                            <td colspan="3">@T.Raw</td>
+                        }
+                    </tr>
+                }
+            </table>
         </div>
     }
 }

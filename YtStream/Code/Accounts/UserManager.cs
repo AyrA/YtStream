@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace YtStream.Accounts
 {
@@ -55,6 +56,16 @@ namespace YtStream.Accounts
             return Accounts.Count(m => m.Enabled && m.Roles.HasFlag(UserRoles.Administrator)) > 1;
         }
 
+        public static bool IsValidUsername(string Username, bool CheckExisting = true)
+        {
+            var Valid = Username != null && Regex.IsMatch(Username, NamePattern);
+            if (Valid && CheckExisting)
+            {
+                Valid &= GetUser(Username) == null;
+            }
+            return Valid;
+        }
+
         public static AccountInfo[] GetUsers()
         {
             return Accounts.ToArray();
@@ -62,6 +73,10 @@ namespace YtStream.Accounts
 
         public static AccountInfo GetUser(string Username)
         {
+            if (string.IsNullOrEmpty(Username))
+            {
+                return null;
+            }
             return Accounts.FirstOrDefault(m => m.Username.ToLower() == Username.ToLower());
         }
 

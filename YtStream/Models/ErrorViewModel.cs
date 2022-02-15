@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace YtStream.Models
 {
@@ -32,6 +33,19 @@ namespace YtStream.Models
         {
             ShowDetails = DefaultDetailOption;
             Error = ex;
+        }
+
+        public StackTraceInfo[] ParseStackTrace()
+        {
+            if (Error == null)
+            {
+                throw new InvalidOperationException($"The \"{nameof(Error)}\" property is null.");
+            }
+            return Error.StackTrace
+                .Trim()
+                .Split('\n')
+                .Select(m => new StackTraceInfo(m.Trim()))
+                .ToArray();
         }
     }
 }

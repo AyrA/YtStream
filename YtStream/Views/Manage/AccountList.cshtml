@@ -22,13 +22,52 @@
                 <td>@Acc.Username</td>
                 <td>
                     <form asp-action="@ChgLink" method="post" class="form-inline">
+                        @Enabled
                         <input type="hidden" name="Username" value="@Acc.Username" />
-                        <input type="submit" class="link" title="Click to change" value="@Enabled" />
+                        <input type="submit" class="link" title="Click to change" value="Change" />
                     </form>
                 </td>
                 <td>@string.Join(", ",Acc.GetRoleStrings())</td>
-                <td>TODO</td>
+                <td>
+                    <a asp-action="AccountEdit" asp-route-id="@Acc.Username" class="btn btn-warning">Edit</a>
+                </td>
             </tr>
         }
     </tbody>
 </table>
+<h2>Create account</h2>
+<form asp-action="AccountAdd" method="post">
+    <div class="row">
+        <div class="form-group col-md-4">
+            <label>User Name</label>
+            <input type="text" class="form-control" id="userName" name="userName"
+                   rerquired placeholder="Enter user name" />
+        </div>
+    </div>
+    <div class="row">
+        <div class="form-group col-md-4">
+            <label>Password</label>
+            <input type="password" class="form-control password-check" name="password" id="password"
+                   minlength="@UserManager.PasswordMinLength"
+                   required placeholder="Password" />
+        </div>
+    </div>
+    <div class="row">
+        <div class="form-group col-md-4">
+            <label>Password</label>
+            <input type="password" class="form-control password-match" name="passwordRepeat" id="passwordRepeat"
+                   minlength="@UserManager.PasswordMinLength"
+                   required placeholder="Password" />
+        </div>
+    </div>
+    <div class="row form-group">
+        <div class="col-md-6">
+            @await Html.PartialAsync("_PasswordInfo")
+        </div>
+    </div>
+    <div class="row">
+        <div class="form-check col-md-4">
+            <input type="submit" class="btn btn-primary password-validate" value="Register" />
+        </div>
+    </div>
+</form>
