@@ -66,13 +66,17 @@ namespace YtStream
         public enum CacheType
         {
             /// <summary>
-            /// MP3 file cache
+            /// MP3 file cache from youtube
             /// </summary>
             MP3,
             /// <summary>
             /// SBlock range cache
             /// </summary>
-            SponsorBlock
+            SponsorBlock,
+            /// <summary>
+            /// Audio segments that are inserted in between other audio segments
+            /// </summary>
+            AudioSegments
         }
     }
 }

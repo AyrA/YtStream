@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using YtStream.MP3;
 
 namespace YtStream.Models
 {
@@ -84,6 +85,9 @@ namespace YtStream.Models
         /// </remarks>
         public bool PublicRegistration { get; set; }
 
+        public Bitrate AudioBitrate { get; set; }
+        public Frequency AudioFrequency { get; set; }
+
         /// <summary>
         /// Initializes a configuration with defaults
         /// </summary>
@@ -100,6 +104,9 @@ namespace YtStream.Models
             //7 days
             CacheSBlockLifetime = Tools.SponsorBlockCacheTime;
             MaxKeysPerUser = 10;
+            //Default MP3 settings
+            AudioBitrate = Converter.DefaultRate;
+            AudioFrequency = Converter.DefaultFrequency;
         }
 
         /// <summary>
@@ -114,6 +121,14 @@ namespace YtStream.Models
         public string[] GetValidationMessages()
         {
             var Messages = new List<string>();
+            if (!Enum.IsDefined(typeof(Bitrate), AudioBitrate))
+            {
+                Messages.Add("Audio bitrate has an invalid value");
+            }
+            if (!Enum.IsDefined(typeof(Frequency), AudioFrequency))
+            {
+                Messages.Add("Audio frequency has an invalid value");
+            }
             if (CacheMp3Lifetime < 0 || CacheSBlockLifetime < 0)
             {
                 Messages.Add("Cache lifetime cannot be negative");

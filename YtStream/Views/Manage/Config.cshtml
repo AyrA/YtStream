@@ -66,6 +66,7 @@ else
             <a href="https://youtube-dl.org/" target="_blank" rel="noreferrer nofollow noopener">Download</a>
         </div>
     </div>
+
     <h2>Cache</h2>
     <div class="row">
         <div class="col-md-4 form-group">
@@ -92,6 +93,7 @@ else
             <i>Zero indicates to cache forever</i>
         </div>
     </div>
+
     <h2>SponsorBlock</h2>
     <div class="row">
         <div class="col-md-4 form-group">
@@ -118,6 +120,7 @@ else
             <i>Zero indicates to cache forever</i>
         </div>
     </div>
+
     <h2>Streaming options</h2>
     <div class="row">
         <div class="col-md-4 form-group">
@@ -127,6 +130,31 @@ else
             </label>
         </div>
     </div>
+    <div class="row">
+        <div class="col-md-4 form-group">
+            <label>Bitrate</label>
+            <select asp-for="AudioBitrate" asp-items="Tools.HtmlEnumSwapList<YtStream.MP3.Bitrate>()" class="form-control"></select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 form-group">
+            <label>Frequency</label>
+            <select asp-for="AudioFrequency" asp-items="Tools.HtmlEnumSwapList<YtStream.MP3.Frequency>()" class="form-control"></select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-8 form-group text-danger">
+            CAUTION! After changing the frequency or bitrate you must clear the MP3 cache.
+            Many browsers and devices have trouble playing streams that are made up of files with the old and new settings mixed.
+            It's highly recommended you leave these values at default.<br />
+            Default bitrate: @Tools.SwapEnumName(YtStream.MP3.Bitrate.kbps192);
+            Default frequency: @Tools.SwapEnumName(YtStream.MP3.Frequency.Hz44100)<br />
+            Increasing the values will not yield better quality since the material from Youtube is not of better quality,
+            but it will consume more bandwidth.
+            You can reduce the Bitrate to @Tools.SwapEnumName(YtStream.MP3.Bitrate.kbps128) if bandwidth is a concern.
+        </div>
+    </div>
+
     <h2>Accounts</h2>
     <div class="row">
         <div class="col-md-4 form-group">

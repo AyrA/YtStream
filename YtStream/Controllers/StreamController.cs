@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using YtStream.MP3;
 
 namespace YtStream.Controllers
 {
@@ -205,7 +206,7 @@ namespace YtStream.Controllers
                         {
                             _logger.LogInformation("Using cache for {0}", filename);
                             Tools.SetAudioHeaders(Response);
-                            await Mp3Cut.CutMp3Async(ranges, CacheStream, OutputStreams);
+                            await MP3Cut.CutMp3Async(ranges, CacheStream, OutputStreams);
                             await Response.Body.FlushAsync();
                             continue;
                         }
@@ -218,6 +219,8 @@ namespace YtStream.Controllers
                 //At this point we need to go live to youtube to get the file
                 var ytdl = new YoutubeDl(Settings.YoutubedlPath);
                 var converter = new Converter(Settings.FfmpegPath, await ytdl.GetUserAgent());
+                converter.AudioFrequency = Settings.AudioFrequency;
+                converter.AudioRate = Settings.AudioBitrate;
                 var url = await ytdl.GetAudioUrl(ytid);
                 if (string.IsNullOrEmpty(url))
                 {
@@ -238,13 +241,13 @@ namespace YtStream.Controllers
                         _logger.LogInformation("Downloading {0} from YT and populate cache", ytid);
                         using (CacheStream)
                         {
-                            await Mp3Cut.CutMp3Async(ranges, Mp3Data, OutputStreams);
+                            await MP3Cut.CutMp3Async(ranges, Mp3Data, OutputStreams);
                         }
                     }
                     else
                     {
                         _logger.LogInformation("Downloading {0} from YT without populating cache", ytid);
-                        await Mp3Cut.CutMp3Async(ranges, Mp3Data, OutputStreams);
+                        await MP3Cut.CutMp3Async(ranges, Mp3Data, OutputStreams);
                     }
                     //Flush all data before attempting the next file
                     await Response.Body.FlushAsync();

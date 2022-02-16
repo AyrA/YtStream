@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -29,6 +31,9 @@ namespace YtStream
         /// </summary>
         /// <seealso cref="https://cable.ayra.ch/help/fs.php?help=youtube_id"/>
         private static readonly Regex IdRegex = new Regex(@"^[\w\-]{10}[AEIMQUYcgkosw048]$");
+        /// <summary>
+        /// Regex of a regular playlist
+        /// </summary>
         private static readonly Regex PlRegex = new Regex(@"^PL(?:[\dA-F]{16}|[\w\-]{32})$");
         /// <summary>
         /// RNG for non cryptographic purposes
@@ -268,6 +273,38 @@ namespace YtStream
                 var bytes = Encoding.UTF8.GetBytes(Data);
                 await S.WriteAsync(bytes, 0, bytes.Length);
             }
+        }
+
+        /// <summary>
+        /// Gets Enums in the form "Name1234" as select item list that displays "1234 Name"
+        /// </summary>
+        /// <typeparam name="T">Enum type</typeparam>
+        /// <returns>Enum list for "asp-items" entry</returns>
+        public static IEnumerable<SelectListItem> HtmlEnumSwapList<T>() where T : Enum
+        {
+            var Values = Enum.GetValues(typeof(T)).OfType<T>();
+            foreach (var V in Values)
+            {
+                yield return new SelectListItem(SwapEnumName(V), V.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Swaps "NameValue" enum string into "Value Name"
+        /// </summary>
+        /// <typeparam name="T">Enum type</typeparam>
+        /// <param name="EnumValue">Enum value</param>
+        /// <returns>
+        /// "Value Name" format. Returns name as-is if it doesn't matches "NameValue"
+        /// </returns>
+        public static string SwapEnumName<T>(T EnumValue) where T : Enum
+        {
+            var Lbl = Regex.Match(EnumValue.ToString(), @"([a-zA-Z]+)(\d+)");
+            if (Lbl.Success)
+            {
+                return Lbl.Groups[2].Value + " " + Lbl.Groups[1].Value;
+            }
+            return EnumValue.ToString();
         }
     }
 }

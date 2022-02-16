@@ -12,6 +12,24 @@ namespace YtStream
     public class Converter : IDisposable
     {
         /// <summary>
+        /// Default bitrate for the MP3 target.
+        /// Defaults to 192 kbps because that's approximately what youtube uses.
+        /// Setting this higher has thus no benefits because the source material is already heavily compressed.
+        /// You can set it lower though.
+        /// 128 kbps is common for internet radio stations.
+        /// If you use this instance for spoken material and not music, you can go down to 64 kbps.
+        /// In that case you may also want to switch to mono. (ffmpeg argument: -ac 1)
+        /// </summary>
+        public const Bitrate DefaultRate = Bitrate.kbps192;
+        /// <summary>
+        /// Default frequency for the MP3 target.
+        /// Defaults to 44.1 kHz ("CD quality")
+        /// because the difference to 48 kHz is inaudible at 1x playback speed
+        /// and 32 kHz is too low.
+        /// </summary>
+        public const Frequency DefaultFrequency = Frequency.Hz44100;
+
+        /// <summary>
         /// Result for async conversion operation
         /// </summary>
         public class AsyncStreamResult
@@ -53,12 +71,12 @@ namespace YtStream
         /// <summary>
         /// Get or set audio bitrate
         /// </summary>
-        public Bitrate AudioRate { get; set; } = Bitrate.kbps192;
+        public Bitrate AudioRate { get; set; } = DefaultRate;
 
         /// <summary>
         /// Get or set audio frequency
         /// </summary>
-        public Frequency AudioFrequency { get; set; } = Frequency.Hz44100;
+        public Frequency AudioFrequency { get; set; } = DefaultFrequency;
 
         /// <summary>
         /// Gets if the converter is currently running
