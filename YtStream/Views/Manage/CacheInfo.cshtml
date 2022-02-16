@@ -1,0 +1,47 @@
+﻿@model CacheHandler
+@{
+    ViewData["Title"] = "Cache inspector";
+    int FileCount = 0;
+    long TotalSize = 0;
+    int SafetyCheck = Tools.GetRandom(1, 4);
+    foreach (var F in System.IO.Directory.EnumerateFiles(Model.CachePath, "*.mp3"))
+    {
+        ++FileCount;
+        TotalSize += new System.IO.FileInfo(F).Length;
+    }
+}
+<h1>Cache information</h1>
+<p>
+    Files in the cache: @FileCount<br />
+    Size of all files: @Tools.NiceSize(TotalSize)
+</p>
+<h1>Delete files</h1>
+@if (Model.DefaultCacheLifetime >= TimeSpan.Zero)
+{
+    <form method="post" asp-action="CacheClean">
+        <input type="submit" class="btn btn-warning" value="Delete expired" />
+    </form>
+}
+else
+{
+    <p>
+        <i>Cache lifetime is infinite, thus no expired files exist</i>
+    </p>
+}
+<h1>Purge cache</h1>
+<form method="post" asp-action="CachePurge">
+    <input type="hidden" name="Check" value="@SafetyCheck" />
+    <input type="submit" class="btn btn-danger" value="Purge entire cache" /><br />
+    <p>
+        Please check box <b>Confirm @SafetyCheck</b> to confirm this action
+    </p>
+    <div class="form-group">
+        @for (var i = 1; i < 4; i++)
+        {
+            <label>
+                <input type="checkbox" name="Confirm" value="@i" />
+                Confirm @i
+            </label><br />
+        }
+    </div>
+</form>

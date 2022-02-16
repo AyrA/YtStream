@@ -27,6 +27,27 @@ namespace YtStream.Controllers
         }
 
         [HttpGet]
+        public IActionResult CacheInfo()
+        {
+            return View(Cache.GetHandler(Cache.CacheType.MP3, Settings.CacheMp3Lifetime));
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public IActionResult CacheClean()
+        {
+            var Handler = Cache.GetHandler(Cache.CacheType.MP3, Settings.CacheMp3Lifetime);
+            try
+            {
+                var Msg = $"Deleted {Handler.ClearStale()} expired files from cache";
+                return RedirectWithMessage("CacheInfo", Msg);
+            }
+            catch (Exception ex)
+            {
+                return View("Error", new ErrorViewModel(ex));
+            }
+        }
+
+        [HttpGet]
         public async Task<IActionResult> Backup(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -114,40 +135,50 @@ namespace YtStream.Controllers
             {
                 return View("Error", new ErrorViewModel(ex));
             }
-            ViewBag.Status = HttpContext.Request.Cookies["status-success"];
-            HttpContext.Response.Cookies.Delete("status-success");
             return View(Acc);
         }
 
         [HttpPost, ValidateAntiForgeryToken]
         public IActionResult AccountRename(string id, string username)
         {
-            if (id != null && username != null && id.ToLower() == username.ToLower())
-            {
-                HttpContext.Response.Cookies.Append("status-success", "No change");
-                return RedirectToAction("AccountEdit", new { id = username });
-            }
             AccountInfo Acc;
-            try
+            if (id != null && username != null)
             {
-                Acc = GetAccount(id);
-                if (UserManager.GetUser(username) != null)
+                if (id == username)
                 {
-                    throw new InvalidOperationException("An account with this name already exists");
+                    return RedirectWithMessage("AccountEdit", null, "No change", new { id = username });
                 }
-                if (!UserManager.IsValidUsername(username, false))
+                try
                 {
-                    throw new FormatException("Invalid user name");
+                    Acc = GetAccount(id);
+                    if (id.ToLower() == username.ToLower())
+                    {
+                        //Just an upper/lowercase change.
+                        //This bypasses validation because user names are case-insensitive
+                        //and thus validation would always fail
+                        Acc.Username = username;
+                        UserManager.Save();
+                        return RedirectWithMessage("AccountEdit", null, $"Renamed to {username}", new { id = username });
+                    }
+                    //Regular renaming action
+                    if (UserManager.GetUser(username) != null)
+                    {
+                        throw new InvalidOperationException("An account with this name already exists");
+                    }
+                    if (!UserManager.IsValidUsername(username, false))
+                    {
+                        throw new FormatException("Invalid user name");
+                    }
+                    Acc.Username = username;
+                    UserManager.Save();
+                    return RedirectWithMessage("AccountEdit", null, $"Renamed to {username}", new { id = username });
                 }
-                Acc.Username = username;
-                UserManager.Save();
+                catch (Exception ex)
+                {
+                    return View("Error", new ErrorViewModel(ex));
+                }
             }
-            catch (Exception ex)
-            {
-                return View("Error", new ErrorViewModel(ex));
-            }
-            HttpContext.Response.Cookies.Append("status-success", "Username changed");
-            return RedirectToAction("AccountEdit", new { id = username });
+            return BadRequest();
         }
 
         [HttpPost, ValidateAntiForgeryToken]
@@ -169,7 +200,7 @@ namespace YtStream.Controllers
             {
                 return View("Error", new ErrorViewModel(ex));
             }
-            return RedirectToAction("AccountList");
+            return RedirectToAction("AccountEdit", new { id = userName });
         }
 
         [HttpPost, ValidateAntiForgeryToken]
@@ -207,8 +238,7 @@ namespace YtStream.Controllers
             {
                 return View("Error", new ErrorViewModel(ex));
             }
-            HttpContext.Response.Cookies.Append("status-success", "Password changed");
-            return RedirectToAction("AccountEdit", new { id });
+            return RedirectWithMessage("AccountEdit", "Password changed", new { id });
         }
 
         [HttpPost, ValidateAntiForgeryToken]
@@ -244,8 +274,7 @@ namespace YtStream.Controllers
             {
                 return View("Error", new ErrorViewModel(ex));
             }
-            HttpContext.Response.Cookies.Append("status-success", "Permissions adjusted");
-            return RedirectToAction("AccountEdit", new { id });
+            return RedirectWithMessage("AccountEdit", "Permissions adjusted", new { id });
         }
 
         [HttpPost, ActionName("ChangeLock"), ValidateAntiForgeryToken]
@@ -255,18 +284,13 @@ namespace YtStream.Controllers
             {
                 Startup.Locked = !Startup.Locked;
             }
-            return RedirectToAction("ChangeLock");
+            return RedirectWithMessage("ChangeLock", "Application lock changed");
         }
 
         [HttpGet, ActionName("ChangeLock")]
         public IActionResult ChangeLockGet()
         {
             return View();
-        }
-
-        public IActionResult ConfigSaved()
-        {
-            return View(Settings);
         }
 
         [HttpGet, ActionName("Config")]
@@ -289,12 +313,13 @@ namespace YtStream.Controllers
             }
             model.Save();
             Startup.ApplySettings(model);
-            return RedirectToAction("ConfigSaved");
+            return RedirectWithMessage("Config", "Settings saved and applied");
         }
 
         private IActionResult ChangeUserEnabled(string Username, bool State)
         {
             AccountInfo Acc;
+            var Msg = (State ? "enabled" : "disabled");
             try
             {
                 Acc = GetAccount(Username, false);
@@ -305,7 +330,7 @@ namespace YtStream.Controllers
             }
             Acc.Enabled = State;
             UserManager.Save();
-            return RedirectToAction("AccountList");
+            return RedirectWithMessage("AccountList", $"User {Username} was {Msg}");
         }
 
         private AccountInfo GetAccount(string Username, bool AllowSelf = false)

@@ -44,7 +44,7 @@ namespace YtStream
             }
             ViewBag.User = CurrentUser;
             ViewBag.Settings = Settings;
-            CookieMessage = HttpContext.Request.Cookies["status"];
+            ViewBag.CookieMessage = CookieMessage = HttpContext.Request.Cookies["status"];
             if (!string.IsNullOrEmpty(CookieMessage))
             {
                 HttpContext.Response.Cookies.Delete("status");
@@ -57,16 +57,16 @@ namespace YtStream
             CurrentUser = UserManager.GetUser(ApiKey);
         }
 
-        public IActionResult RedirectWithMessage(string Action, string Message)
+        public IActionResult RedirectWithMessage(string Action, string Message, object RouteData = null)
         {
             HttpContext.Response.Cookies.Append("status", Message);
-            return RedirectToAction(Action);
+            return RedirectToAction(Action, RouteData);
         }
 
-        public IActionResult RedirectWithMessage(string Action, string Controller, string Message)
+        public IActionResult RedirectWithMessage(string Action, string Controller, string Message, object RouteData = null)
         {
             HttpContext.Response.Cookies.Append("status", Message);
-            return RedirectToAction(Action, Controller);
+            return RedirectToAction(Action, Controller, RouteData);
         }
     }
 }

@@ -1,14 +1,9 @@
 ﻿@model AccountInfo
 @{
     ViewData["Title"] = "Edit account";
-    var Status = (string)ViewBag.Status;
     var PermText = new Dictionary<UserRoles, string>();
     PermText[UserRoles.User] = "Can stream content";
     PermText[UserRoles.Administrator] = "Can change application settings and manage users";
-}
-@if (!string.IsNullOrEmpty(Status))
-{
-    <div class="alert alert-success">@Status</div>
 }
 <h1>Change user name</h1>
 <form asp-action="AccountRename" asp-route-id="@Model.Username">

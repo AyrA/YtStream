@@ -306,5 +306,41 @@ namespace YtStream
             }
             return EnumValue.ToString();
         }
+
+        /// <summary>
+        /// Converts a size in bytes into nicer display format for people
+        /// </summary>
+        /// <param name="d">Size in bytes</param>
+        /// <returns>
+        /// Nice size on success. "0 Bytes" if negative, "unknown" if NaN or infinite</returns>
+        public static string NiceSize(double d)
+        {
+            int index = 0;
+            var sizes = "Bytes,KB,MB,GB,TB,PB,EX,ZB,YB".Split(',');
+            if (!double.IsFinite(d)) //Handles NaN too
+            {
+                return "unknown";
+            }
+            while (d >= 1024.0 && index < sizes.Length - 1)
+            {
+                ++index;
+                d /= 1024.0;
+            }
+            return $"{Math.Round(Math.Max(0.0, d), 2)} {sizes[index]}";
+        }
+
+        /// <summary>
+        /// Gets a random number from the unsafe RNG
+        /// </summary>
+        /// <param name="MinIncl">Minimum number (included)</param>
+        /// <param name="MaxExcl">Maximum number (excluded)</param>
+        /// <returns>X where <paramref name="MinIncl"/> &lt;= X &lt; <paramref name="MaxExcl"/></returns>
+        public static int GetRandom(int MinIncl, int MaxExcl)
+        {
+            lock (R)
+            {
+                return R.Next(MinIncl, MaxExcl);
+            }
+        }
     }
 }
