@@ -4,14 +4,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using YtStream.MP3;
 
-namespace YtStream
+namespace YtStream.MP3
 {
     /// <summary>
     /// Cuts and filters MP3 data
     /// </summary>
-    public static class Mp3Cut
+    public static class MP3Cut
     {
         /// <summary>
         /// Cuts an MP3 file according to ranges.

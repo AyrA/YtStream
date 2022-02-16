@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace YtStream
+namespace YtStream.MP3
 {
     /// <summary>
     /// Output configuration for the MP3 cutting function
