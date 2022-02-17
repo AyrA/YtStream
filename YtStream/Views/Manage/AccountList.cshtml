@@ -30,6 +30,7 @@
                 <td>@string.Join(", ",Acc.GetRoleStrings())</td>
                 <td>
                     <a asp-action="AccountEdit" asp-route-id="@Acc.Username" class="btn btn-warning">Edit</a>
+                    <a asp-action="AccountDelete" asp-route-id="@Acc.Username" class="btn btn-danger">Delete</a>
                 </td>
             </tr>
         }
