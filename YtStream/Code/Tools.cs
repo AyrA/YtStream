@@ -115,6 +115,29 @@ namespace YtStream
             return Array;
         }
 
+        public static void CheckFormConfirmation(IFormCollection values)
+        {
+            var Check = values["FormSafetyCheck"];
+            var Values = values["FormSafetyConfirm"];
+            if (Check.Count != 1)
+            {
+                throw new ArgumentException("Invalid confirmation field value. Please reload the page. " +
+                    "If the error persists, disable browser extensions that may interfere with form fields.");
+            }
+            if (Values.Count == 0)
+            {
+                throw new ArgumentException("No confirmation checkbox was selected");
+            }
+            if (Values.Count > 1)
+            {
+                throw new ArgumentException("More than one confirmation checkbox was selected");
+            }
+            if(Check.ToString() != Values.ToString())
+            {
+                throw new ArgumentException("The wrong confirmation checkbox was selected");
+            }
+        }
+
         /// <summary>
         /// Sets the "Expires" header to the given time
         /// </summary>

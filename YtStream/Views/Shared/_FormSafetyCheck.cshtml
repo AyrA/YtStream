@@ -4,11 +4,11 @@
 <p>
     Please check the box "<b>Confirm @SafetyCheck</b>" to confirm this action
 </p>
-<input type="hidden" name="Check" value="@SafetyCheck" />
+<input type="hidden" name="FormSafetyCheck" value="@SafetyCheck" />
 @for (var i = 1; i < 4; i++)
 {
     <label>
-        <input type="checkbox" name="Confirm" value="@i" />
+        <input type="checkbox" name="FormSafetyConfirm" value="@i" />
         Confirm @i
     </label>
     <br />
