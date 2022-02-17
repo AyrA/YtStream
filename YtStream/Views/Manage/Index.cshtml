@@ -5,18 +5,23 @@
 }
 <h1>Management</h1>
 <p>
-    <a asp-action="ChangeLock" class="btn btn-link">Change application lock</a>
-    (Application is currently <span class="alert-@labelClass">@label</span>)
+    <a asp-action="ChangeLock" class="btn btn-link">Application lock</a><br />
+    (Un-)Lock streaming functionality.
+    Application is currently <span class="text-@labelClass">@label</span>
 </p>
 <p>
-    <a asp-action="Config" class="btn btn-link">Change settings</a>
+    <a asp-action="Config" class="btn btn-link">Settings</a><br />
+    Change global settings
 </p>
 <p>
-    <a asp-action="AccountList" class="btn btn-link">Edit accounts</a>
+    <a asp-action="AccountList" class="btn btn-link">Accounts</a><br />
+    Add, edit and delete accounts
 </p>
 <p>
-    <a asp-action="CacheInfo" class="btn btn-link">Cache information and purging</a>
+    <a asp-action="CacheInfo" class="btn btn-link">Cache</a><br />
+    View, cleanup and purge cache
 </p>
 <p>
-    <a asp-action="Backup" class="btn btn-link">Backup and restore</a>
+    <a asp-action="Backup" class="btn btn-link">Backup</a><br />
+    Back up and restore configuration and user accounts.
 </p>
