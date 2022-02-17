@@ -47,6 +47,23 @@ namespace YtStream.Controllers
             }
         }
 
+        [HttpPost, ValidateAntiForgeryToken]
+        public IActionResult CachePurge()
+        {
+            try
+            {
+                Tools.CheckFormConfirmation(Request.Form);
+                var Handler = Cache.GetHandler(Cache.CacheType.MP3, Settings.CacheMp3Lifetime);
+                var Count = Handler.Purge();
+                _logger.LogInformation("MP3 cache purge: Deleted {0} files", Count);
+                return RedirectWithMessage("CacheInfo", $"Deleted {Count} files from cache");
+            }
+            catch (Exception ex)
+            {
+                return View("Error", new ErrorViewModel(ex));
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> Backup(string id)
         {

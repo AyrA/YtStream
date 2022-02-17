@@ -306,5 +306,30 @@ namespace YtStream
             }
             return Removed;
         }
+
+        /// <summary>
+        /// Purges the cache
+        /// </summary>
+        /// <returns>Number of files deleted</returns>
+        /// <remarks>
+        /// Files unable to be deleted will silently remain in the cache
+        /// </remarks>
+        public int Purge()
+        {
+            var Removed = 0;
+            foreach(var F in Directory.GetFiles(CachePath))
+            {
+                try
+                {
+                    File.Delete(F);
+                    ++Removed;
+                }
+                catch
+                {
+                    //NOOP
+                }
+            }
+            return Removed;
+        }
     }
 }
