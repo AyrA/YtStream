@@ -1,0 +1,14 @@
+﻿@model AccountInfo
+@{
+    ViewData["Title"] = "Delete account";
+}
+<h1>Delete account</h1>
+<p>
+    Really delete the account "@Model.Username"?
+</p>
+<form method="post" asp-action="AccountDelete">
+    <div class="form-group">
+        @await Html.PartialAsync("_FormSafetyCheck")
+    </div>
+    <input type="submit" class="btn btn-danger" value="Delete @Model.Username" />
+</form>

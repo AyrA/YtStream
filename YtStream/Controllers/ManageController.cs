@@ -123,6 +123,38 @@ namespace YtStream.Controllers
             return View(UserManager.GetUsers());
         }
 
+        [HttpGet, ActionName("AccountDelete")]
+        public IActionResult AccountDeleteGet(string id)
+        {
+            try
+            {
+                return View(GetAccount(id));
+            }
+            catch (Exception ex)
+            {
+                return View("Error", new ErrorViewModel(ex));
+            }
+        }
+
+        [HttpPost, ActionName("AccountDelete"), ValidateAntiForgeryToken]
+        public IActionResult AccountDeletePost(string id)
+        {
+            AccountInfo Acc;
+            try
+            {
+                //If we do not allow the user to delete itself we guarantee that at least one administrator is remaining.
+                Tools.CheckFormConfirmation(Request.Form);
+                Acc = GetAccount(id);
+                UserManager.DeleteUser(id);
+            }
+            catch (Exception ex)
+            {
+                return View("Error", new ErrorViewModel(ex));
+            }
+            _logger.LogInformation($"User '{Acc.Username}' deleted");
+            return RedirectWithMessage("AccountList", $"User '{Acc.Username}' was deleted");
+        }
+
         [HttpGet]
         public IActionResult AccountEdit(string id)
         {
