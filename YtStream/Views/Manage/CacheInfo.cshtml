@@ -30,18 +30,8 @@ else
 }
 <h1>Purge cache</h1>
 <form method="post" asp-action="CachePurge">
-    <input type="hidden" name="Check" value="@SafetyCheck" />
-    <input type="submit" class="btn btn-danger" value="Purge entire cache" /><br />
-    <p>
-        Please check box <b>Confirm @SafetyCheck</b> to confirm this action
-    </p>
     <div class="form-group">
-        @for (var i = 1; i < 4; i++)
-        {
-            <label>
-                <input type="checkbox" name="Confirm" value="@i" />
-                Confirm @i
-            </label><br />
-        }
+        @await Html.PartialAsync("_FormSafetyCheck")
     </div>
+    <input type="submit" class="btn btn-danger" value="Purge entire cache" />
 </form>
