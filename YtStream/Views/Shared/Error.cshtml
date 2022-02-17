@@ -18,6 +18,7 @@
     <p>@Model.Error.Message</p>
     if (Model.ShowDetails)
     {
+        <div class="alert alert-info">Developer information</div>
         var Trace = Model.ParseStackTrace();
         <div>
             <h2>Type</h2>
