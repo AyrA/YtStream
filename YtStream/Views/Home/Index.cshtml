@@ -32,6 +32,30 @@
             </p>
         </div>
     }
+    else if (!Model.IsValid())
+    {
+        <div class="alert alert-danger">
+            <p>
+                The configuration is invalid
+            </p>
+            <ul>
+                @foreach (var Err in Model.GetValidationMessages())
+                {
+                    <li>@Err</li>
+                }
+            </ul>
+            <p>
+                Streaming functionality is unavailable until the problems are fixed.
+            </p>
+        </div>
+    }
+    @if (Startup.Locked)
+    {
+        <div class="alert alert-warning">
+            This application is currently locked, and streaming is not available.
+            <a asp-action="ChangeLock" asp-controller="Manage">An administrator can unlock it</a>
+        </div>
+    }
     <p>
         This system allows you to directly stream Youtube videos to MP3.
         It has a few features that separate it from other systems.

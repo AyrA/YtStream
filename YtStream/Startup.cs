@@ -60,14 +60,9 @@ namespace YtStream
             {
                 C = null;
             }
-            if (C == null)
-            {
-                Locked = true;
-            }
-            else
-            {
-                ApplySettings(C);
-            }
+            ApplySettings(C);
+            //Lock application if config failed to load or is not valid
+            Locked = C == null || !C.IsValid();
         }
 
         /// <summary>

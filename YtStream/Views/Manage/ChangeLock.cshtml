@@ -1,6 +1,8 @@
 ﻿@{
     ViewData["Title"] = "Change application lock";
-    var HasSettings = null != (ConfigModel)ViewBag.Settings;
+    var Settings = (ConfigModel)ViewBag.Settings;
+    var HasSettings = Settings != null && Settings.IsValid();
+
     var LockMsg = Startup.Locked || !HasSettings ? "Locked. Streaming functionality unavailable" : "Unlocked. Streaming functionality available";
     var divClass = Startup.Locked || !HasSettings ? "danger" : "success";
     var btnClass = Startup.Locked || !HasSettings ? "success" : "danger";

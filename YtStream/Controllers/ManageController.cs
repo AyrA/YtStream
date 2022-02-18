@@ -364,10 +364,23 @@ namespace YtStream.Controllers
         [HttpPost, ActionName("ChangeLock"), ValidateAntiForgeryToken]
         public IActionResult ChangeLockPost()
         {
-            if (Settings != null)
+            try
             {
-                Startup.Locked = !Startup.Locked;
+                //Locking is always possible
+                if (Startup.Locked)
+                {
+                    if (Settings == null || !Settings.IsValid())
+                    {
+                        throw new InvalidOperationException("Cannot change lock state while the configuration is invalid");
+                    }
+                }
             }
+            catch (Exception ex)
+            {
+                Startup.Locked = true;
+                return View("Error", new ErrorViewModel(ex));
+            }
+            Startup.Locked = !Startup.Locked;
             return RedirectWithMessage("ChangeLock", "Application lock changed");
         }
 
