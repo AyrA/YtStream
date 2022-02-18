@@ -61,7 +61,16 @@
         if (lbl) {
             var e = q(lbl);
             if (e) {
-                e.textContent = this.files[0].name;
+                if (this.files.length > 0) {
+                    var text = this.files[0].name;
+                    if (this.files.length > 1) {
+                        text += " (and " + (this.files.length - 1) + " more)";
+                    }
+                    e.textContent = text;
+                }
+                else {
+                    e.textContent = this.multiple ? "Select one or more files" : "Select a file";
+                }
             }
         }
     };
@@ -78,6 +87,7 @@
     Array.from(qa("[type=file]")).forEach(function (v) {
         if (v.dataset.fileLabel) {
             v.addEventListener("change", updateFileLabel);
+            updateFileLabel.call(v);
         }
     });
 })(document.querySelector.bind(document), document.querySelectorAll.bind(document));
