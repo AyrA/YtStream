@@ -13,6 +13,30 @@ namespace YtStream.MP3
     public static class MP3Cut
     {
         /// <summary>
+        /// Filters invalid MP3 data and writes clean MP3 to the destination
+        /// </summary>
+        /// <param name="Source">Source stream</param>
+        /// <param name="Dest">Target stream</param>
+        public static void FilterMp3(Stream Source, Stream Dest)
+        {
+            var Conf = new MP3CutTargetStreamConfig();
+            Conf.AddStream(new MP3CutTargetStreamInfo(Dest, true, false, false));
+            CutMp3(null, Source, Conf);
+        }
+
+        /// <summary>
+        /// Filters invalid MP3 data and writes clean MP3 to the destination
+        /// </summary>
+        /// <param name="Source">Source stream</param>
+        /// <param name="Dest">Target stream</param>
+        public static Task FilterMp3Async(Stream Source, Stream Dest)
+        {
+            var Conf = new MP3CutTargetStreamConfig();
+            Conf.AddStream(new MP3CutTargetStreamInfo(Dest, true, false, false));
+            return CutMp3Async(null, Source, Conf);
+        }
+
+        /// <summary>
         /// Cuts an MP3 file according to ranges.
         /// Also removes any non-audio bytes.
         /// </summary>
