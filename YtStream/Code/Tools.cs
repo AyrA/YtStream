@@ -132,7 +132,7 @@ namespace YtStream
             {
                 throw new ArgumentException("More than one confirmation checkbox was selected");
             }
-            if(Check.ToString() != Values.ToString())
+            if (Check.ToString() != Values.ToString())
             {
                 throw new ArgumentException("The wrong confirmation checkbox was selected");
             }
@@ -328,6 +328,28 @@ namespace YtStream
                 return Lbl.Groups[2].Value + " " + Lbl.Groups[1].Value;
             }
             return EnumValue.ToString();
+        }
+
+        /// <summary>
+        /// Checks if a combined enum only consists of existing flags
+        /// </summary>
+        /// <typeparam name="T">Enum type</typeparam>
+        /// <param name="EnumValue">Enum value</param>
+        /// <returns></returns>
+        public static bool CheckEnumFlags<T>(T EnumValue) where T : Enum
+        {
+            //Don't bother with more complex checks if it's a defined value
+            if (Enum.IsDefined(EnumValue.GetType(), EnumValue))
+            {
+                return true;
+            }
+            ulong Flags = 0;
+            ulong Supplied = Convert.ToUInt64(EnumValue);
+            foreach (var Value in Enum.GetValues(EnumValue.GetType()).OfType<T>())
+            {
+                Flags |= Convert.ToUInt64(Value);
+            }
+            return Flags == (Supplied | Flags);
         }
 
         /// <summary>
