@@ -2,20 +2,46 @@
 
 namespace YtStream.Accounts
 {
+    /// <summary>
+    /// Represents password rules and tests passwords against them
+    /// </summary>
     public class UserPasswordRules
     {
+        /// <summary>
+        /// Minimum password length in characters
+        /// </summary>
         public int MinimumLength { get; set; }
 
+        /// <summary>
+        /// Require uppercase
+        /// </summary>
         public bool Uppercase { get; set; }
 
+        /// <summary>
+        /// Require lowercase
+        /// </summary>
         public bool Lowercase { get; set; }
 
+        /// <summary>
+        /// Require digits
+        /// </summary>
         public bool Digits { get; set; }
 
+        /// <summary>
+        /// Require symbols
+        /// </summary>
         public bool Symbols { get; set; }
 
+        /// <summary>
+        /// Require a given number of categories
+        /// </summary>
+        /// <remarks>Categories are: Uppercase, lowercase, digit, symbol</remarks>
         public int RuleCount { get; set; }
 
+        /// <summary>
+        /// Create a default instance (8 chars, 3 out of 4 categories)
+        /// </summary>
+        /// <remarks>This rule set is pretty much the default rule set of active directory</remarks>
         public UserPasswordRules()
         {
             MinimumLength = UserManager.PasswordMinLength;
@@ -23,6 +49,11 @@ namespace YtStream.Accounts
             RuleCount = 3;
         }
 
+        /// <summary>
+        /// Test a password against current complexity rules
+        /// </summary>
+        /// <param name="Password">Password</param>
+        /// <returns>true, if password passes the rules</returns>
         public bool IsComplexPassword(string Password)
         {
             if (Password == null || Password.Length < MinimumLength)
@@ -61,6 +92,5 @@ namespace YtStream.Accounts
             }
             return Complexity >= RuleCount;
         }
-
     }
 }

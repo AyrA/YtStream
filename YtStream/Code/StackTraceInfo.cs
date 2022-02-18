@@ -1,25 +1,47 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+﻿using System.Text.RegularExpressions;
 
 namespace YtStream
 {
+    /// <summary>
+    /// Deserializes a stack trace message
+    /// </summary>
     public class StackTraceInfo
     {
+        /// <summary>
+        /// Stack trace line format
+        /// </summary>
+        /// <remarks>This only matches a full trace with file name and line number</remarks>
         private const string Pattern = @"at\s+([^\(]+)\(([^\)]*)\)\s+in\s+(.+):line\s+(\d+)";
 
+        /// <summary>
+        /// Raw message
+        /// </summary>
         public string Raw { get; private set; }
 
+        /// <summary>
+        /// Name of the function
+        /// </summary>
         public string Function { get; private set; }
 
+        /// <summary>
+        /// Argument list
+        /// </summary>
         public string Arguments { get; private set; }
 
+        /// <summary>
+        /// Source file name
+        /// </summary>
         public string Filename { get; private set; }
 
+        /// <summary>
+        /// Source code line
+        /// </summary>
         public int Line { get; private set; }
 
+        /// <summary>
+        /// Parses a stack trace line
+        /// </summary>
+        /// <param name="TraceLine">Stack trace line</param>
         public StackTraceInfo(string TraceLine)
         {
             var Result = Regex.Match(TraceLine, Pattern);

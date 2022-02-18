@@ -3,14 +3,33 @@ using System.Collections.Generic;
 
 namespace YtStream.Accounts
 {
+    /// <summary>
+    /// Represents an API key
+    /// </summary>
+    /// <remarks>
+    /// API keys are currently for streaming only.
+    /// It's the developers task to ensure that no two users share the same key.
+    /// </remarks>
     public class UserApiKey : IValidateable
     {
+        /// <summary>
+        /// Gets or sets the key
+        /// </summary>
         public Guid Key { get; set; }
 
+        /// <summary>
+        /// Gets or sets the date this instance was created at
+        /// </summary>
         public DateTime CreatedAt { get; set; }
 
+        /// <summary>
+        /// Gets or sets the name
+        /// </summary>
         public string Name { get; set; }
 
+        /// <summary>
+        /// Creates a new key without a name
+        /// </summary>
         public UserApiKey()
         {
             Key = Guid.NewGuid();

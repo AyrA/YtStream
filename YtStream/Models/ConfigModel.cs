@@ -90,7 +90,14 @@ namespace YtStream.Models
         /// </summary>
         public bool AdminAds { get; set; }
 
+        /// <summary>
+        /// Audio bitrate for MP3 conversion
+        /// </summary>
         public Bitrate AudioBitrate { get; set; }
+
+        /// <summary>
+        /// Audio frequency for MP3 conversion
+        /// </summary>
         public Frequency AudioFrequency { get; set; }
 
         /// <summary>

@@ -74,7 +74,7 @@ namespace YtStream
             /// </summary>
             SponsorBlock,
             /// <summary>
-            /// Audio segments that are inserted in between other audio segments
+            /// Audio segments that are inserted in between other audio segments (ads)
             /// </summary>
             AudioSegments
         }

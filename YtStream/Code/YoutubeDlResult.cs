@@ -5,6 +5,7 @@ namespace YtStream
     /// <summary>
     /// Represents the JSON result of youtube dl
     /// </summary>
+    /// <remarks>This is not necessarily complete</remarks>
     public class YoutubeDlResult
     {
         /// <summary>

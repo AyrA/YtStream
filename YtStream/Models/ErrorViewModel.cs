@@ -8,8 +8,15 @@ namespace YtStream.Models
     /// </summary>
     public class ErrorViewModel
     {
+        /// <summary>
+        /// If set to true, details are shown by default
+        /// </summary>
+        /// <remarks>In <see cref="Startup"/> this is set to true for the development environment</remarks>
         public static bool DefaultDetailOption = false;
 
+        /// <summary>
+        /// Gets if details should be shown (exception type and stack trace)
+        /// </summary>
         public bool ShowDetails { get; set; }
 
         /// <summary>
@@ -27,14 +34,25 @@ namespace YtStream.Models
         /// </summary>
         public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
 
+        /// <summary>
+        /// Creates a default instance
+        /// </summary>
         public ErrorViewModel() : this(null) { }
 
+        /// <summary>
+        /// Creates an instance for the given exception
+        /// </summary>
+        /// <param name="ex">Exception</param>
         public ErrorViewModel(Exception ex)
         {
             ShowDetails = DefaultDetailOption;
             Error = ex;
         }
 
+        /// <summary>
+        /// Deserializes stack trace lines
+        /// </summary>
+        /// <returns>Stack trace</returns>
         public StackTraceInfo[] ParseStackTrace()
         {
             if (Error == null)

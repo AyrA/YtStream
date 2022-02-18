@@ -115,6 +115,11 @@ namespace YtStream
             return Array;
         }
 
+        /// <summary>
+        /// Checks if the form checkbox confirmation created by "_FormSafetyCheck.cshtml" is correct.
+        /// </summary>
+        /// <param name="values">Form values</param>
+        /// <remarks>Throws an exception on failure with the details</remarks>
         public static void CheckFormConfirmation(IFormCollection values)
         {
             var Check = values["FormSafetyCheck"];

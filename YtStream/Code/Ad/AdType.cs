@@ -2,12 +2,16 @@
 
 namespace YtStream.Ad
 {
+    /// <summary>
+    /// Represents Ad types
+    /// </summary>
     [Flags]
     public enum AdType
     {
         /// <summary>
         /// Default value, cannot be used by the user as function arguments
         /// </summary>
+        /// <remarks>This is in use by <see cref="AdFileInfo"/> only</remarks>
         None = 0,
         /// <summary>
         /// All supported types

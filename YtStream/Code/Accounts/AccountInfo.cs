@@ -8,20 +8,55 @@ using System.Text.RegularExpressions;
 
 namespace YtStream.Accounts
 {
+    /// <summary>
+    /// Represents a user account
+    /// </summary>
     public class AccountInfo : IValidateable
     {
+        /// <summary>
+        /// Streaming keys
+        /// </summary>
         private List<UserApiKey> _keys;
 
+        /// <summary>
+        /// Gets or sets if the account is enabled
+        /// </summary>
+        /// <remarks>
+        /// A disabled account cannot log in or use stream keys
+        /// </remarks>
         public bool Enabled { get; set; }
 
+        /// <summary>
+        /// Gets or sets if ads are disabled
+        /// </summary>
+        /// <remarks>
+        /// Ads can be disabled for administrators globally in the settings.
+        /// </remarks>
         public bool DisableAds { get; set; }
 
+        /// <summary>
+        /// Gets or sets the user name used to log into the system.
+        /// </summary>
+        /// <remarks>This is case insensitive</remarks>
         public string Username { get; set; }
 
+        /// <summary>
+        /// Gets or sets the hashed password.
+        /// Use <see cref="SetPassword(string, int)"/> instead
+        /// </summary>
+        /// <remarks>
+        /// If the value is invalid the user will be locked out until an administrator resets the password
+        /// </remarks>
         public string Password { get; set; }
 
+        /// <summary>
+        /// Gets or sets the roles this user account has
+        /// </summary>
         public UserRoles Roles { get; set; }
 
+        /// <summary>
+        /// Gets or sets the streaming keys of this user
+        /// </summary>
         public UserApiKey[] ApiKeys
         {
             get
@@ -41,12 +76,22 @@ namespace YtStream.Accounts
             }
         }
 
+        /// <summary>
+        /// Creates an instance with defaults
+        /// </summary>
         public AccountInfo()
         {
             Enabled = true;
             Roles = UserRoles.User;
         }
 
+        /// <summary>
+        /// Gets all roles as string for use with the .NET Identity handler
+        /// </summary>
+        /// <returns>Role strings</returns>
+        /// <remarks>
+        /// This can be an empty string if no roles are enabled
+        /// </remarks>
         public string[] GetRoleStrings()
         {
             var RoleStrings = new List<string>();
@@ -60,6 +105,14 @@ namespace YtStream.Accounts
             return RoleStrings.ToArray();
         }
 
+        /// <summary>
+        /// Sets the hashed password
+        /// </summary>
+        /// <param name="NewPassword">User supplied password</param>
+        /// <param name="Difficulty">
+        /// Difficulty value. Doubling this number doubles time difficulty.
+        /// Default: 100'000
+        /// </param>
         public void SetPassword(string NewPassword, int Difficulty = 100000)
         {
             using (var Enc = new Rfc2898DeriveBytes(NewPassword, 16, Difficulty, HashAlgorithmName.SHA256))
@@ -68,6 +121,16 @@ namespace YtStream.Accounts
             }
         }
 
+        /// <summary>
+        /// Checks the supplied password against the stored hashed password.
+        /// </summary>
+        /// <param name="TestPassword">Password to test</param>
+        /// <returns>
+        /// true if password matches, false if argument not supplied or user password not set or invalid format.
+        /// </returns>
+        /// <remarks>
+        /// This disregards whether the account is enabled or not
+        /// </remarks>
         public bool CheckPassword(string TestPassword)
         {
             if (string.IsNullOrEmpty(TestPassword))
@@ -89,6 +152,10 @@ namespace YtStream.Accounts
             return false;
         }
 
+        /// <summary>
+        /// Checks if the user has a hashed password
+        /// </summary>
+        /// <returns>true, if hashed password present</returns>
         public bool HasPassword()
         {
             if (string.IsNullOrEmpty(Password))
@@ -112,6 +179,11 @@ namespace YtStream.Accounts
             return true;
         }
 
+        /// <summary>
+        /// Removes a streaming key
+        /// </summary>
+        /// <param name="Key">Streaming key</param>
+        /// <returns>Number of keys removed</returns>
         public int RemoveKey(UserApiKey Key)
         {
             if (Key == null)
@@ -125,6 +197,11 @@ namespace YtStream.Accounts
             return 0;
         }
 
+        /// <summary>
+        /// Removes a streaming key
+        /// </summary>
+        /// <param name="G">Streaming key</param>
+        /// <returns>Number of keys removed</returns>
         public int RemoveKey(Guid G)
         {
             if (_keys != null)
@@ -134,6 +211,10 @@ namespace YtStream.Accounts
             return 0;
         }
 
+        /// <summary>
+        /// Adds a new streaming key
+        /// </summary>
+        /// <param name="Key">Streaming key</param>
         public void AddKey(UserApiKey Key)
         {
             if (Key == null)
@@ -155,6 +236,12 @@ namespace YtStream.Accounts
             _keys.Add(Key);
         }
 
+        /// <summary>
+        /// Checks if the given key is assigned to this user
+        /// </summary>
+        /// <param name="Key">Key</param>
+        /// <returns>true, if this user has this key</returns>
+        /// <remarks>Disregards whether the account is enabled or not</remarks>
         public bool HasKey(Guid Key)
         {
             return _keys != null && _keys.Any(m => m.Key == Key);
