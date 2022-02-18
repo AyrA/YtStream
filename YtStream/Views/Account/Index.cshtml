@@ -17,6 +17,12 @@
 <p>
     Permissions: <b>@string.Join(", ", Model.GetRoleStrings())</b>
 </p>
+@if (Model.Roles.HasFlag(UserRoles.Administrator))
+{
+    <p>
+        Ads: <b>@(Model.DisableAds?"Off":"On")</b> [<a asp-action="ChangeAdSetting">Change</a>]
+    </p>
+}
 <p>
     <a asp-action="DeleteAccount" class="btn btn-danger">Delete account</a>
 </p>

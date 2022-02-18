@@ -5,8 +5,8 @@
     PermText[UserRoles.User] = "Can stream content";
     PermText[UserRoles.Administrator] = "Can change application settings and manage users";
 }
-<h1>Change user name</h1>
-<form asp-action="AccountRename" asp-route-id="@Model.Username">
+<h2>Change user name</h2>
+<form asp-action="AccountRename" asp-route-id="@Model.Username" class="form-group">
     <div class="row">
         <div class="col-md-4">
             <input type="text" pattern="@UserManager.NamePattern" required
@@ -18,7 +18,8 @@
         </div>
     </div>
 </form>
-<h1>Change password</h1>
+
+<h2>Change password</h2>
 <form asp-action="AccountPasswordChange" asp-route-id="@Model.Username">
     <div class="row form-group">
         <div class="col-md-4">
@@ -41,9 +42,21 @@
     </div>
 </form>
 @await Html.PartialAsync("_PasswordInfo")
+
+<h2>Options</h2>
+<form asp-action="AccountSetOptions" asp-route-id="@Model.Username" method="post"  class="form-group">
+    <p>
+        <label>
+            <input type="checkbox" name="noads" value="True" checked="@Model.DisableAds" />
+            Disable ads
+        </label>
+    </p>
+    <input type="submit" class="btn btn-primary" value="Save" />
+</form>
+
 <h2>Set permissions</h2>
 <div class="form-group">
-    <form asp-action="AccountPermission" asp-route-id="@Model.Username" method="post">
+    <form asp-action="AccountPermission" asp-route-id="@Model.Username" method="post"  class="form-group">
         @foreach (var Perm in Enum.GetValues(typeof(UserRoles)).OfType<UserRoles>())
         {
             <p>

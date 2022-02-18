@@ -38,6 +38,8 @@ namespace YtStream
             /// Task that completes when all data has been piped INTO the process
             /// </summary>
             public Task CopyStreamResult { get; }
+            public Stream StandardInputStream { get; }
+
             /// <summary>
             /// MP3 output stream
             /// </summary>
@@ -48,9 +50,10 @@ namespace YtStream
             /// </summary>
             /// <param name="CopyStreamResult">Task</param>
             /// <param name="StandardOutputStream">Stream</param>
-            public AsyncStreamResult(Task CopyStreamResult, Stream StandardOutputStream)
+            public AsyncStreamResult(Task CopyStreamResult, Stream StandardInputStream, Stream StandardOutputStream)
             {
                 this.CopyStreamResult = CopyStreamResult;
+                this.StandardInputStream = StandardInputStream;
                 this.StandardOutputStream = StandardOutputStream;
             }
         }
@@ -207,6 +210,7 @@ namespace YtStream
             P.EnableRaisingEvents = true;
             return new AsyncStreamResult(
                 SourceData.CopyToAsync(P.StandardInput.BaseStream),
+                P.StandardInput.BaseStream,
                 P.StandardOutput.BaseStream);
         }
 

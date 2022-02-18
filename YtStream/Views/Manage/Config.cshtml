@@ -132,26 +132,54 @@ else
     </div>
     <div class="row">
         <div class="col-md-4 form-group">
+            <label>
+                <input type="checkbox" asp-for="AdminAds" value="True" />
+                Play ads for administrators too
+            </label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 form-group">
             <label>Bitrate</label>
             <select asp-for="AudioBitrate" asp-items="Tools.HtmlEnumSwapList<YtStream.MP3.Bitrate>()" class="form-control"></select>
+            <i>Default recommended bitrate: @Tools.SwapEnumName(YtStream.MP3.Bitrate.kbps192)</i>
         </div>
     </div>
     <div class="row">
         <div class="col-md-4 form-group">
             <label>Frequency</label>
             <select asp-for="AudioFrequency" asp-items="Tools.HtmlEnumSwapList<YtStream.MP3.Frequency>()" class="form-control"></select>
+            <i>Default recommended frequency: @Tools.SwapEnumName(YtStream.MP3.Frequency.Hz44100)</i>
         </div>
     </div>
     <div class="row">
-        <div class="col-md-8 form-group text-danger">
-            CAUTION! After changing the frequency or bitrate you must clear the MP3 cache.
-            Many browsers and devices have trouble playing streams that are made up of files with the old and new settings mixed.
-            It's highly recommended you leave these values at default.<br />
-            Default bitrate: @Tools.SwapEnumName(YtStream.MP3.Bitrate.kbps192);
-            Default frequency: @Tools.SwapEnumName(YtStream.MP3.Frequency.Hz44100)<br />
-            Increasing the values will not yield better quality since the material from Youtube is not of better quality,
-            but it will consume more bandwidth.
-            You can reduce the Bitrate to @Tools.SwapEnumName(YtStream.MP3.Bitrate.kbps128) if bandwidth is a concern.
+        <div class="col-md-12 form-group text-danger">
+            <p>
+                <b>&#9888;&#65039; CAUTION &#9888;&#65039;</b><br />
+                After changing the frequency or bitrate you must clear the MP3 cache if it's enabled and not empty.
+                Many browsers and devices have trouble playing streams that are made up of files with the old and new settings mixed.
+                The player may simply stop at the first time the value change is encountered in the stream,
+                or the time may stop counting up or trigger other weird behavior.
+                Consider locking the application before changing audio settings
+                if this application is already in active use.
+            </p>
+            <p>
+                <b>QUALITY</b><br />
+                Increasing the values will not yield better quality,
+                simply because the material from Youtube is not of better quality,
+                but it will consume more bandwidth.
+                You can reduce the Bitrate to @Tools.SwapEnumName(YtStream.MP3.Bitrate.kbps128) if bandwidth is a concern
+                without sacrificing audio quality too much.
+                If you plan on using this system purely for voice content and want to save as much bandwidth as possible,
+                you can reduce the bitrate to around @Tools.SwapEnumName(YtStream.MP3.Bitrate.kbps64)
+                and still get acceptable results.
+            </p>
+            <p>
+                <b>ADS</b><br />
+                If you are using ads, you must re-upload them all.
+                It's recommended that you remove all ads from the system before changing the audio settings
+                or you risk people being unable to stream at all until all ads are re-uploaded.
+            </p>
         </div>
     </div>
 

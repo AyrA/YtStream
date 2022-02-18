@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using YtStream.Ad;
 using YtStream.MP3;
 
 namespace YtStream.Controllers
@@ -102,7 +103,7 @@ namespace YtStream.Controllers
             {
                 return NotFound("Playlist empty or does not exist");
             }
-            return await PerformStream(PL);
+            return await PerformStream(PL, ShouldPlayAds());
         }
 
         public async Task<IActionResult> PlaylistRandom(string id)
@@ -122,12 +123,12 @@ namespace YtStream.Controllers
             {
                 return NotFound("Playlist empty or does not exist");
             }
-            return await PerformStream(Tools.Shuffle(PL));
+            return await PerformStream(Tools.Shuffle(PL), ShouldPlayAds());
         }
 
         public async Task<IActionResult> Order(string id)
         {
-            return await PerformStream(SplitIds(id));
+            return await PerformStream(SplitIds(id), ShouldPlayAds());
         }
 
         public async Task<IActionResult> Ranges(string id)
@@ -149,11 +150,14 @@ namespace YtStream.Controllers
 
         public async Task<IActionResult> Random(string id)
         {
-            return await PerformStream(Tools.Shuffle(SplitIds(id)));
+            return await PerformStream(Tools.Shuffle(SplitIds(id)), ShouldPlayAds());
         }
 
-        private async Task<IActionResult> PerformStream(string[] ids)
+        private async Task<IActionResult> PerformStream(string[] ids, bool IncludeAds)
         {
+            var AdHandler = IncludeAds ? new Ads() : null;
+            var CurrentAdType = AdType.Intro;
+
             if (ids == null || ids.Length == 0)
             {
                 return NotFound("No id specified");
@@ -206,6 +210,8 @@ namespace YtStream.Controllers
                         {
                             _logger.LogInformation("Using cache for {0}", filename);
                             Tools.SetAudioHeaders(Response);
+                            await PlayAd(AdHandler, CurrentAdType);
+                            CurrentAdType = AdType.Inter;
                             await MP3Cut.CutMp3Async(ranges, CacheStream, OutputStreams);
                             await Response.Body.FlushAsync();
                             continue;
@@ -241,12 +247,16 @@ namespace YtStream.Controllers
                         _logger.LogInformation("Downloading {0} from YT and populate cache", ytid);
                         using (CacheStream)
                         {
+                            await PlayAd(AdHandler, CurrentAdType);
+                            CurrentAdType = AdType.Inter;
                             await MP3Cut.CutMp3Async(ranges, Mp3Data, OutputStreams);
                         }
                     }
                     else
                     {
                         _logger.LogInformation("Downloading {0} from YT without populating cache", ytid);
+                        await PlayAd(AdHandler, CurrentAdType);
+                        CurrentAdType = AdType.Inter;
                         await MP3Cut.CutMp3Async(ranges, Mp3Data, OutputStreams);
                     }
                     //Flush all data before attempting the next file
@@ -268,8 +278,33 @@ namespace YtStream.Controllers
                 _logger.LogWarning("None of the ids yielded usable results");
                 return NotFound();
             }
+            await PlayAd(AdHandler, AdType.Outro);
             _logger.LogInformation("Stream request complete");
+
             return new EmptyResult();
+        }
+
+        private async Task PlayAd(Ads Handler, AdType Type)
+        {
+            if (Handler != null && !HttpContext.RequestAborted.IsCancellationRequested)
+            {
+                try
+                {
+                    var Name = Handler.GetRandomAdName(Type);
+                    if (Name != null)
+                    {
+                        using (var FS = Handler.GetAd(Name))
+                        {
+                            _logger.LogInformation("Playing ad: {0}", Name);
+                            await FS.CopyToAsync(Response.Body);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Failed to send ad. Reaso: {0}", ex.Message);
+                }
+            }
         }
 
         /// <summary>
@@ -307,6 +342,12 @@ namespace YtStream.Controllers
         private bool IsHead()
         {
             return HttpContext.Request.Method.ToUpper() == "HEAD";
+        }
+
+        private bool ShouldPlayAds()
+        {
+            return !CurrentUser.DisableAds &&
+                (Settings.AdminAds || !CurrentUser.Roles.HasFlag(Accounts.UserRoles.Administrator));
         }
     }
 }

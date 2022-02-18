@@ -14,6 +14,8 @@ namespace YtStream.Accounts
 
         public bool Enabled { get; set; }
 
+        public bool DisableAds { get; set; }
+
         public string Username { get; set; }
 
         public string Password { get; set; }

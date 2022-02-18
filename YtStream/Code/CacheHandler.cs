@@ -177,6 +177,89 @@ namespace YtStream
         }
 
         /// <summary>
+        /// Imports an existing file into the cache
+        /// </summary>
+        /// <param name="Filename">File name</param>
+        /// <param name="Move">
+        /// If true, the file is moved instead of copied
+        /// </param>
+        /// <param name="AvoidConflict">
+        /// If true, the file name is changed if needed to avoid conflicts.
+        /// If false, the destination is overwritten
+        /// </param>
+        /// <returns>
+        /// Final file name under which the file is stored.
+        /// </returns>
+        /// <remarks>
+        /// The result is usually the file name component from <paramref name="Filename"/>,
+        /// but it may differ if <paramref name="AvoidConflict"/> is used and a conflict was present.
+        /// </remarks>
+        public string ImportFile(string Filename, bool Move = false, bool AvoidConflict = true)
+        {
+            var BaseName = Path.GetFileName(Filename);
+            if (AvoidConflict)
+            {
+                BaseName = GetNoConfictName(Filename, true);
+            }
+            var Dest = Path.Combine(CachePath, BaseName);
+            if (Move)
+            {
+                File.Move(Filename, Dest, true);
+            }
+            else
+            {
+                File.Copy(Filename, Dest, true);
+            }
+            return BaseName;
+        }
+
+        /// <summary>
+        /// Gets a file name that doesn't conflicts with existing names in the cache
+        /// </summary>
+        /// <param name="Filename">File name. Path component is discarded</param>
+        /// <param name="CreateFile">If set, the file with the final name is created empty</param>
+        /// <returns>Conflict free file name</returns>
+        /// <remarks>
+        /// Conflict prevention is done by adding an incremental counter if the initial name caused a conflict.
+        /// </remarks>
+        public string GetNoConfictName(string Filename, bool CreateFile = false)
+        {
+            var BaseName = Path.GetFileName(Filename);
+            var Index = 0;
+            do
+            {
+                if (CreateFile)
+                {
+                    try
+                    {
+                        using (var FS = File.Open(Path.Combine(Cache.BaseDirectory, BaseName), FileMode.CreateNew))
+                        {
+                            FS.Close();
+                        }
+                        return BaseName;
+                    }
+                    catch
+                    {
+                        ++Index;
+                        BaseName = Path.GetFileNameWithoutExtension(Filename) + $"_{Index}" + Path.GetExtension(Filename);
+                    }
+                }
+                else
+                {
+                    if (File.Exists(Path.Combine(CachePath, BaseName)))
+                    {
+                        ++Index;
+                        BaseName = Path.GetFileNameWithoutExtension(Filename) + $"_{Index}" + Path.GetExtension(Filename);
+                    }
+                    else
+                    {
+                        return BaseName;
+                    }
+                }
+            } while (true);
+        }
+
+        /// <summary>
         /// Gets how long until the given file becomes stale
         /// </summary>
         /// <param name="FileName">File name</param>
@@ -317,7 +400,7 @@ namespace YtStream
         public int Purge()
         {
             var Removed = 0;
-            foreach(var F in Directory.GetFiles(CachePath))
+            foreach (var F in Directory.GetFiles(CachePath))
             {
                 try
                 {

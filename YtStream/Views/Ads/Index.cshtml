@@ -1,0 +1,109 @@
+﻿@{
+    var Handler = new YtStream.Ad.Ads();
+    ViewData["Title"] = "Manage ads";
+    var SizeLimit = YtStream.Controllers.AdsController.ReqLimit;
+    var AdLists = new Dictionary<string, YtStream.Ad.AdType>()
+{
+        { "Intro", YtStream.Ad.AdType.Intro },
+        { "Intermission", YtStream.Ad.AdType.Inter },
+        { "Outro", YtStream.Ad.AdType.Outro },
+    };
+    var Files = Handler.GetFiles().ToArray();
+}
+<h1>Manage ads</h1>
+<p>
+    Here you can manage ads and intermissions that play.
+    "Intro" plays before the first audio file is streamed.
+    "Intermission" plays between two audio streams.
+    "Outro" plays after the last audio stream.
+    If you have multiple files enabled for a given type one will be picked at random.
+</p>
+<p>
+    Ads are sent as part of the stream and are not detectable as ads by automated means.
+    Depending on your local laws you may be required to announce ads,
+    in that case it's recommended you have a single "Intro" ad that's the explanation,
+    and then use the intermission and outro slots for actual ads.
+</p>
+@foreach (var KnownType in AdLists)
+{
+    <h2>@KnownType.Key</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>File name</th>
+                <th>Options</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var Ad in Handler.GetList(KnownType.Value))
+            {
+                <tr>
+                    <td>
+                        @Ad
+                        [<a href="#@Ad" class="play-link">Play</a>]
+                    </td>
+                    <td>
+                        <form method="post" asp-action="Remove" class="form-inline">
+                            <input type="hidden" name="Type" value="@KnownType.Value" />
+                            <input type="hidden" name="Filename" value="@Ad" />
+                            <input type="submit" value="Remove" class="btn btn-warning" />
+                        </form>
+                    </td>
+                </tr>
+            }
+            <tr>
+                <td colspan="2">
+                    <form method="post" asp-action="Add" class="form-inline">
+                        <input type="hidden" name="Type" value="@KnownType.Value" />
+                        <select class="form-control" required name="Filename">
+                            <option value="">-- Add file --</option>
+                            @foreach (var F in Files.Where(m => !m.Type.HasFlag(KnownType.Value)))
+                            {
+                                <option value="@F.Filename">@F.Filename</option>
+                            }
+                        </select>&nbsp;
+                        <input type="submit" class="btn btn-primary" value="Enable" />
+                    </form>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+}
+
+<h2>Uplod</h2>
+<form asp-action="Upload" method="post" enctype="multipart/form-data" class="form-inline">
+    <label class="btn btn-success">
+        <input type="file" style="display:none" name="File" accept="audio/*" multiple
+               required data-file-label="#lblUpload" maxlength="@SizeLimit" />
+        <span id="lblUpload">Select file</span>
+    </label>&nbsp;
+    <input type="submit" class="btn btn-primary" value="Upload" />
+</form>
+<p>
+    <i>
+        The files will be converted into an MP3 file with the current settings
+        unless they're already in this format.
+        You can select multiple files at once.
+        Maximum batch size is <span title="@SizeLimit bytes">@Tools.NiceSize(SizeLimit)</span>
+    </i>
+</p>
+
+<h2>Delete</h2>
+@foreach (var F in Files)
+{
+    <div class="form-group">
+        <form method="post" asp-action="Delete" class="form-inline">
+            <input type="hidden" name="Filename" value="@F.Filename" />
+            <input type="submit" value="Delete" class="btn btn-danger" />&nbsp;
+            <label>@F.Filename</label>
+        </form>
+    </div>
+}
+<p>
+    <i>You don't need to manually remove the files from the ad categories above when deleting them</i>
+</p>
+
+@section Scripts
+{
+    <script type="text/javascript" src="~/js/ads.view.js" defer></script>
+}

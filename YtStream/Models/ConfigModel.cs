@@ -85,6 +85,11 @@ namespace YtStream.Models
         /// </remarks>
         public bool PublicRegistration { get; set; }
 
+        /// <summary>
+        /// Enable or disable streaming ads for administrators
+        /// </summary>
+        public bool AdminAds { get; set; }
+
         public Bitrate AudioBitrate { get; set; }
         public Frequency AudioFrequency { get; set; }
 

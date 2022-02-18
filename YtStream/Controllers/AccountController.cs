@@ -26,6 +26,17 @@ namespace YtStream.Controllers
         }
 
 
+        public IActionResult ChangeAdSetting()
+        {
+            if (CurrentUser.Roles.HasFlag(UserRoles.Administrator))
+            {
+                CurrentUser.DisableAds = !CurrentUser.DisableAds;
+                UserManager.Save();
+                return RedirectWithMessage("Index", "Ad settings changed");
+            }
+            return Forbid();
+        }
+
         [HttpPost, ActionName("DeleteAccount"), ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAccountPost(string Password)
         {

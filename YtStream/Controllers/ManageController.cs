@@ -26,6 +26,8 @@ namespace YtStream.Controllers
             return View();
         }
 
+        #region Cache
+
         [HttpGet]
         public IActionResult CacheInfo()
         {
@@ -63,6 +65,10 @@ namespace YtStream.Controllers
                 return View("Error", new ErrorViewModel(ex));
             }
         }
+
+        #endregion
+
+        #region Config Backup
 
         [HttpGet]
         public async Task<IActionResult> Backup(string id)
@@ -133,6 +139,10 @@ namespace YtStream.Controllers
                 return View("Error", new ErrorViewModel(ex));
             }
         }
+
+        #endregion
+
+        #region Accounts
 
         [HttpGet]
         public IActionResult AccountList()
@@ -326,6 +336,31 @@ namespace YtStream.Controllers
             return RedirectWithMessage("AccountEdit", "Permissions adjusted", new { id });
         }
 
+        [HttpPost, ValidateAntiForgeryToken]
+        public IActionResult AccountSetOptions(string id, bool noads)
+        {
+            AccountInfo Acc;
+            try
+            {
+                if (!HttpContext.Request.HasFormContentType)
+                {
+                    return BadRequest();
+                }
+                Acc = GetAccount(id);
+                Acc.DisableAds = noads;
+                UserManager.Save();
+            }
+            catch (Exception ex)
+            {
+                return View("Error", new ErrorViewModel(ex));
+            }
+            return RedirectWithMessage("AccountEdit", "Options adjusted", new { id });
+        }
+
+        #endregion
+
+        #region Settings
+
         [HttpPost, ActionName("ChangeLock"), ValidateAntiForgeryToken]
         public IActionResult ChangeLockPost()
         {
@@ -364,6 +399,10 @@ namespace YtStream.Controllers
             Startup.ApplySettings(model);
             return RedirectWithMessage("Config", "Settings saved and applied");
         }
+
+        #endregion
+
+        #region Internal helper functions
 
         private IActionResult ChangeUserEnabled(string Username, bool State)
         {
@@ -440,5 +479,7 @@ namespace YtStream.Controllers
             }
             return RedirectWithMessage("Backup", "User accounts imported");
         }
+
+        #endregion
     }
 }
