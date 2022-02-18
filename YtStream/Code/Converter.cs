@@ -87,8 +87,11 @@ namespace YtStream
         /// Creates a converter instance
         /// </summary>
         /// <param name="Executable">FFmpeg executable path</param>
-        /// <param name="UserAgent">User agent for URL based requests. See <see cref="YoutubeDl.GetUserAgent"/></param>
-        public Converter(string Executable, string UserAgent)
+        /// <param name="UserAgent">
+        /// User agent for URL based requests. See <see cref="YoutubeDl.GetUserAgent"/>.
+        /// If null, the default by ffmpeg is used
+        /// </param>
+        public Converter(string Executable, string UserAgent = null)
         {
             if (string.IsNullOrWhiteSpace(Executable))
             {
