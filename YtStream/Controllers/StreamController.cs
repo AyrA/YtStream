@@ -39,6 +39,7 @@ namespace YtStream.Controllers
                 context.Result = StatusCode(500, "Misconfiguration. Please check the application settings");
                 return;
             }
+            //Do not allow the use of stream keys if we're logged in
             if (Settings.RequireAccount && !User.Identity.IsAuthenticated)
             {
                 //Check if streaming key was supplied
@@ -48,7 +49,7 @@ namespace YtStream.Controllers
                     if (Guid.TryParse(key.ToString(), out Guid StreamKey))
                     {
                         SetApiUser(StreamKey);
-                        if (CurrentUser != null)
+                        if (CurrentUser != null && CurrentUser.Enabled)
                         {
                             _logger.LogInformation("User {0}: Key based authentication success", CurrentUser.Username);
                             await base.OnActionExecutionAsync(context, next);
