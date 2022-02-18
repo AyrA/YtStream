@@ -6,7 +6,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="accounts.json" />
+    <Content Remove="config.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="..\.editorconfig" Link=".editorconfig" />
+    <None Include="accounts.json" />
+    <None Include="config.json" />
   </ItemGroup>
 
   <ItemGroup>
