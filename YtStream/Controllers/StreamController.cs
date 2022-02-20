@@ -68,6 +68,7 @@ namespace YtStream.Controllers
             return View();
         }
 
+        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> List(string id)
         {
             if (IsHead())
@@ -84,8 +85,33 @@ namespace YtStream.Controllers
             {
                 return NotFound("Playlist empty or does not exist");
             }
+            Tools.SetExpiration(Response, TimeSpan.FromHours(1));
             return Json(PL);
         }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Info(string id)
+        {
+            if (IsHead())
+            {
+                return Json(null);
+            }
+            if (!Tools.IsYoutubeId(id))
+            {
+                return BadRequest("Supplied argument is not a valid video identifier");
+            }
+            var ytdl = new YoutubeDl(Settings.YoutubedlPath);
+            var Info = await ytdl.GetAudioDetails(id);
+            if (Info == null)
+            {
+                return NotFound("Video id does not exist or is restricted/private");
+            }
+            Tools.SetExpiration(Response, TimeSpan.FromHours(1));
+            //Do not forward the URL since it's unusable
+            Info.Url = null;
+            return Json(Info);
+        }
+
 
         public async Task<IActionResult> PlaylistOrder(string id)
         {
