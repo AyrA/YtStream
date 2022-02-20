@@ -115,5 +115,15 @@ namespace YtStream
             HttpContext.Response.Cookies.Append("status", Message);
             return RedirectToAction(Action, Controller, RouteData);
         }
+
+        /// <summary>
+        /// Generates an error view with the supplied exception
+        /// </summary>
+        /// <param name="ex">Exception</param>
+        /// <returns>Error view</returns>
+        public IActionResult Error(Exception ex)
+        {
+            return View("Error", new ErrorViewModel(ex));
+        }
     }
 }
