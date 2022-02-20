@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,19 @@ namespace YtStream
     /// </summary>
     public class YoutubeDl
     {
+        /// <summary>
+        /// How many minutes playlist items remain in the cache
+        /// </summary>
+        private const double MaxCacheAgeMinutes = 60.0;
+        /// <summary>
+        /// Holds results from playlist queries for a limited time
+        /// </summary>
+        private static readonly Dictionary<string, PlaylistInfo> PlCache = new Dictionary<string, PlaylistInfo>();
+        /// <summary>
+        /// Counts time since last cache cleanup
+        /// </summary>
+        private static readonly Stopwatch LastClean = Stopwatch.StartNew();
+
         /// <summary>
         /// Youtube-dl executable
         /// </summary>
@@ -80,6 +94,17 @@ namespace YtStream
             {
                 throw new FormatException("Argument must be a youtube playlist id");
             }
+            CleanCache();
+            lock (PlCache)
+            {
+                if (PlCache.TryGetValue(Playlist, out PlaylistInfo info))
+                {
+                    if (info.Age.TotalMinutes < MaxCacheAgeMinutes)
+                    {
+                        return info.Items;
+                    }
+                }
+            }
             var Args = "--get-id --flat-playlist https://www.youtube.com/playlist?list=" + Playlist;
             var PSI = new ProcessStartInfo(executable, Args);
             PSI.UseShellExecute = false;
@@ -87,7 +112,9 @@ namespace YtStream
             using (var P = Process.Start(PSI))
             {
                 var Lines = await P.StandardOutput.ReadToEndAsync();
-                return Lines.Trim().Split('\n').Where(m => Tools.IsYoutubeId(m.Trim())).ToArray();
+                var Items = Lines.Trim().Split('\n').Where(m => Tools.IsYoutubeId(m.Trim())).ToArray();
+                PlCache[Playlist] = new PlaylistInfo(Items);
+                return Items;
             }
         }
 
@@ -123,6 +150,76 @@ namespace YtStream
         public async Task<string> GetAudioUrl(string Id)
         {
             return (await GetAudioDetails(Id)).Url;
+        }
+
+        /// <summary>
+        /// Removes expired items from the cache
+        /// </summary>
+        /// <remarks>
+        /// Should be called fairly often. It will clean at most once a minute
+        /// </remarks>
+        private static void CleanCache()
+        {
+            lock (PlCache)
+            {
+                if (LastClean.Elapsed.TotalMinutes >= 1.0)
+                {
+                    var Items = PlCache
+                        .Where(m => m.Value.Age.TotalMinutes > MaxCacheAgeMinutes)
+                        .Select(m => m.Key)
+                        .ToArray();
+                    foreach(var Item in Items)
+                    {
+                        PlCache.Remove(Item);
+                    }
+                    LastClean.Reset();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Represents an item in the playlist cache
+        /// </summary>
+        private class PlaylistInfo
+        {
+            /// <summary>
+            /// Counts age of this instance
+            /// </summary>
+            private readonly Stopwatch Timer;
+
+            /// <summary>
+            /// Items in the playlist
+            /// </summary>
+            public string[] Items { get; private set; }
+
+            /// <summary>
+            /// Age of this instance
+            /// </summary>
+            public TimeSpan Age
+            {
+                get
+                {
+                    return Timer.Elapsed;
+                }
+            }
+
+            /// <summary>
+            /// Creates a new cached playlist result
+            /// </summary>
+            /// <param name="Items">Playlist items</param>
+            public PlaylistInfo(string[] Items)
+            {
+                Timer = Stopwatch.StartNew();
+                this.Items = (string[])Items.Clone();
+            }
+
+            /// <summary>
+            /// Resets expiration back to zero
+            /// </summary>
+            public void ResetExpiration()
+            {
+                Timer.Restart();
+            }
         }
     }
 }
