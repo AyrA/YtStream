@@ -11,6 +11,9 @@
     <title>@ViewData["Title"] - YtStream</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" />
+    <noscript>
+        <link rel="stylesheet" href="~/css/noscript.css" />
+    </noscript>
 </head>
 <body>
     <header>
@@ -28,6 +31,9 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="Home" asp-action="Info">How to use</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Builder">Stream URL builder</a>
                         </li>
                         @if (User.Identity.IsAuthenticated && Acc.Roles.HasFlag(UserRoles.Administrator))
                         {
