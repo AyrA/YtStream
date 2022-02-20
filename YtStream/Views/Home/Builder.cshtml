@@ -1,0 +1,47 @@
+﻿@{
+    ViewData["Title"] = "Stream URL builder";
+    var AF = Tools.ParseAntiforgery(Html.AntiForgeryToken());
+}
+<h1>Stream URL builder</h1>
+<p>
+    This page will help you build a stream URL
+</p>
+<noscript>
+    <div class="alert alert-danger">
+        This page makes use of JavaScript,
+        which is disabled in your browser if you can read this message.
+        If you for some reason cannot enable scripting,
+        you can read the <a asp-action="Info">How to use</a> guide
+        which tells you how to construct an URL manually.
+    </div>
+</noscript>
+
+<div class="row">
+    <div class="col-md-6">
+        <h2>Add an id</h2>
+        <div class="form-inline">
+            <input type="url" id="tbUrl" class="form-control" placeholder="Youtube URL" />&nbsp;
+            <input type="button" class="btn btn-primary" id="btnAddId" value="Add" />
+        </div>
+    </div>
+    <div class="col-md-6">
+        <h2>Current list</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Options</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="2"><i>List is empty</i></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+@section Scripts
+{
+    <script src="~/js/builder.view.js" asp-append-version="true" data-af-name="@AF.Name" data-af-value="@AF.Value" defer></script>
+}
