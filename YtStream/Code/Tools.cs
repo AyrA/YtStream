@@ -392,5 +392,40 @@ namespace YtStream
                 return R.Next(MinIncl, MaxExcl);
             }
         }
+
+        /// <summary>
+        /// Parse the antiforgery token into a C# object
+        /// </summary>
+        /// <param name="FormElement">Antiforgery element. Usually <see cref="IHtmlHelper.AntiForgeryToken()"/></param>
+        /// <returns>Object with field name and value</returns>
+        public static Antiforgery ParseAntiforgery(Microsoft.AspNetCore.Html.IHtmlContent FormElement)
+        {
+            var Pattern = new Regex("(\\w+)\\s*=\\s*\"([^\"]+)\"");
+            string Form;
+            using (var SW = new StringWriter())
+            {
+                FormElement.WriteTo(SW, System.Text.Encodings.Web.HtmlEncoder.Default);
+                Form = SW.ToString();
+            }
+            var MM = Pattern.Matches(Form).OfType<Match>().ToArray();
+            var AF = new Antiforgery();
+            foreach (var M in MM)
+            {
+                if (M.Groups[1].Value.ToLower() == "name")
+                {
+                    AF.Name = M.Groups[2].Value;
+                }
+                if (M.Groups[1].Value.ToLower() == "value")
+                {
+                    AF.Value = M.Groups[2].Value;
+                }
+            }
+            return AF;
+        }
+
+        public struct Antiforgery
+        {
+            public string Name, Value;
+        }
     }
 }
