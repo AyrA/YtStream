@@ -20,6 +20,7 @@ namespace YtStream
         /// Holds results from playlist queries for a limited time
         /// </summary>
         private static readonly Dictionary<string, PlaylistInfo> PlCache = new Dictionary<string, PlaylistInfo>();
+        private static readonly Dictionary<string, AudioInfo> IdCache = new Dictionary<string, AudioInfo>();
         /// <summary>
         /// Counts time since last cache cleanup
         /// </summary>
@@ -29,6 +30,14 @@ namespace YtStream
         /// Youtube-dl executable
         /// </summary>
         private readonly string executable;
+        /// <summary>
+        /// Cached user agent
+        /// </summary>
+        private string userAgent = null;
+        /// <summary>
+        /// Cached version
+        /// </summary>
+        private string version = null;
 
         /// <summary>
         /// Creates a new instance
@@ -54,6 +63,10 @@ namespace YtStream
         /// <returns>User agent string</returns>
         public async Task<string> GetUserAgent()
         {
+            if (!string.IsNullOrEmpty(userAgent))
+            {
+                return userAgent;
+            }
             var PSI = new ProcessStartInfo(executable, "--dump-user-agent")
             {
                 UseShellExecute = false,
@@ -61,7 +74,7 @@ namespace YtStream
             };
             using (var P = Process.Start(PSI))
             {
-                return (await P.StandardOutput.ReadToEndAsync()).Trim();
+                return userAgent = (await P.StandardOutput.ReadToEndAsync()).Trim();
             }
         }
 
@@ -72,6 +85,10 @@ namespace YtStream
         /// <remarks>Version number is currently formatted as YYYY.MM.DD</remarks>
         public async Task<string> GetVersion()
         {
+            if (!string.IsNullOrEmpty(version))
+            {
+                return version;
+            }
             var PSI = new ProcessStartInfo(executable, "--version")
             {
                 UseShellExecute = false,
@@ -79,7 +96,7 @@ namespace YtStream
             };
             using (var P = Process.Start(PSI))
             {
-                return (await P.StandardOutput.ReadToEndAsync()).Trim();
+                return version = (await P.StandardOutput.ReadToEndAsync()).Trim();
             }
         }
 
@@ -132,12 +149,23 @@ namespace YtStream
             {
                 throw new FormatException("Argument must be a youtube video id");
             }
+            CleanCache();
+            lock (IdCache)
+            {
+                if (IdCache.TryGetValue(Id, out AudioInfo info) && !info.Expired)
+                {
+                    return info.Info.JsonClone();
+                }
+                //Id not found or expired
+            }
             var PSI = new ProcessStartInfo(executable, $"--skip-download --dump-json --format bestaudio {Tools.IdToUrl(Id)}");
             PSI.UseShellExecute = false;
             PSI.RedirectStandardOutput = true;
             using (var P = Process.Start(PSI))
             {
-                return (await P.StandardOutput.ReadToEndAsync()).FromJson<YoutubeDlResult>();
+                var Result = (await P.StandardOutput.ReadToEndAsync()).FromJson<YoutubeDlResult>();
+                IdCache[Id] = new AudioInfo(Result);
+                return Result;
             }
         }
 
@@ -160,19 +188,27 @@ namespace YtStream
         /// </remarks>
         private static void CleanCache()
         {
-            lock (PlCache)
+            if (LastClean.Elapsed.TotalMinutes >= 1.0)
             {
-                if (LastClean.Elapsed.TotalMinutes >= 1.0)
+                LastClean.Reset();
+                lock (PlCache)
                 {
                     var Items = PlCache
                         .Where(m => m.Value.Age.TotalMinutes > MaxCacheAgeMinutes)
                         .Select(m => m.Key)
                         .ToArray();
-                    foreach(var Item in Items)
+                    foreach (var Item in Items)
                     {
                         PlCache.Remove(Item);
                     }
-                    LastClean.Reset();
+                }
+                lock (IdCache)
+                {
+                    var Items = IdCache.Where(m => m.Value.Expired).Select(m => m.Key).ToArray();
+                    foreach (var Item in Items)
+                    {
+                        IdCache.Remove(Item);
+                    }
                 }
             }
         }
@@ -219,6 +255,54 @@ namespace YtStream
             public void ResetExpiration()
             {
                 Timer.Restart();
+            }
+        }
+
+        /// <summary>
+        /// Represents an element in the audio info cache
+        /// </summary>
+        private class AudioInfo
+        {
+            /// <summary>
+            /// Date of expiration
+            /// </summary>
+            private readonly DateTime Expiration;
+
+            /// <summary>
+            /// Audio info from YT
+            /// </summary>
+            public YoutubeDlResult Info { get; private set; }
+            /// <summary>
+            /// Gets how long this item can remain in the cache
+            /// </summary>
+            public TimeSpan Remaining { get => Expiration.Subtract(DateTime.UtcNow); }
+            /// <summary>
+            /// Gets if this item is expired
+            /// </summary>
+            public bool Expired { get => Expiration < DateTime.UtcNow; }
+
+            /// <summary>
+            /// Creates a new cached audio result 
+            /// </summary>
+            /// <param name="Info">Audio result</param>
+            public AudioInfo(YoutubeDlResult Info)
+            {
+                this.Info = Info ?? throw new ArgumentNullException(nameof(Info));
+                Expiration = DateTime.Parse(Tools.UnixZeroParse).ToUniversalTime();
+                if (Uri.TryCreate(Info.Url, UriKind.Absolute, out Uri Result) && !string.IsNullOrEmpty(Result.Query))
+                {
+                    //Get the numerical part from "expire=1234"
+                    var ExpArg = Result.Query.Substring(1).Split('&').FirstOrDefault(m => m.StartsWith("expire="));
+                    ExpArg = ExpArg.Substring(ExpArg.IndexOf('=') + 1);
+                    if (ulong.TryParse(ExpArg, out ulong Timestamp))
+                    {
+                        //Store expiration time minus a minute
+                        Expiration = DateTime
+                            .Parse(Tools.UnixZeroParse)
+                            .AddSeconds(Timestamp - 60)
+                            .ToUniversalTime();
+                    }
+                }
             }
         }
     }

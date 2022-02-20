@@ -52,6 +52,22 @@ namespace YtStream
         }
 
         /// <summary>
+        /// Clones an object via JSON serialization and deserialization
+        /// </summary>
+        /// <typeparam name="T">Object type</typeparam>
+        /// <param name="o">Object</param>
+        /// <param name="Throw">true to throw on deserialization error</param>
+        /// <returns>Object clone</returns>
+        public static T JsonClone<T>(this T o, bool Throw = false)
+        {
+            if (o == null)
+            {
+                return o;
+            }
+            return o.ToJson().FromJson<T>(Throw);
+        }
+
+        /// <summary>
         /// Convert byte array into UTF8 string
         /// </summary>
         /// <param name="data">Byte array</param>
