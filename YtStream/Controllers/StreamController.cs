@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -115,7 +116,12 @@ namespace YtStream.Controllers
 
         public async Task<IActionResult> PlaylistOrder(string id)
         {
-            if (!Tools.IsYoutubePlaylist(id))
+            if (id == null)
+            {
+                return BadRequest("Missing argument");
+            }
+            var ids = id.Split(',');
+            if (!ids.All(Tools.IsYoutubePlaylist))
             {
                 return BadRequest("Supplied argument is not a valid playlist identifier");
             }
@@ -124,18 +130,26 @@ namespace YtStream.Controllers
                 Tools.SetAudioHeaders(Response);
                 return new EmptyResult();
             }
-            var ytdl = new YoutubeDl(Settings.YoutubedlPath);
-            var PL = await ytdl.GetPlaylist(id);
-            if (PL == null || PL.Length == 0)
+            string[] videoids;
+            try
             {
-                return NotFound("Playlist empty or does not exist");
+                videoids = await EnumeratePlaylists(ids);
             }
-            return await PerformStream(PL, ShouldPlayAds());
+            catch (Exception ex)
+            {
+                return Error(ex);
+            }
+            return await PerformStream(videoids.ToArray(), ShouldPlayAds());
         }
 
         public async Task<IActionResult> PlaylistRandom(string id)
         {
-            if (!Tools.IsYoutubePlaylist(id))
+            if (id == null)
+            {
+                return BadRequest("Missing argument");
+            }
+            var ids = id.Split(',');
+            if (!ids.All(Tools.IsYoutubePlaylist))
             {
                 return BadRequest("Supplied argument is not a valid playlist identifier");
             }
@@ -144,13 +158,16 @@ namespace YtStream.Controllers
                 Tools.SetAudioHeaders(Response);
                 return new EmptyResult();
             }
-            var ytdl = new YoutubeDl(Settings.YoutubedlPath);
-            var PL = await ytdl.GetPlaylist(id);
-            if (PL == null || PL.Length == 0)
+            string[] videoids;
+            try
             {
-                return NotFound("Playlist empty or does not exist");
+                videoids = await EnumeratePlaylists(ids);
             }
-            return await PerformStream(Tools.Shuffle(PL), ShouldPlayAds());
+            catch (Exception ex)
+            {
+                return Error(ex);
+            }
+            return await PerformStream(Tools.Shuffle(videoids), ShouldPlayAds());
         }
 
         public async Task<IActionResult> Order(string id)
@@ -309,6 +326,26 @@ namespace YtStream.Controllers
             _logger.LogInformation("Stream request complete");
 
             return new EmptyResult();
+        }
+
+        private async Task<string[]> EnumeratePlaylists(IEnumerable<string> PlaylistIds, bool Skip = false)
+        {
+            var Ids = new List<string>();
+            var ytdl = new YoutubeDl(Settings.YoutubedlPath);
+            foreach (var id in PlaylistIds)
+            {
+                var PL = await ytdl.GetPlaylist(id);
+                if (PL == null || PL.Length == 0)
+                {
+                    if (!Skip)
+                    {
+                        throw new Exception($"Playlist empty or does not exist: {id}");
+                    }
+                    continue;
+                }
+                Ids.AddRange(PL);
+            }
+            return Ids.ToArray();
         }
 
         private async Task PlayAd(Ads Handler, AdType Type)
