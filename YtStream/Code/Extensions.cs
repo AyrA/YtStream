@@ -17,13 +17,17 @@ namespace YtStream
         /// true to throw instead of returning the types default value
         /// </param>
         /// <returns>Deserialized data</returns>
-        public static T FromJson<T>(this string s, bool Throw = false)
+        public static T FromJson<T>(this string s, bool Throw = false, bool IgnoreCase = false)
         {
             try
             {
                 if (!string.IsNullOrWhiteSpace(s))
                 {
-                    return JsonSerializer.Deserialize<T>(s);
+                    JsonSerializerOptions Opt = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = IgnoreCase
+                    };
+                    return JsonSerializer.Deserialize<T>(s, Opt);
                 }
             }
             catch
@@ -42,12 +46,16 @@ namespace YtStream
         /// <param name="o">Object</param>
         /// <param name="Pretty">print nicely instead of as compact as possible</param>
         /// <returns>Serialized data</returns>
-        public static string ToJson(this object o, bool Pretty = false)
+        public static string ToJson(this object o, bool Pretty = false, bool UseCamelCase = false)
         {
             var Opt = new JsonSerializerOptions()
             {
                 WriteIndented = Pretty
             };
+            if (UseCamelCase)
+            {
+                Opt.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            }
             return JsonSerializer.Serialize(o, Opt);
         }
 
