@@ -1,5 +1,43 @@
 ﻿"use strict";
 
+var tools = {
+    token: function () {
+        var e = document.querySelector("[data-af-name]");
+        if (e) {
+            return {
+                name: e.dataset.afName,
+                token: e.dataset.afValue,
+            };
+        }
+    },
+    post: function (url, data) {
+        return new Promise(function (accept, reject) {
+            var fd = new FormData();
+            var t = tools.token();
+            if (t) {
+                fd.append(t.name, t.token);
+            }
+            if (data && typeof (data) == typeof ({})) {
+                Object.keys(data).forEach(function (key) {
+                    fd.append(key, data[key]);
+                });
+            }
+            var req = new XMLHttpRequest();
+            req.responseType = "json";
+            req.open("POST", url);
+            req.addEventListener("error", reject);
+            req.upload.addEventListener("error", reject);
+            req.addEventListener("load", function () {
+                if (req.status >= 300 || req.status < 200) {
+                    reject(new Error("Invalid status code: " + req.status));
+                }
+                accept(req.response);
+            });
+            req.send(fd);
+        });
+    }
+};
+
 (function (q, qa) {
     var copyText = function (node) {
         if (document.execCommand) {
