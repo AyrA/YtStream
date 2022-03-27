@@ -28,7 +28,7 @@ namespace YtStream
         /// <summary>
         /// Parse string for unix date
         /// </summary>
-        public const string UnixZeroParse = "1970-00-00T00:00:00Z";
+        public const string UnixZeroParse = "1970-01-01T00:00:00Z";
 
         /// <summary>
         /// Regex of a valid youtube video id
