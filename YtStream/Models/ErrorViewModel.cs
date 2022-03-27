@@ -37,7 +37,11 @@ namespace YtStream.Models
         /// <summary>
         /// Creates a default instance
         /// </summary>
-        public ErrorViewModel() : this(null) { }
+        public ErrorViewModel()
+        {
+            ShowDetails = DefaultDetailOption;
+            Error = new Exception("Unspecified error");
+        }
 
         /// <summary>
         /// Creates an instance for the given exception
@@ -58,6 +62,10 @@ namespace YtStream.Models
             if (Error == null)
             {
                 throw new InvalidOperationException($"The \"{nameof(Error)}\" property is null.");
+            }
+            if (Error.StackTrace == null)
+            {
+                return new StackTraceInfo[0];
             }
             return Error.StackTrace
                 .Trim()
