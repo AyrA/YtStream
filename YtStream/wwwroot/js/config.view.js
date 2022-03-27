@@ -15,4 +15,10 @@
     boolFields.cache.addEventListener("change", updateFields);
     boolFields.sblock.addEventListener("change", updateFields);
     updateFields();
+    q("#YtApiKey").addEventListener("focus", function () {
+        this.type = "text";
+    });
+    q("#YtApiKey").addEventListener("blur", function () {
+        this.type = "password";
+    });
 })(document.querySelector.bind(document));

@@ -2,9 +2,10 @@
     var Settings = (ConfigModel)ViewBag.Settings;
     var Acc = (AccountInfo)ViewBag.User;
     var Msg = (string)ViewBag.CookieMessage;
+    var AFToken = Tools.ParseAntiforgery(Html.AntiForgeryToken());
 }
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-af-name="@AFToken.Name" data-af-value="@AFToken.Value">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -32,9 +33,12 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="Home" asp-action="Info">How to use</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Builder">Stream URL builder</a>
-                        </li>
+                        @if (!string.IsNullOrEmpty(Settings.YtApiKey))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Home" asp-action="Builder">Stream URL builder</a>
+                            </li>
+                        }
                         @if (User.Identity.IsAuthenticated && Acc.Roles.HasFlag(UserRoles.Administrator))
                         {
                             <li class="nav-item">
@@ -59,7 +63,7 @@
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Login</a>
                             </li>
-                            @if(Settings.PublicRegistration)
+                            @if (Settings.PublicRegistration)
                             {
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-controller="Account" asp-action="Register">Register</a>
