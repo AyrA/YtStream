@@ -1,6 +1,5 @@
 ﻿@{
     ViewData["Title"] = "Stream URL builder";
-    var AF = Tools.ParseAntiforgery(Html.AntiForgeryToken());
 }
 <h1>Stream URL builder</h1>
 <p>
@@ -26,7 +25,7 @@
     </div>
     <div class="col-md-6">
         <h2>Current list</h2>
-        <table class="table">
+        <table class="table" id="idTable">
             <thead>
                 <tr>
                     <th>Title</th>
@@ -41,7 +40,36 @@
         </table>
     </div>
 </div>
+
+<div class="modal" tabindex="-1" id="idTypeModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select type of id</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    The URL you supplied contains a video id as well as a playlist id.
+                    Please select which one you would like to add to your queue.
+                </p>
+                <div class="form-group">
+                    <input type="button" id="btnIdModalVideoId" class="btn btn-primary" data-value="video" value="Video id" data-dismiss="modal" />
+                </div>
+                <div class="form-group">
+                    <input type="button" id="btnIdModalPlId" class="btn btn-primary" data-value="pl" value="Playlist id" data-dismiss="modal" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts
 {
-    <script src="~/js/builder.view.js" asp-append-version="true" data-af-name="@AF.Name" data-af-value="@AF.Value" defer></script>
+    <script src="~/js/builder.view.js" asp-append-version="true" defer></script>
 }

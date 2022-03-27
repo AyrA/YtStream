@@ -18,6 +18,10 @@ namespace YtStream.Controllers
 
         public IActionResult Builder()
         {
+            if (!string.IsNullOrEmpty(Settings.YtApiKey))
+            {
+                return BadRequest("Yo");
+            }
             return View();
         }
 
