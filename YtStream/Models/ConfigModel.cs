@@ -59,6 +59,14 @@ namespace YtStream.Models
         public int MaxKeysPerUser { get; set; }
 
         /// <summary>
+        /// API key for the YT API
+        /// </summary>
+        /// <remarks>
+        /// Some features will be unavailable if this is not set
+        /// </remarks>
+        public string YtApiKey { get; set; }
+
+        /// <summary>
         /// Path to youtube-dl executable
         /// </summary>
         public string YoutubedlPath { get; set; }
