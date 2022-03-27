@@ -21,7 +21,7 @@ namespace YtStream.YT
             apiKey = ApiKey;
         }
 
-        public async Task<YtPlItem[]> GetPlaylistInfo(string PlaylistId)
+        public async Task<YtPlItem[]> GetPlaylistInfoAsync(string PlaylistId)
         {
             if (!Tools.IsYoutubePlaylist(PlaylistId))
             {
