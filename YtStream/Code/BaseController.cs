@@ -121,7 +121,7 @@ namespace YtStream
         /// </summary>
         /// <param name="ex">Exception</param>
         /// <returns>Error view</returns>
-        public IActionResult Error(Exception ex)
+        protected IActionResult Error(Exception ex)
         {
             return View("Error", new ErrorViewModel(ex));
         }
