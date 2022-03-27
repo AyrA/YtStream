@@ -26,9 +26,15 @@ SBlock operates on a custom license that requires attribution.
 
 [See here for licensing details](https://github.com/ajayyy/SponsorBlock/wiki/Database-and-API-License)
 
-You cannot run YtStream this as a commercial service under this license.
+The gist of it is that you cannot run YtStream as a commercial service under this license.
 
-Note that YtStream uses the AGPL which considers SaaS/hosting a form of publishing
+## The AGPL
+
+YtStream itself uses the AGPL which considers SaaS/hosting a form of publishing.
+You must provide unobstructed and ovious access to the YtStream source
+including all modifications you made.
+
+For the exact details, see the `LICENSE` file.
 
 ## Installation
 
