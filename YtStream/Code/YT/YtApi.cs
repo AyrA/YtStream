@@ -41,7 +41,7 @@ namespace YtStream.YT
                 {
                     Result = (await GetJson(URL)).FromJson<YtPlResult>(true, true);
                 }
-                catch (Exception ex)
+                catch
                 {
                     return null;
                 }
