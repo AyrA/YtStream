@@ -13,9 +13,13 @@ namespace YtStream
     public class YoutubeDl
     {
         /// <summary>
+        /// Upper limit for playlist item count
+        /// </summary>
+        public const int MaxPlaylistEntries = 1000;
+        /// <summary>
         /// How many minutes playlist items remain in the cache
         /// </summary>
-        private const double MaxCacheAgeMinutes = 60.0;
+        private const double MaxCacheAgeMinutes = 60.0 * 24.0;
         /// <summary>
         /// Holds results from playlist queries for a limited time
         /// </summary>
@@ -105,11 +109,15 @@ namespace YtStream
         /// </summary>
         /// <param name="Playlist">Playlist id</param>
         /// <returns>Video Ids</returns>
-        public async Task<string[]> GetPlaylist(string Playlist)
+        public async Task<string[]> GetPlaylist(string Playlist, int MaxItems)
         {
             if (!Tools.IsYoutubePlaylist(Playlist))
             {
                 throw new FormatException("Argument must be a youtube playlist id");
+            }
+            if (MaxItems < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(MaxItems), "Must be 0 or bigger");
             }
             CleanCache();
             lock (PlCache)
@@ -118,14 +126,17 @@ namespace YtStream
                 {
                     if (info.Age.TotalMinutes < MaxCacheAgeMinutes)
                     {
-                        return info.Items;
+                        return MaxItems == 0 ? info.Items : info.Items.Take(MaxItems).ToArray();
                     }
                 }
             }
-            var Args = "--get-id --flat-playlist https://www.youtube.com/playlist?list=" + Playlist;
-            var PSI = new ProcessStartInfo(executable, Args);
-            PSI.UseShellExecute = false;
-            PSI.RedirectStandardOutput = true;
+            var ItemCount = MaxItems > 0 ? $"--playlist-items 1-{Math.Min(MaxPlaylistEntries, MaxItems)}" : "";
+            var Args = $"--get-id {ItemCount} --flat-playlist https://www.youtube.com/playlist?list={Playlist}";
+            var PSI = new ProcessStartInfo(executable, Args)
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
             using (var P = Process.Start(PSI))
             {
                 var Lines = await P.StandardOutput.ReadToEndAsync();
@@ -158,9 +169,11 @@ namespace YtStream
                 }
                 //Id not found or expired
             }
-            var PSI = new ProcessStartInfo(executable, $"--skip-download --dump-json --format bestaudio {Tools.IdToUrl(Id)}");
-            PSI.UseShellExecute = false;
-            PSI.RedirectStandardOutput = true;
+            var PSI = new ProcessStartInfo(executable, $"--skip-download --dump-json --format bestaudio {Tools.IdToUrl(Id)}")
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
             using (var P = Process.Start(PSI))
             {
                 var Result = (await P.StandardOutput.ReadToEndAsync()).FromJson<YoutubeDlResult>();

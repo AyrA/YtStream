@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
 
 namespace YtStream.YT
 {
-    public class YtPlResult
+    public class YtResult
     {
         public string NextPageToken { get; set; }
-        public YtPlItem[] Items { get; set; }
+        public YtBaseItem[] Items { get; set; }
 
         public YtPageInfo PageInfo { get; set; }
     }
@@ -19,12 +18,15 @@ namespace YtStream.YT
         public int ResultsPerPage { get; set; }
     }
 
-    public class YtPlItem
+    public class YtBaseItem
     {
-        public YtPlSnippet Snippet { get; set; }
+        public string Kind { get; set; }
+        public string ETag { get; set; }
+        public string Id { get; set; }
+        public YtSnippet Snippet { get; set; }
     }
 
-    public class YtPlSnippet
+    public class YtSnippet
     {
         public DateTime PublishedAt { get; set; }
 

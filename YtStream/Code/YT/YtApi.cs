@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -21,25 +22,29 @@ namespace YtStream.YT
             apiKey = ApiKey;
         }
 
-        public async Task<YtPlItem[]> GetPlaylistInfoAsync(string PlaylistId)
+        public async Task<YtSnippet[]> GetPlaylistInfoAsync(string PlaylistId, int MaxItems = int.MaxValue)
         {
             if (!Tools.IsYoutubePlaylist(PlaylistId))
             {
                 throw new ArgumentException("Playlist id is invalid");
             }
+            var Ret = new List<YtSnippet>();
+            if (MaxItems <= 0)
+            {
+                return Ret.ToArray();
+            }
             var URL = BuildUrl("playlistItems", new
             {
                 part = "snippet",
-                maxResults = 20,
+                maxResults = 50,
                 playlistId = PlaylistId
             });
-            var Ret = new List<YtPlItem>();
-            YtPlResult Result;
+            YtResult Result;
             do
             {
                 try
                 {
-                    Result = (await GetJson(URL)).FromJson<YtPlResult>(true, true);
+                    Result = (await GetJson(URL)).FromJson<YtResult>(true, true);
                 }
                 catch
                 {
@@ -49,16 +54,38 @@ namespace YtStream.YT
                 {
                     return null;
                 }
-                Ret.AddRange(Result.Items);
+                Ret.AddRange(Result.Items.Select(m => m.Snippet));
                 URL = BuildUrl("playlistItems", new
                 {
                     part = "snippet",
-                    maxResults = 20,
+                    maxResults = 50,
                     playlistId = PlaylistId,
                     pageToken = Result.NextPageToken
                 });
-            } while (!string.IsNullOrEmpty(Result.NextPageToken));
-            return Ret.ToArray();
+            } while (Ret.Count < MaxItems && !string.IsNullOrEmpty(Result.NextPageToken));
+            return Ret.Take(MaxItems).ToArray();
+        }
+
+        public async Task<YtSnippet> GetVideoInfo(string VideoId)
+        {
+            if (!Tools.IsYoutubeId(VideoId))
+            {
+                throw new ArgumentException("Video id is invalid");
+            }
+            var URL = BuildUrl("videos", new
+            {
+                part = "snippet",
+                maxResults = 1,
+                id = VideoId
+            });
+            try
+            {
+                return (await GetJson(URL)).FromJson<YtResult>(true, true).Items[0].Snippet;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private Uri BuildUrl(string Function, object UrlParams)
@@ -82,6 +109,7 @@ namespace YtStream.YT
 
         private static async Task<string> GetJson(Uri Url)
         {
+            ILogger Logger = Startup.GetLogger<YtApi>();
             var Req = WebRequest.CreateHttp(Url);
             Req.Accept = "application/json";
             Req.UserAgent = "YtStream +https://github.com/AyrA/YtStream";
@@ -92,7 +120,9 @@ namespace YtStream.YT
                 {
                     using (var Body = Res.GetResponseStream())
                     {
-                        return await Tools.ReadStringAsync(Body);
+                        var Result = await Tools.ReadStringAsync(Body);
+                        Logger.LogDebug(Result);
+                        return Result;
                     }
                 }
 
@@ -103,7 +133,9 @@ namespace YtStream.YT
                 {
                     using (var Body = Res.GetResponseStream())
                     {
-                        return await Tools.ReadStringAsync(Body);
+                        var Result = await Tools.ReadStringAsync(Body);
+                        Logger.LogWarning(Result);
+                        return Result;
                     }
                 }
             }
