@@ -1,6 +1,31 @@
 ﻿"use strict";
 
 var tools = {
+    q: document.querySelector.bind(document),
+    qa: document.querySelectorAll.bind(document),
+    id: {
+        fromVideo: function (id) {
+            id = String(id);
+            id = id.replace(/_/g, '/').replace(/-/g, '+') + "=";
+            if (id.length === 12) {
+                try {
+                    return atob(id).split('').map(v => ("0" + v.charCodeAt(0).toString(16)).match(/..$/)[0]).join("").toUpperCase();
+                }
+                catch (e) {
+                    return null;
+                }
+            }
+            return null;
+        },
+        fromCache: function (id) {
+            id = String(id);
+            if (!id.match(/^[\dA-F]{16}$/i)) {
+                return null;
+            }
+            id = btoa(id.match(/../g).map(v => String.fromCharCode(parseInt(v, 16))).join(""));
+            return id.replace(/\+/g, '-').replace(/\//g, '_').substr(0, 11);
+        }
+    },
     token: function () {
         var e = document.querySelector("[data-af-name]");
         if (e) {

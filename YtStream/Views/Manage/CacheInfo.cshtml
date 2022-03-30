@@ -15,7 +15,17 @@
     Files in the cache: @FileCount<br />
     Size of all files: @Tools.NiceSize(TotalSize)
 </p>
-<h1>Delete files</h1>
+<h1>Convert Ids</h1>
+<p>
+    This allows you to convert between a video id and the cached file name.
+    The conversion type is detected automatically.
+</p>
+<div class="form-inline">
+    <input type="text" id="tbConvert" class="form-control" />
+    &nbsp;
+    <input type="button" id="btnConvert" class="btn btn-primary" value="Convert" />
+</div>
+<h1>Delete expired files</h1>
 @if (Model.DefaultCacheLifetime > TimeSpan.Zero)
 {
     <form method="post" asp-action="CacheClean">
@@ -35,3 +45,7 @@ else
     </div>
     <input type="submit" class="btn btn-danger" value="Purge entire cache" />
 </form>
+
+@section Scripts{ 
+    <script type="text/javascript" src="~/js/cache.view.js" defer></script>
+}
