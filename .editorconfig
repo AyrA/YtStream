@@ -2,3 +2,12 @@
 
 # IDE0063: Use simple 'using' statement
 csharp_prefer_simple_using_statement = false
+
+# IDE0066: Convert switch statement to expression
+csharp_style_prefer_switch_expression = false
+
+# IDE0057: Use range operator
+csharp_style_prefer_range_operator = false
+
+# IDE0037: Use inferred member name
+dotnet_style_prefer_inferred_anonymous_type_member_names = false
