@@ -161,8 +161,10 @@ namespace YtStream.MP3
                     }
                     foreach (var Info in Streams)
                     {
-                        if(Info.IsUncut || !Skip)
+                        if (Info.IsUncut || !Skip)
                         {
+                            //Clear "private" bit
+                            Header[2] &= 0xFE;
                             try
                             {
                                 await Info.Stream.WriteAsync(Header, 0, Header.Length);
@@ -186,6 +188,105 @@ namespace YtStream.MP3
                     {
                         //Stream too short for next header
                         return;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Reads <paramref name="Source"/> as MP3
+        /// and sends it to <paramref name="Output"/>.
+        /// Sets or clears the "private" bit according to <paramref name="Mark"/>
+        /// </summary>
+        /// <param name="Source">Source MP3 stream</param>
+        /// <param name="Output">Target MP3 stream</param>
+        /// <param name="Mark">Set or clear private bit</param>
+        /// <returns>true if at least one audio chunk was sent, false otherwise</returns>
+        public static async Task<bool> SendAd(Stream Source, Stream Output, bool Mark)
+        {
+            if (Source == null)
+            {
+                throw new ArgumentNullException(nameof(Source));
+            }
+            if (Output == null)
+            {
+                throw new ArgumentNullException(nameof(Output));
+            }
+            bool sent = false;
+            byte[] Header = new byte[4];
+            MP3Header Parsed;
+            if (!await GuaranteedRead(Header, 0, Header.Length, Source))
+            {
+                //Stream not long enough for initial header material
+                return false;
+            }
+            while (true)
+            {
+                Parsed = null;
+                if (MP3Header.IsHeader(Header))
+                {
+                    try
+                    {
+                        Parsed = new MP3Header(Header);
+                    }
+                    catch
+                    {
+                        //NOOP
+                    }
+                }
+                if (Parsed == null)
+                {
+                    //On invalid header: go bytewise to the next until partial sync is detected
+                    do
+                    {
+                        int Next = Source.ReadByte();
+                        if (Next < 0) //EOF
+                        {
+                            //Stream end within invalid data
+                            return sent;
+                        }
+                        //If you want to output invalid bytes, send Header[0] to the target stream here
+
+                        Header[0] = Header[1];
+                        Header[1] = Header[2];
+                        Header[2] = Header[3];
+                        Header[3] = (byte)Next;
+                    } while (Header[0] != 0xFF); //This is faster and simpler than the IsHeader check
+                    continue;
+                }
+                else
+                {
+                    //Valid header at this point. Read audio portion
+                    byte[] Audio = new byte[Parsed.NumberOfBytes];
+                    if (!await GuaranteedRead(Audio, 0, Audio.Length, Source))
+                    {
+                        //Stream too short for audio data
+                        return sent;
+                    }
+                    //Clear or set "private" bit according to "Mark"
+                    if (Mark)
+                    {
+                        Header[2] |= 1;
+                    }
+                    else
+                    {
+                        Header[2] &= 0xFE;
+                    }
+                    try
+                    {
+                        await Output.WriteAsync(Header, 0, Header.Length);
+                        await Output.WriteAsync(Audio, 0, Audio.Length);
+                        sent = true;
+                    }
+                    catch
+                    {
+                        return sent;
+                    }
+                    //Read next header
+                    if (!await GuaranteedRead(Header, 0, Header.Length, Source))
+                    {
+                        //Stream too short for next header
+                        return sent;
                     }
                 }
             }

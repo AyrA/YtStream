@@ -56,6 +56,11 @@ namespace YtStream.MP3
         public bool IsProtected { get; }
 
         /// <summary>
+        /// Gets the status of the private bit
+        /// </summary>
+        public bool Private { get; }
+
+        /// <summary>
         /// Gets the frequency of the audio
         /// </summary>
         public Frequency AudioFrequency { get; }
@@ -88,6 +93,7 @@ namespace YtStream.MP3
             }
 
             IsProtected = (Data[1] & 1) == 0;
+            Private = (Data[2] & 1) == 1;
             AudioRate = (Bitrate)AudioRates[(Data[2] & 0b11110000) >> 4];
             AudioFrequency = (Frequency)AudioFrequencies[(Data[2] & 0b1100) >> 2];
             HasPadding = (Data[2] & 0b10) == 0b10;

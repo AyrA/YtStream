@@ -70,109 +70,78 @@ namespace YtStream.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> List(string id)
-        {
-            if (IsHead())
-            {
-                return Json(null);
-            }
-            if (!Tools.IsYoutubePlaylist(id))
-            {
-                return BadRequest("Supplied argument is not a valid playlist identifier");
-            }
-            var ytdl = new YoutubeDl(Settings.YoutubedlPath);
-            var PL = await ytdl.GetPlaylist(id);
-            if (PL == null || PL.Length == 0)
-            {
-                return NotFound("Playlist empty or does not exist");
-            }
-            Tools.SetExpiration(Response, TimeSpan.FromHours(1));
-            return Json(PL);
-        }
-
-        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Info(string id)
         {
-            if (IsHead())
+            if (string.IsNullOrEmpty(Settings.YtApiKey))
             {
-                return Json(null);
+                throw new InvalidOperationException("Youtube API key has not been configured");
             }
-            if (!Tools.IsYoutubeId(id))
+            if (Tools.IsYoutubePlaylist(id))
             {
-                return BadRequest("Supplied argument is not a valid video identifier");
+                if (IsHead())
+                {
+                    return Json(null);
+                }
+                var API = new YT.YtApi(Settings.YtApiKey);
+                var Result = await API.GetPlaylistInfoAsync(id);
+                if (Result == null)
+                {
+                    Tools.SetExpiration(Response, TimeSpan.FromDays(1));
+                    return NotFound();
+                }
+                Tools.SetExpiration(Response, TimeSpan.FromHours(1));
+                return Json(Result.Select(m => new
+                {
+                    title = m.Title,
+                    id = m.ResourceId.VideoId
+                }));
             }
-            var ytdl = new YoutubeDl(Settings.YoutubedlPath);
-            var Info = await ytdl.GetAudioDetails(id);
-            if (Info == null)
+            else if (Tools.IsYoutubeId(id))
             {
-                return NotFound("Video id does not exist or is restricted/private");
+                if (IsHead())
+                {
+                    return Json(null);
+                }
+                var API = new YT.YtApi(Settings.YtApiKey);
+                var Result = await API.GetVideoInfo(id);
+                if (Result == null)
+                {
+                    Tools.SetExpiration(Response, TimeSpan.FromDays(1));
+                    return NotFound();
+                }
+                Tools.SetExpiration(Response, TimeSpan.FromHours(1));
+                return Json(new
+                {
+                    title = Result.Title,
+                    id = id
+                });
             }
-            Tools.SetExpiration(Response, TimeSpan.FromHours(1));
-            //Do not forward the URL since it's unusable
-            Info.Url = null;
-            return Json(Info);
+            return BadRequest("Supplied argument is not a valid video or playlist identifier");
         }
 
-
-        public async Task<IActionResult> PlaylistOrder(string id)
+        public async Task<IActionResult> List(string id)
         {
-            if (id == null)
+#if DEBUG
+            if (Tools.IsYoutubePlaylist(id))
             {
-                return BadRequest("Missing argument");
+                if (IsHead())
+                {
+                    return Json(null);
+                }
+                var Downloader = new YoutubeDl(Settings.YoutubedlPath);
+                var items = await Downloader.GetPlaylist(id, Settings.MaxStreamIds);
+                Tools.SetExpiration(Response, TimeSpan.FromHours(1));
+                return Json(items);
             }
-            var ids = id.Split(',');
-            if (!ids.All(Tools.IsYoutubePlaylist))
-            {
-                return BadRequest("Supplied argument is not a valid playlist identifier");
-            }
-            if (IsHead())
-            {
-                Tools.SetAudioHeaders(Response);
-                return new EmptyResult();
-            }
-            string[] videoids;
-            try
-            {
-                videoids = await EnumeratePlaylists(ids);
-            }
-            catch (Exception ex)
-            {
-                return Error(ex);
-            }
-            return await PerformStream(videoids.ToArray(), ShouldPlayAds());
-        }
-
-        public async Task<IActionResult> PlaylistRandom(string id)
-        {
-            if (id == null)
-            {
-                return BadRequest("Missing argument");
-            }
-            var ids = id.Split(',');
-            if (!ids.All(Tools.IsYoutubePlaylist))
-            {
-                return BadRequest("Supplied argument is not a valid playlist identifier");
-            }
-            if (IsHead())
-            {
-                Tools.SetAudioHeaders(Response);
-                return new EmptyResult();
-            }
-            string[] videoids;
-            try
-            {
-                videoids = await EnumeratePlaylists(ids);
-            }
-            catch (Exception ex)
-            {
-                return Error(ex);
-            }
-            return await PerformStream(Tools.Shuffle(videoids), ShouldPlayAds());
+            return BadRequest("Supplied argument is not a valid video or playlist identifier");
+#else
+            return NotFound();
+#endif
         }
 
         public async Task<IActionResult> Order(string id)
         {
-            return await PerformStream(SplitIds(id), ShouldPlayAds());
+            return await PerformStream(await ExpandIdList(SplitIds(id)), ShouldPlayAds(), ShouldMarkAds());
         }
 
         public async Task<IActionResult> Ranges(string id)
@@ -194,10 +163,10 @@ namespace YtStream.Controllers
 
         public async Task<IActionResult> Random(string id)
         {
-            return await PerformStream(Tools.Shuffle(SplitIds(id)), ShouldPlayAds());
+            return await PerformStream(Tools.Shuffle(await ExpandIdList(SplitIds(id))), ShouldPlayAds(), ShouldMarkAds());
         }
 
-        private async Task<IActionResult> PerformStream(string[] ids, bool IncludeAds)
+        private async Task<IActionResult> PerformStream(string[] ids, bool IncludeAds, bool MarkAds)
         {
             var AdHandler = IncludeAds ? new Ads() : null;
             var CurrentAdType = AdType.Intro;
@@ -243,7 +212,7 @@ namespace YtStream.Controllers
                 {
                     _logger.LogWarning("Could not open {0} from cache. Will perform a direct YT stream", filename);
                     //If this doesn't works, the file is currently being written to.
-                    //In that case we directly go to youtube but do not create a cached file
+                    //In that case we directly go to youtube but do not create a cached file.
                     setCache = false;
                 }
                 if (CacheStream != null)
@@ -254,7 +223,10 @@ namespace YtStream.Controllers
                         {
                             _logger.LogInformation("Using cache for {0}", filename);
                             Tools.SetAudioHeaders(Response);
-                            await PlayAd(AdHandler, CurrentAdType);
+                            using (var S = GetAd(AdHandler, CurrentAdType))
+                            {
+                                await MP3Cut.SendAd(S, Response.Body, MarkAds);
+                            }
                             CurrentAdType = AdType.Inter;
                             await MP3Cut.CutMp3Async(ranges, CacheStream, OutputStreams);
                             await Response.Body.FlushAsync();
@@ -268,9 +240,11 @@ namespace YtStream.Controllers
                 }
                 //At this point we need to go live to youtube to get the file
                 var ytdl = new YoutubeDl(Settings.YoutubedlPath);
-                var converter = new Converter(Settings.FfmpegPath, await ytdl.GetUserAgent());
-                converter.AudioFrequency = Settings.AudioFrequency;
-                converter.AudioRate = Settings.AudioBitrate;
+                var converter = new Converter(Settings.FfmpegPath, await ytdl.GetUserAgent())
+                {
+                    AudioFrequency = Settings.AudioFrequency,
+                    AudioRate = Settings.AudioBitrate
+                };
                 var url = await ytdl.GetAudioUrl(ytid);
                 if (string.IsNullOrEmpty(url))
                 {
@@ -291,7 +265,10 @@ namespace YtStream.Controllers
                         _logger.LogInformation("Downloading {0} from YT and populate cache", ytid);
                         using (CacheStream)
                         {
-                            await PlayAd(AdHandler, CurrentAdType);
+                            using (var S = GetAd(AdHandler, CurrentAdType))
+                            {
+                                await MP3Cut.SendAd(S, Response.Body, MarkAds);
+                            }
                             CurrentAdType = AdType.Inter;
                             await MP3Cut.CutMp3Async(ranges, Mp3Data, OutputStreams);
                         }
@@ -299,7 +276,10 @@ namespace YtStream.Controllers
                     else
                     {
                         _logger.LogInformation("Downloading {0} from YT without populating cache", ytid);
-                        await PlayAd(AdHandler, CurrentAdType);
+                        using (var S = GetAd(AdHandler, CurrentAdType))
+                        {
+                            await MP3Cut.SendAd(S, Response.Body, MarkAds);
+                        }
                         CurrentAdType = AdType.Inter;
                         await MP3Cut.CutMp3Async(ranges, Mp3Data, OutputStreams);
                     }
@@ -322,19 +302,45 @@ namespace YtStream.Controllers
                 _logger.LogWarning("None of the ids yielded usable results");
                 return NotFound();
             }
-            await PlayAd(AdHandler, AdType.Outro);
+            using (var S = GetAd(AdHandler, AdType.Outro))
+            {
+                await MP3Cut.SendAd(S, Response.Body, MarkAds);
+            }
             _logger.LogInformation("Stream request complete");
 
             return new EmptyResult();
         }
 
-        private async Task<string[]> EnumeratePlaylists(IEnumerable<string> PlaylistIds, bool Skip = false)
+        private async Task<string[]> ExpandIdList(IEnumerable<string> IdList)
+        {
+            var ret = new List<string>();
+            //Treat zero as maximum
+            var max = Settings.MaxStreamIds > 0 ? Settings.MaxStreamIds : int.MaxValue;
+            foreach (var item in IdList)
+            {
+                if (Tools.IsYoutubePlaylist(item))
+                {
+                    ret.AddRange(await EnumeratePlaylists(new string[] { item }, true, max - ret.Count));
+                }
+                else
+                {
+                    ret.Add(item);
+                }
+                if (ret.Count >= max)
+                {
+                    break;
+                }
+            }
+            return ret.Take(max).ToArray();
+        }
+
+        private async Task<string[]> EnumeratePlaylists(IEnumerable<string> PlaylistIds, bool Skip = false, int MaxItems = 0)
         {
             var Ids = new List<string>();
             var ytdl = new YoutubeDl(Settings.YoutubedlPath);
             foreach (var id in PlaylistIds)
             {
-                var PL = await ytdl.GetPlaylist(id);
+                var PL = await ytdl.GetPlaylist(id, MaxItems);
                 if (PL == null || PL.Length == 0)
                 {
                     if (!Skip)
@@ -348,7 +354,8 @@ namespace YtStream.Controllers
             return Ids.ToArray();
         }
 
-        private async Task PlayAd(Ads Handler, AdType Type)
+        /*
+        private async Task PlayAd(Ads Handler, AdType Type, bool Mark)
         {
             if (Handler != null && !HttpContext.RequestAborted.IsCancellationRequested)
             {
@@ -366,9 +373,31 @@ namespace YtStream.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning("Failed to send ad. Reaso: {0}", ex.Message);
+                    _logger.LogWarning("Failed to send ad. Reason: {0}", ex.Message);
                 }
             }
+        }
+        //*/
+
+        private Stream GetAd(Ads Handler, AdType Type)
+        {
+            if (Handler != null && !HttpContext.RequestAborted.IsCancellationRequested)
+            {
+                try
+                {
+                    var Name = Handler.GetRandomAdName(Type);
+                    if (Name != null)
+                    {
+                        _logger.LogInformation("Playing ad: {0}", Name);
+                        return Handler.GetAd(Name);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Failed to send ad. Reason: {0}", ex.Message);
+                }
+            }
+            return Stream.Null;
         }
 
         /// <summary>
@@ -412,6 +441,11 @@ namespace YtStream.Controllers
         {
             return !CurrentUser.DisableAds &&
                 (Settings.AdminAds || !CurrentUser.Roles.HasFlag(Accounts.UserRoles.Administrator));
+        }
+
+        private bool ShouldMarkAds()
+        {
+            return Settings.MarkAds;
         }
     }
 }

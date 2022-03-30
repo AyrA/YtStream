@@ -76,9 +76,10 @@ else
             <input type="password" asp-for="YtApiKey" class="form-control"
                    value="@Model.YtApiKey" placeholder="YouTube API Key" />
             <i>
-                This is optional. If you don't set this then the URL builder will be unavailable.
+                This is optional. If you don't set this then the URL builder will be unavailable,
+                but streaming playlists will still work.
                 <a href="https://developers.google.com/youtube/v3/getting-started"
-                    target="_blank" rel="noreferrer nofollow noopener">Get an API key</a>
+                   target="_blank" rel="noreferrer nofollow noopener">Get an API key here</a>
             </i>
         </div>
     </div>
@@ -103,10 +104,13 @@ else
     <div class="row">
         <div class="col-md-4 form-group">
             <label>
-                Max cache time for MP3 files
+                Max cache time for MP3 files (in seconds)
             </label>
             <input type="number" min="0" asp-for="CacheMp3Lifetime" class="form-control" />
-            <i>Zero indicates to cache forever</i>
+            <i>
+                Zero indicates to cache forever.
+                For MP3, this is the preferred option because they never change on their own.
+            </i>
         </div>
     </div>
 
@@ -130,30 +134,75 @@ else
     <div class="row">
         <div class="col-md-4 form-group">
             <label>
-                Max cache time for SponsorBlock files
+                Max cache time for SponsorBlock files (in seconds)
             </label>
             <input type="number" min="0" asp-for="CacheSBlockLifetime" class="form-control" />
-            <i>Zero indicates to cache forever</i>
+            <i>
+                Zero indicates to cache forever.
+                Recommendation is between 1 (86400) and 7 (@(86400*7)) days.
+                Only successful responses with at least one range are cached.
+            </i>
         </div>
     </div>
 
     <h2>Streaming options</h2>
     <div class="row">
-        <div class="col-md-4 form-group">
+        <div class="col-md-6 form-group">
             <label>
                 <input type="checkbox" asp-for="RequireAccount" value="True" />
                 Require account to stream
-            </label>
+            </label><br />
+            <i>
+                If set, people need to either be logged in or use a streaming key.
+                If disabled, anyone can stream media from this server.
+            </i>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6 form-group">
+            <label>
+                <input type="checkbox" asp-for="MarkAds" value="True" />
+                Mark ads in MP3 header
+            </label><br />
+            <i>
+                This sets the "private" bit in the MP3 headers that contain ads.
+                This would allow an application to automatically mark them to the user,
+                or to silence/remove them.
+                If this option is unset, the "private" bit will be unset in all MP3 headers.
+            </i>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6 form-group">
+            <label>
+                <input type="checkbox" asp-for="AdminAds" value="True" />
+                Play ads for administrators too
+            </label><br />
+            <i>
+                Ads are normally not played when an administrator account streams media.
+                You can enable ads here. Most useful for testing purposes.
+            </i>
         </div>
     </div>
     <div class="row">
         <div class="col-md-4 form-group">
             <label>
-                <input type="checkbox" asp-for="AdminAds" value="True" />
-                Play ads for administrators too
+                Maximum number of video ids per stream
             </label>
+            <input type="number" min="0" max="1000" asp-for="MaxStreamIds" class="form-control" />
+            <i>
+                Zero indicates no limit.<br />
+                Once this limit is reached,
+                the system stops adding more ids to the stream list.
+                Regardless of this setting, there's a hard limit of
+                @YoutubeDl.MaxPlaylistEntries items per individual playlist.
+                This will stop most bad people from overloading the system
+                by trying to stream multiple huge playlists.
+                There is no exception for administrators either.
+            </i>
         </div>
     </div>
+
     <div class="row">
         <div class="col-md-4 form-group">
             <label>Bitrate</label>

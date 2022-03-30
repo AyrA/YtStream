@@ -59,6 +59,14 @@ namespace YtStream.Models
         public int MaxKeysPerUser { get; set; }
 
         /// <summary>
+        /// Maximum allowed ids for a single stream
+        /// </summary>
+        /// <remarks>
+        /// Playlists are counted in their expanded state
+        /// </remarks>
+        public int MaxStreamIds { get; set; }
+
+        /// <summary>
         /// API key for the YT API
         /// </summary>
         /// <remarks>
@@ -97,6 +105,15 @@ namespace YtStream.Models
         /// Enable or disable streaming ads for administrators
         /// </summary>
         public bool AdminAds { get; set; }
+        
+        /// <summary>
+        /// Sets whether ads should be marked
+        /// </summary>
+        /// <remarks>
+        /// This utilizes the "private" bit of the MP3 header.
+        /// It will be set for ads and unset for other audio
+        /// </remarks>
+        public bool MarkAds { get; set; }
 
         /// <summary>
         /// Audio bitrate for MP3 conversion
@@ -155,7 +172,11 @@ namespace YtStream.Models
             }
             if (MaxKeysPerUser < 0)
             {
-                Messages.Add(nameof(MaxKeysPerUser) + " cannot be negative");
+                Messages.Add(nameof(MaxKeysPerUser) + " cannot be negative. Use zero to impose no limit instead.");
+            }
+            if (MaxStreamIds < 0)
+            {
+                Messages.Add(nameof(MaxStreamIds) + " cannot be negative. Use zero to impose no limit instead.");
             }
             if (UseCache)
             {
