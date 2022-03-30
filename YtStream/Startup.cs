@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using System;
 using YtStream.Models;
 
 namespace YtStream
@@ -14,6 +16,8 @@ namespace YtStream
     /// </summary>
     public class Startup
     {
+        private static IServiceProvider provider;
+
         /// <summary>
         /// Base path of the application
         /// </summary>
@@ -38,6 +42,16 @@ namespace YtStream
                     Cache.SetBaseDirectory(Settings.CachePath);
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets a logger for the given type
+        /// </summary>
+        /// <typeparam name="T">Log type</typeparam>
+        /// <returns>Logger</returns>
+        public static ILogger<T> GetLogger<T>()
+        {
+            return provider.GetRequiredService<ILogger<T>>();
         }
 
         /// <summary>
@@ -87,7 +101,7 @@ namespace YtStream
             services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
             {
                 //Required for the BufferedStream to dispose correctly.
-                //No writes will actualy be performed because we always call FlushAsync() before disposing.
+                //No writes will actually be performed because we always call FlushAsync() before disposing.
                 options.AllowSynchronousIO = true;
             });
         }
@@ -100,6 +114,7 @@ namespace YtStream
         /// <param name="env">Hosting environment</param>
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            provider = app.ApplicationServices;
             //Detailed errors for devs
             if (env.IsDevelopment())
             {
