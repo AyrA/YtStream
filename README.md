@@ -124,6 +124,10 @@ You can change the follow settings:
 
 - Set the path of FFmpeg and Youtube-Dl
 
+### Youtube
+
+- Set the YouTube API key
+
 ### Cache
 
 - Disable the cache completely
@@ -139,7 +143,9 @@ You can change the follow settings:
 ### Streaming options
 
 - Disable anonymous streaming
+- Enable marking of ads
 - Configure ads for administrators
+- Limit number of video ids users can concatenate
 - Set audio bitrate and sampling frequency
 
 **CAUTION!** Read the warning below the bitrate and frequency settings.
