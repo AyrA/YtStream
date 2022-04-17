@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using YtStream.Models;
@@ -11,6 +12,20 @@ namespace YtStream.Controllers
         {
         }
 
+        public override void OnActionExecuting(ActionExecutingContext context)
+        {
+            var Action = ((string)RouteData.Values["action"]).ToLower();
+            if (Action == "builder")
+            {
+                if (Settings.RequireAccount && !User.Identity.IsAuthenticated)
+                {
+                    context.Result = RedirectToAction("Login", "Account", new { returnUrl = HttpContext.Request.Path });
+                    return;
+                }
+            }
+            base.OnActionExecuting(context);
+        }
+
         public IActionResult Index()
         {
             return View(Settings);
@@ -21,6 +36,10 @@ namespace YtStream.Controllers
             if (string.IsNullOrEmpty(Settings.YtApiKey))
             {
                 return NotFound();
+            }
+            if (Settings.RequireAccount && !User.Identity.IsAuthenticated)
+            {
+
             }
             return View();
         }

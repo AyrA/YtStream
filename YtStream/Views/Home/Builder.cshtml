@@ -2,9 +2,6 @@
     ViewData["Title"] = "Stream URL builder";
 }
 <h1>Stream URL builder</h1>
-<p>
-    This page will help you build a stream URL
-</p>
 <noscript>
     <div class="alert alert-danger">
         This page makes use of JavaScript,
@@ -14,32 +11,44 @@
         which tells you how to construct an URL manually.
     </div>
 </noscript>
+<p>
+    This page will help you build a stream URL.
+    You can enter an individual playlist or video id,
+    or you can also paste an entire YouTube URL to have it extracted.
+</p>
 
+<div class="form-inline form-group">
+    <input type="text" id="tbUrl" class="form-control" placeholder="Youtube URL" />&nbsp;
+    <input type="button" class="btn btn-primary" id="btnAddId" value="Add" />
+</div>
+
+<h2>URL</h2>
 <div class="row">
     <div class="col-md-6">
-        <h2>Add an id</h2>
-        <div class="form-inline">
-            <input type="url" id="tbUrl" class="form-control" placeholder="Youtube URL" />&nbsp;
-            <input type="button" class="btn btn-primary" id="btnAddId" value="Add" />
-        </div>
-    </div>
-    <div class="col-md-6">
-        <h2>Current list</h2>
-        <table class="table" id="idTable">
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Options</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td colspan="2"><i>List is empty</i></td>
-                </tr>
-            </tbody>
-        </table>
+        <label><input type="radio" name="rbPlayType" id="rbPlayTypeOrder" value="Order" checked /> Ordered</label>
+        <label><input type="radio" name="rbPlayType" id="rbPlayTypeRandom" value="Random" /> Random</label>
     </div>
 </div>
+<div class="row">
+    <div class="col-md-6">
+        <input type="text" readonly id="tbGeneratedUrl" class="form-control" />
+    </div>
+</div>
+
+<h2>Current list</h2>
+<table class="table" id="idTable">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Options</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td colspan="2"><i>List is empty</i></td>
+        </tr>
+    </tbody>
+</table>
 
 <div class="modal" tabindex="-1" id="idTypeModal">
     <div class="modal-dialog">
@@ -52,14 +61,55 @@
             </div>
             <div class="modal-body">
                 <p>
-                    The URL you supplied contains a video id as well as a playlist id.
-                    Please select which one you would like to add to your queue.
+                    The URL you supplied contains a playlist id.
+                    Please select how you would like to add it to your queue.
+                </p>
+                <b>Playlist</b>
+                <p>
+                    Adding the playlist keeps the URL short
+                    and makes the stream dynamically read it when needed.
+                </p>
+                <b>Individual videos</b>
+                <p>
+                    Adding the videos allows you to reorder and remove items from it now.
+                    The contents will not change when the playlist changes,
+                    and the URL is getting longer.
+                    For big playlists this can mean that the URL gets longer
+                    than your device can handle.
                 </p>
                 <div class="form-group">
-                    <input type="button" id="btnIdModalVideoId" class="btn btn-primary" data-value="video" value="Video id" data-dismiss="modal" />
+                    <input type="button" id="btnIdModalVideoId" class="btn btn-primary" data-value="video" value="Individual videos" data-dismiss="modal" />
                 </div>
                 <div class="form-group">
-                    <input type="button" id="btnIdModalPlId" class="btn btn-primary" data-value="pl" value="Playlist id" data-dismiss="modal" />
+                    <input type="button" id="btnIdModalPlId" class="btn btn-primary" data-value="playlist" value="Playlist" data-dismiss="modal" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" tabindex="-1" id="idSelectModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select type of id</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    The URL you supplied contains a video id and a playlist id.
+                    Please select which one you want to use.
+                </p>
+                <div class="form-group">
+                    <input type="button" id="btnSelectModalVideoId" class="btn btn-primary" data-value="video" value="Video" data-dismiss="modal" />
+                </div>
+                <div class="form-group">
+                    <input type="button" id="btnSelectModalPlId" class="btn btn-primary" data-value="playlist" value="Playlist" data-dismiss="modal" />
                 </div>
             </div>
             <div class="modal-footer">

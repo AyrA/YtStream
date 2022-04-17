@@ -4,7 +4,8 @@
     var list = [];
     var patterns = {
         videos: [
-            /(?:youtu\.be\/|youtube(?:-nocookie)?.com\/(?:v\/|e\/|.*u\/\w+\/|embed\/|.*v=))([\w\-]{10}[AEIMQUYcgkosw048])/i
+            /(?:youtu\.be\/|youtube(?:-nocookie)?.com\/(?:v\/|e\/|.*u\/\w+\/|embed\/|.*v=))([\w\-]{10}[AEIMQUYcgkosw048])/i,
+            /^\s*([\w\-]{10}[AEIMQUYcgkosw048])\s*$/
         ],
         playlists: [
             // /youtube.com\/playlist?list=(PL[\w\-]+)/i,
@@ -12,41 +13,91 @@
         ]
     };
 
+    var playFile = function (id) {
+        var p = q("audio");
+        if (p) {
+            p.pause();
+        }
+        else {
+            p = document.body.appendChild(document.createElement("audio"));
+            p.addEventListener("error", function () {
+                alert("Unable to play this file. Video is restricted, unavailable, or invalid.");
+            });
+        }
+        if (id) {
+            if (p.dataset.id !== id) {
+                p.dataset.id = id;
+                p.src = location.origin + "/Stream/Order/" + id;
+                p.play();
+            }
+            else {
+                delete p.dataset.id;
+            }
+        }
+        else {
+            delete p.dataset.id;
+        }
+    };
+
     var renderList = function () {
         var tbl = q("#idTable tbody");
         while (tbl.childNodes.length) {
             tbl.childNodes[0].remove();
         }
+        if (list.length === 0) {
+            var row = tbl.appendChild(document.createElement("tr"));
+            var cell = row.appendChild(document.createElement("td"));
+            cell.setAttribute("colspan", "2");
+            cell.appendChild(document.createElement("i")).textContent = "List is empty";
+        }
         list.forEach(function (v, i) {
             var row = document.createElement("tr");
-            row.appendChild(document.createElement("td")).textContent = v;
+
+            //Title and link
+            var videoCell = row.appendChild(document.createElement("td"));
+            var videoLink = videoCell.appendChild(document.createElement("a"));
+            videoLink.textContent = v.title;
+            videoLink.href = "/Stream/Order/" + v.id;
+            videoLink.setAttribute("target", "_blank");
+
+            //Buttons
             var btnCell = row.appendChild(document.createElement("td"));
+            var play = btnCell.appendChild(document.createElement("button"));
+            btnCell.insertAdjacentHTML("beforeend", "&nbsp;");
             var up = btnCell.appendChild(document.createElement("button"));
-            btnCell.appendChild(document.createTextNode(" "));
+            btnCell.insertAdjacentHTML("beforeend", "&nbsp;");
             var down = btnCell.appendChild(document.createElement("button"));
-            btnCell.appendChild(document.createTextNode(" "));
+            btnCell.insertAdjacentHTML("beforeend", "&nbsp;");
             var del = btnCell.appendChild(document.createElement("button"));
 
+            play.classList.add("btn", "btn-warning");
             up.classList.add("btn", "btn-success");
             down.classList.add("btn", "btn-success");
             del.classList.add("btn", "btn-danger");
 
+            play.innerHTML = "&#9654;";
             up.innerHTML = "&uarr;";
             down.innerHTML = "&darr;";
             del.textContent = "DEL";
 
+            play.dataset.id = v.id;
             up.dataset.id = down.dataset.id = del.dataset.id = i;
+            play.dataset.action = "play";
             up.dataset.action = "up";
             down.dataset.action = "down";
             del.dataset.action = "del";
             up.disabled = i === 0;
             down.disabled = i === list.length - 1;
 
+            //Commit row
             tbl.appendChild(row);
         });
         $(tbl).find("button").on("click", function () {
             var id = +this.dataset.id;
             switch (this.dataset.action) {
+                case "play":
+                    playFile(this.dataset.id);
+                    break;
                 case "up":
                     //Remove item and insert at previous location
                     list.splice(id - 1, 0, list.splice(id, 1)[0]);
@@ -62,6 +113,13 @@
             }
             renderList();
         });
+        q("#tbGeneratedUrl").disabled = list.length === 0;
+        if (list.length > 0) {
+            var type = q("#rbPlayTypeOrder").checked ? "Order" : "Random";
+            q("#tbGeneratedUrl").value = location.origin + "/Stream/" + type + "/" + list.map(v => v.id).join(",");
+        } else {
+            q("#tbGeneratedUrl").value = "Please add at least one video";
+        }
     };
 
     var askIdType = function () {
@@ -69,17 +127,23 @@
         mod.modal("show");
         delete mod[0].dataset.result;
         return new Promise(function (a, r) {
-            var cb = function (e) {
-                mod[0].dataset.result = this.dataset.value;
-                this.removeEventListener("click", cb);
-            };
             var hidden = function () {
                 mod.off("hidden.bs.modal", hidden);
                 a(mod[0].dataset.result);
             };
-            q("#btnIdModalVideoId").addEventListener("click", cb);
-            q("#btnIdModalPlId").addEventListener("click", cb);
-            q("#idTypeModal .modal-footer button").addEventListener("click", cb);
+            mod.on("hidden.bs.modal", hidden);
+        });
+    };
+
+    var askVideoVsPl = function () {
+        var mod = $("#idSelectModal");
+        mod.modal("show");
+        delete mod[0].dataset.result;
+        return new Promise(function (a, r) {
+            var hidden = function () {
+                mod.off("hidden.bs.modal", hidden);
+                a(mod[0].dataset.result);
+            };
             mod.on("hidden.bs.modal", hidden);
         });
     };
@@ -93,6 +157,15 @@
         }
     };
 
+    var getVideo = function (id) {
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].id === id) {
+                return list[i];
+            }
+        }
+        return null;
+    };
+
     var addId = async function () {
         var field = q("#tbUrl");
         var ids = {
@@ -103,43 +176,80 @@
             alert("Cannot find video or playlist id in this link");
         }
         else {
-            if (ids.video && ids.playlist) {
-                var result = await askIdType();
-                switch (result) {
+            if (ids.playlist && ids.video) {
+                switch (await askVideoVsPl()) {
                     case "video":
-                        ids.playlist = null;
+                        delete ids.playlist;
                         break;
-                    case "pl":
-                        ids.video = null;
+                    case "playlist":
+                        delete ids.video;
                         break;
                     default:
                         return;
                 }
             }
-            if (ids.video) {
-                list.push(ids.video);
+            if (ids.playlist) {
+                var type = await askIdType();
+                if (type === "playlist") {
+                    list.push({ title: "playlist " + ids.playlist, id: ids.playlist, pl: true });
+                }
+                else if (type === "video") {
+                    try {
+                        list = list.concat(await tools.post("/Api/Info/" + ids.playlist));
+                    } catch (e) {
+                        alert(e.message);
+                    }
+                }
+                else {
+                    //NOOP
+                }
             }
-            else {
+            else if (ids.video) {
+                var item = getVideo(ids.video);
+                if (item) {
+
+                }
                 try {
-                    list = list.concat(await tools.post("/Stream/List/" + ids.playlist));
+                    list.push(await tools.post("/Api/Info/" + ids.video));
                 } catch (e) {
                     alert(e.message);
                 }
-                //TODO: Add playlist
-                //TODO: Ask user if he wants the playlist or the playlist items
             }
             renderList();
         }
         console.log(ids);
         field.select();
     };
+    //Handle enter key
     q("#tbUrl").addEventListener("keydown", function (e) {
         if (e.keyCode === 13) {
             addId();
         }
     });
+    //Add id button
     q("#btnAddId").addEventListener("click", addId);
-    //DEBUG
-    list = "ABCDEFGHIJKLMN".split("");
+
+    //Set up modal events (playlist type)
+    var modalTypeBtn = function () {
+        q("#idTypeModal").dataset.result = this.dataset.value || "";
+    };
+    q("#btnIdModalVideoId").addEventListener("click", modalTypeBtn);
+    q("#btnIdModalPlId").addEventListener("click", modalTypeBtn);
+    q("#idTypeModal .modal-footer button").addEventListener("click", modalTypeBtn);
+
+    //Set up modal events (id type)
+    var modalSelectBtn = function () {
+        q("#idSelectModal").dataset.result = this.dataset.value || "";
+    };
+    q("#btnSelectModalVideoId").addEventListener("click", modalSelectBtn);
+    q("#btnSelectModalPlId").addEventListener("click", modalSelectBtn);
+    q("#idSelectModal .modal-footer button").addEventListener("click", modalSelectBtn);
+
+    //Event for URL type change
+    q("#rbPlayTypeOrder").addEventListener("change", renderList);
+    //Add label click events because JS is dumb
+    q("#rbPlayTypeOrder").parentNode.addEventListener("click", renderList);
+    q("#rbPlayTypeRandom").parentNode.addEventListener("click", renderList);
+
     renderList();
-})(document.querySelector.bind(document));
+})(tools.q);
