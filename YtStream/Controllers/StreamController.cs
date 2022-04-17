@@ -69,96 +69,9 @@ namespace YtStream.Controllers
             return View();
         }
 
-        [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Info(string id)
-        {
-            if (string.IsNullOrEmpty(Settings.YtApiKey))
-            {
-                throw new InvalidOperationException("Youtube API key has not been configured");
-            }
-            if (Tools.IsYoutubePlaylist(id))
-            {
-                if (IsHead())
-                {
-                    return Json(null);
-                }
-                var API = new YT.YtApi(Settings.YtApiKey);
-                var Result = await API.GetPlaylistInfoAsync(id);
-                if (Result == null)
-                {
-                    Tools.SetExpiration(Response, TimeSpan.FromDays(1));
-                    return NotFound();
-                }
-                Tools.SetExpiration(Response, TimeSpan.FromHours(1));
-                return Json(Result.Select(m => new
-                {
-                    title = m.Title,
-                    id = m.ResourceId.VideoId
-                }));
-            }
-            else if (Tools.IsYoutubeId(id))
-            {
-                if (IsHead())
-                {
-                    return Json(null);
-                }
-                var API = new YT.YtApi(Settings.YtApiKey);
-                var Result = await API.GetVideoInfo(id);
-                if (Result == null)
-                {
-                    Tools.SetExpiration(Response, TimeSpan.FromDays(1));
-                    return NotFound();
-                }
-                Tools.SetExpiration(Response, TimeSpan.FromHours(1));
-                return Json(new
-                {
-                    title = Result.Title,
-                    id = id
-                });
-            }
-            return BadRequest("Supplied argument is not a valid video or playlist identifier");
-        }
-
-        public async Task<IActionResult> List(string id)
-        {
-#if DEBUG
-            if (Tools.IsYoutubePlaylist(id))
-            {
-                if (IsHead())
-                {
-                    return Json(null);
-                }
-                var Downloader = new YoutubeDl(Settings.YoutubedlPath);
-                var items = await Downloader.GetPlaylist(id, Settings.MaxStreamIds);
-                Tools.SetExpiration(Response, TimeSpan.FromHours(1));
-                return Json(items);
-            }
-            return BadRequest("Supplied argument is not a valid video or playlist identifier");
-#else
-            return NotFound();
-#endif
-        }
-
         public async Task<IActionResult> Order(string id)
         {
             return await PerformStream(await ExpandIdList(SplitIds(id)), ShouldPlayAds(), ShouldMarkAds());
-        }
-
-        public async Task<IActionResult> Ranges(string id)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                return NotFound("No id specified");
-            }
-            if (Tools.IsYoutubeId(id))
-            {
-                if (IsHead())
-                {
-                    return Json(null);
-                }
-                return Json(await GetRanges(id));
-            }
-            return BadRequest("Invalid youtube id");
         }
 
         public async Task<IActionResult> Random(string id)
@@ -201,7 +114,7 @@ namespace YtStream.Controllers
                 OutputStreams.AddStream(new MP3CutTargetStreamInfo(Response.Body, false, true, true));
                 var setCache = true;
                 var filename = Tools.GetIdName(ytid) + ".mp3";
-                var ranges = await GetRanges(ytid);
+                var ranges = await SponsorBlockCache.GetRangesAsync(ytid, Settings);
                 _logger.LogInformation("{0} has {1} ranges", filename, ranges.Length);
                 FileStream CacheStream = null;
                 try
@@ -354,31 +267,6 @@ namespace YtStream.Controllers
             return Ids.ToArray();
         }
 
-        /*
-        private async Task PlayAd(Ads Handler, AdType Type, bool Mark)
-        {
-            if (Handler != null && !HttpContext.RequestAborted.IsCancellationRequested)
-            {
-                try
-                {
-                    var Name = Handler.GetRandomAdName(Type);
-                    if (Name != null)
-                    {
-                        using (var FS = Handler.GetAd(Name))
-                        {
-                            _logger.LogInformation("Playing ad: {0}", Name);
-                            await FS.CopyToAsync(Response.Body);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning("Failed to send ad. Reason: {0}", ex.Message);
-                }
-            }
-        }
-        //*/
-
         private Stream GetAd(Ads Handler, AdType Type)
         {
             if (Handler != null && !HttpContext.RequestAborted.IsCancellationRequested)
@@ -398,43 +286,6 @@ namespace YtStream.Controllers
                 }
             }
             return Stream.Null;
-        }
-
-        /// <summary>
-        /// Gets time ranges for the given youtube id and utilizes cache where possible.
-        /// </summary>
-        /// <param name="ytid">Youtube id</param>
-        /// <returns>time ranges</returns>
-        private async Task<TimeRange[]> GetRanges(string ytid)
-        {
-            var C = Cache.GetHandler(Cache.CacheType.SponsorBlock, Settings.CacheSBlockLifetime);
-            var FN = Tools.GetIdName(ytid) + ".json";
-            var FS = C.OpenIfNotStale(FN);
-            if (FS != null)
-            {
-                var Json = await Tools.ReadStringAsync(FS);
-                var Segments = Json.FromJson<TimeRange[]>();
-                if (Segments != null)
-                {
-                    return Segments;
-                }
-                //Cache problem. Get live data
-            }
-            var Ranges = await SponsorBlock.GetRangesAsync(ytid);
-            if (Ranges != null)
-            {
-                using (var Cache = C.WriteFile(FN))
-                {
-                    await Tools.WriteStringAsync(Cache, Ranges.ToJson());
-                }
-                return Ranges;
-            }
-            return new TimeRange[0];
-        }
-
-        private bool IsHead()
-        {
-            return HttpContext.Request.Method.ToUpper() == "HEAD";
         }
 
         private bool ShouldPlayAds()
