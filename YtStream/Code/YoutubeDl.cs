@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -42,6 +43,7 @@ namespace YtStream
         /// Cached version
         /// </summary>
         private string version = null;
+        private ILogger Logger;
 
         /// <summary>
         /// Creates a new instance
@@ -59,6 +61,7 @@ namespace YtStream
                 throw new IOException("File not found");
             }
             executable = Executable;
+            Logger = Startup.GetLogger<YoutubeDl>();
         }
 
         /// <summary>
@@ -190,7 +193,15 @@ namespace YtStream
         /// <remarks>Internally calls <see cref="GetAudioDetails(string)"/>.Url</remarks>
         public async Task<string> GetAudioUrl(string Id)
         {
-            return (await GetAudioDetails(Id)).Url;
+            try
+            {
+                return (await GetAudioDetails(Id)).Url;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning("Failed to obtain YT stream url", ex.Message);
+            }
+            return null;
         }
 
         /// <summary>

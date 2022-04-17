@@ -109,7 +109,6 @@ namespace YtStream.YT
 
         private static async Task<string> GetJson(Uri Url)
         {
-            ILogger Logger = Startup.GetLogger<YtApi>();
             var Req = WebRequest.CreateHttp(Url);
             Req.Accept = "application/json";
             Req.UserAgent = "YtStream +https://github.com/AyrA/YtStream";
@@ -121,7 +120,6 @@ namespace YtStream.YT
                     using (var Body = Res.GetResponseStream())
                     {
                         var Result = await Tools.ReadStringAsync(Body);
-                        Logger.LogDebug(Result);
                         return Result;
                     }
                 }
@@ -134,6 +132,7 @@ namespace YtStream.YT
                     using (var Body = Res.GetResponseStream())
                     {
                         var Result = await Tools.ReadStringAsync(Body);
+                        ILogger Logger = Startup.GetLogger<YtApi>();
                         Logger.LogWarning(Result);
                         return Result;
                     }

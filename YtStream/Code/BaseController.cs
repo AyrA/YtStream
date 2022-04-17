@@ -116,6 +116,11 @@ namespace YtStream
             return RedirectToAction(Action, Controller, RouteData);
         }
 
+        internal bool IsHead()
+        {
+            return HttpContext.Request.Method.ToUpper() == "HEAD";
+        }
+
         /// <summary>
         /// Generates an error view with the supplied exception
         /// </summary>
