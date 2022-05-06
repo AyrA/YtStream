@@ -11,14 +11,58 @@ written in ASP.NET Core.
 
 ## Notable features
 
-- Live streaming of YT content. Data is sent while it's downloaded to the server
-- Automatic trimming of non-music sections using SBlock
-- User can concatenate multiple ids into a single audio file
-- Supports playback of entire youtube playlists
-- Fully configurable (cache duration, audio quality, etc)
-- Restrictions for streaming
-- Insertion of custom intermissions (Ads. It's ads)
-- Can work on readonly file systems (with limitations)
+This application is a lot more than a simple MP3 downloader
+
+### Live streaming
+
+Data is sent to the client and to the cache (if enabled) at the same time as it's downloaded and converted.
+Because of that, streaming will start as soon as the first MP3 fragment (approx 20-30 ms) arrives.
+
+### Live stream simulation
+
+Data is normally sent to the client as fast as possible.
+While this is great for downloading, it's not so great for streaming.
+It can overwhelm webradio devices, or it can cause web browsers to cache so much audio
+that they don't request new data for a long time, causing the server to close the connection.
+
+YtStream supports a setting that delivers data with the exact speed needed to play it back,
+with an added 3 second buffer.
+
+### Removal of non-music sections
+
+By using SBlock, non-music sections that have been marked as such by the community will be automatically removed.
+The section is only removed from the file that's streamed to the client and not the cached copy.
+This ensures that changes to the SBlock ranges can be accounted for without having to download the file again.
+
+This application only removes section marked as non-music.
+It will not remove other sections such as end cards because this tends to cut off the music.
+
+### Stream concatenation
+
+Users can concatenate multiple ids into a single audio file.
+The resulting file is joined in a seamless manner
+and doesn't requires any special streaming capabilities by the user.
+
+### Playlist support
+
+This application supports playback of entire youtube playlists.
+Playlist ids and video ids can be mixed together.
+
+### Fully configurable from your browser
+
+All settings can be fully accessed and changed from your browser.
+No manual editing of your configuration is necessary.
+
+### Restrictions for streaming
+
+You can restrict streaming to registered users only.
+You can also disable registration, essentially creating a private streaming platform.
+
+### Intermissions
+
+Custom intermissions can be inserted before the first file, between files, and after the last file.
+
+This can be used for ads or other purposes.
 
 ## Additional licenses
 
@@ -31,7 +75,7 @@ The gist of it is that you cannot run YtStream as a commercial service under thi
 ## The AGPL
 
 YtStream itself uses the AGPL which considers SaaS/hosting a form of publishing.
-You must provide unobstructed and ovious access to the YtStream source
+You must provide unobstructed and obvious access to the YtStream source
 including all modifications you made.
 
 For the exact details, see the `LICENSE` file.
@@ -43,7 +87,7 @@ For the exact details, see the `LICENSE` file.
 3. Run `YtStream.exe`
 4. Go to http://localhost:5000
 
-Note: Commits are generally only pushed to master after testing them.
+Note: Commits are generally only pushed to master after building them locally.
 This means you should be able to download and build this project from source as well.
 
 ### File system layout
@@ -91,7 +135,7 @@ You can also listen for TLS connections, dynamic ports, and unix sockets.
 [See details here](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/endpoints)
 
 This type of application is normally run behind a reverse proxy.
-There is nothing that makes it inherently unsafe to directly run it on port 80 or 443.
+There is nothing that makes it inherently unsafe to directly run it on port 80 or 443 though.
 
 Apache and Nginx are popular web servers that support reverse proxying.
 Apache also runs on Windows.
@@ -126,7 +170,7 @@ You can change the follow settings:
 
 ### Youtube
 
-- Set the YouTube API key
+- Set the YouTube API key (optional)
 
 ### Cache
 
@@ -142,13 +186,14 @@ You can change the follow settings:
 
 ### Streaming options
 
+- Simulate real live-stream
 - Disable anonymous streaming
 - Enable marking of ads
 - Configure ads for administrators
 - Limit number of video ids users can concatenate
 - Set audio bitrate and sampling frequency
 
-**CAUTION!** Read the warning below the bitrate and frequency settings.
+**CAUTION!** Read the warning below the bitrate and frequency settings before changing them.
 
 ### Accounts
 
@@ -172,7 +217,7 @@ and it will not permit unlocking until the issue is fixed.
 Accounts can be added, edited, deleted, enabled and disabled.
 
 Note: It's not possible to modify the currently logged in account.
-Editing the current account can be done by clicking on the user name in the top right.
+Editing the current account can be done by clicking on the user name in the top right instead.
 
 Actions that would make unusable or remove the last active administrator account are not permitted.
 
@@ -207,9 +252,11 @@ the next time the user makes a request to this server.
 ## Cache
 
 The MP3 file cache can be inspected and purged.
-You can either delete expired files only (if expiration is enabled that is),
+You can either delete only expired files (if expiration is enabled that is),
 or delete all files unconditionally.
 Purging the cache is useful when you change the audio bitrate or sample frequency settings.
+
+A tool to convert between youtube video ids and cache file ids is provided too.
 
 ## Backup
 
@@ -233,27 +280,33 @@ A processed ad can be configured for one or more of the following categories:
 If multiple ads are configured for the same category,
 one will be picked at random every time an ad is requested from the system.
 
+The system doesn't counts how often an ad has been played,
+and it doesn't ensures that all ads are played equal amounts.
+
 ### Uploading
 
 You currently cannot rename ad files.
 Be sure to name your file properly before uploading it.
 If a name conflict happens, a counter will be added to the current file name.
 The upload limit is 50 MB per request.
-You can upload as many files at once as you want to.
-The dialog supports multi select of files.
+Within the request limit you can upload as many files at once as you want to.
+The file dialog supports multi select of files.
 
 ### Audio format
 
-Ads can be in any audio format that FFmpeg understands.
-The ad is only converted if it's not in the configured audio format.
+Ads can be in any format that FFmpeg understands (most video and audio formats).
+FFmpeg will pick the first (or primary) audio channel and convert that to MP3.
+Other information such as video channels or metadata is discarded.
+
+The ad is only converted if it's not in the configured MP3 format.
 An ad that is already an MP3 with the same bitrate and frequency as you configured,
-it will simply be filtered and copied to the cache without using FFmpeg.
+will simply be filtered and copied to the cache without using FFmpeg.
 
 ### Adding and removing
 
 An ad can be added to the respective category via the drop down at the end of the list.
 Ads can be removed again by clicking the "Remove" button.
-Removing an ad from all categories will not delete it.
+Removing an ad from all categories will not delete the physical file.
 
 ### Deleting
 
@@ -262,3 +315,5 @@ Deleting an ad will automatically remove it from all categories too.
 ### Ad blocking
 
 Ads are transparently injected into the stream and are therefore unblockable.
+
+You can enable a setting that marks ads using the "private" bit in the MP3 header.
