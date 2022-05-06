@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using YtStream.MP3;
 
@@ -297,5 +298,54 @@ namespace YtStream
         {
             return $"-ab {(int)AudioRate}k -vn -ar {(int)AudioFrequency} -acodec mp3 -f mp3 -y pipe:1";
         }
+
+        public static async Task<string> GetVersion(string executable)
+        {
+            var PSI = new ProcessStartInfo(executable, "-version")
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
+            using (var P = Process.Start(PSI))
+            {
+                var Reader = P.StandardOutput.ReadToEndAsync();
+                var Sleeper = Task.Delay(5000);
+                if ((await Task.WhenAny(Reader, Sleeper)) is Task<string> Result)
+                {
+                    var Output = Result.Result.Trim();
+                    var M = Regex.Match(Output, @"ffmpeg version (\S+)", RegexOptions.IgnoreCase);
+                    if (M.Success)
+                    {
+                        return M.Groups[1].Value;
+                    }
+                    throw new Exception($"Did not get version output on {P.StartInfo.FileName} {P.StartInfo.Arguments}");
+                }
+                else
+                {
+                    try
+                    {
+                        P.Kill();
+                    }
+                    catch(Exception ex)
+                    {
+                        throw new Exception("Application did not exit but killing also did not work", ex);
+                    }
+                }
+            }
+            throw new Exception("Application did not exit in time and was forcibly terminated");
+        }
     }
 }
+/*
+ ffmpeg version 2021-01-20-git-2021dbe1d6-full_build-www.gyan.dev Copyright (c) 2000-2021 the FFmpeg developers
+built with gcc 10.2.0 (Rev6, Built by MSYS2 project)
+configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-fontconfig --enable-iconv --enable-gnutls --enable-libxml2 --enable-gmp --enable-lzma --enable-libsnappy --enable-zlib --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-libbluray --enable-libcaca --enable-sdl2 --enable-libdav1d --enable-libzvbi --enable-librav1e --enable-libsvtav1 --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libaom --enable-libopenjpeg --enable-libvpx --enable-libass --enable-frei0r --enable-libfreetype --enable-libfribidi --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-ffnvcodec --enable-nvdec --enable-nvenc --enable-d3d11va --enable-dxva2 --enable-libmfx --enable-libglslang --enable-vulkan --enable-opencl --enable-libcdio --enable-libgme --enable-libmodplug --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libshine --enable-libtheora --enable-libtwolame --enable-libvo-amrwbenc --enable-libilbc --enable-libgsm --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-ladspa --enable-libbs2b --enable-libflite --enable-libmysofa --enable-librubberband --enable-libsoxr --enable-chromaprint
+libavutil      56. 63.101 / 56. 63.101
+libavcodec     58.117.101 / 58.117.101
+libavformat    58. 65.101 / 58. 65.101
+libavdevice    58. 11.103 / 58. 11.103
+libavfilter     7. 96.100 /  7. 96.100
+libswscale      5.  8.100 /  5.  8.100
+libswresample   3.  8.100 /  3.  8.100
+libpostproc    55.  8.100 / 55.  8.100
+*/

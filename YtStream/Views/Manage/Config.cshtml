@@ -2,6 +2,8 @@
 @{
     ViewData["Title"] = "Settings";
     var ErrMsg = (string)ViewBag.ErrorMessage;
+    string FfmpegVersion = null;
+    string ytdlVersion = null;
     if (Model == null)
     {
         try
@@ -15,6 +17,28 @@
             ErrMsg = ex.Message;
         }
     }
+    else
+    {
+        try
+        {
+            FfmpegVersion = await Converter.GetVersion(Model.FfmpegPath);
+        }
+        catch (Exception ex)
+        {
+            ErrMsg = ex.Message;
+            FfmpegVersion = "None";
+        }
+        try
+        {
+            ytdlVersion = await new YtStream.YtDl.YoutubeDl(Model.YoutubedlPath).GetVersion();
+        }
+        catch (Exception ex)
+        {
+            ErrMsg = ex.Message;
+            ytdlVersion = "None";
+        }
+    }
+
 }
 <h1>Settings</h1>
 
@@ -56,14 +80,16 @@ else
                 FFmpeg path
             </label>
             <input type="text" asp-for="FfmpegPath" class="form-control" />
-            <a href="https://ffmpeg.org/download.html" target="_blank" rel="noreferrer nofollow noopener">Download</a>
+            <a href="https://ffmpeg.org/download.html" target="_blank" rel="noreferrer nofollow noopener">Download</a><br />
+            Selected version: <i>@FfmpegVersion</i>
         </div>
         <div class="col-md-6 form-group">
             <label>
                 Youtube-dl path
             </label>
             <input type="text" asp-for="YoutubedlPath" class="form-control" />
-            <a href="https://youtube-dl.org/" target="_blank" rel="noreferrer nofollow noopener">Download</a>
+            <a href="https://youtube-dl.org/" target="_blank" rel="noreferrer nofollow noopener">Download</a><br />
+            Selected version: <i>@ytdlVersion</i>
         </div>
     </div>
 
