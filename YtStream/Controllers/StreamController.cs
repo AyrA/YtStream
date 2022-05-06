@@ -102,17 +102,28 @@ namespace YtStream.Controllers
             }
             var MP3 = Cache.GetHandler(Cache.CacheType.MP3, Settings.CacheMp3Lifetime);
             var skipped = 0;
+            MP3CutTargetStreamConfig OutputStreams = null;
+            var CToken = HttpContext.RequestAborted;
+            CToken.Register(delegate ()
+            {
+                _logger.LogInformation("Connection gone");
+                var os = OutputStreams;
+                if (os != null)
+                {
+                    os.SetTimeout(false);
+                }
+            });
             _logger.LogInformation("Preparing response for {0} ids", ids.Length);
 
             foreach (var ytid in ids)
             {
                 //Stop streaming if the client is gone or the application has been locked
-                if (Startup.Locked || HttpContext.RequestAborted.IsCancellationRequested)
+                if (Startup.Locked || CToken.IsCancellationRequested)
                 {
                     break;
                 }
-                var OutputStreams = new MP3CutTargetStreamConfig();
-                OutputStreams.AddStream(new MP3CutTargetStreamInfo(Response.Body, false, true, true, true));
+                OutputStreams = new MP3CutTargetStreamConfig();
+                OutputStreams.AddStream(new MP3CutTargetStreamInfo(Response.Body, false, true, true, Settings.SimulateRealStream));
                 var setCache = true;
                 var filename = Tools.GetIdName(ytid) + ".mp3";
                 var ranges = await SponsorBlockCache.GetRangesAsync(ytid, Settings);
@@ -164,7 +175,7 @@ namespace YtStream.Controllers
                 {
                     url = await ytdl.GetAudioUrl(ytid);
                 }
-                catch(YoutubeDlException ex)
+                catch (YoutubeDlException ex)
                 {
                     //If this is the only id, return an error to the client.
                     //We can't do this otherwise.
@@ -203,6 +214,11 @@ namespace YtStream.Controllers
                             }
                             CurrentAdType = AdType.Inter;
                             await MP3Cut.CutMp3Async(ranges, Mp3Data, OutputStreams);
+                            if (CacheStream.Position == 0)
+                            {
+                                _logger.LogError("Error downloading {0} from YT. Output is empty", url);
+                                return Error(new Exception($"Error downloading {url} from YT. Output is empty"));
+                            }
                         }
                     }
                     else

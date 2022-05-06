@@ -84,68 +84,82 @@ else
         </div>
     </div>
 
-    <h2>Cache</h2>
     <div class="row">
-        <div class="col-md-4 form-group">
-            <label>
-                <input type="checkbox" asp-for="UseCache" value="True" />
-                Use cache
-            </label>
+        <div class="col-md-6">
+            <h2>Cache</h2>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" asp-for="UseCache" value="True" />
+                    Use cache
+                </label>
+            </div>
+            <div class="form-group">
+                <label>
+                    Cache path
+                </label>
+                <input type="text" asp-for="CachePath" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label>
+                    Max cache time for MP3 files (in seconds)
+                </label>
+                <input type="number" min="0" asp-for="CacheMp3Lifetime" class="form-control" />
+                <i>
+                    Zero indicates to cache forever.
+                    For MP3, this is the preferred option because they never change on their own.
+                </i>
+            </div>
         </div>
-    </div>
-    <div class="row">
-        <div class="col-md-6 form-group">
-            <label>
-                Cache path
-            </label>
-            <input type="text" asp-for="CachePath" class="form-control" />
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-4 form-group">
-            <label>
-                Max cache time for MP3 files (in seconds)
-            </label>
-            <input type="number" min="0" asp-for="CacheMp3Lifetime" class="form-control" />
-            <i>
-                Zero indicates to cache forever.
-                For MP3, this is the preferred option because they never change on their own.
-            </i>
-        </div>
-    </div>
-
-    <h2>SponsorBlock</h2>
-    <div class="row">
-        <div class="col-md-4 form-group">
-            <label>
-                <input type="checkbox" asp-for="UseSponsorBlock" value="True" />
-                Use SponsorBlock
-            </label>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-4 form-group">
-            <label>
-                SponsorBlock server
-            </label>
-            <input type="text" asp-for="SponsorBlockServer" class="form-control" />
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-4 form-group">
-            <label>
-                Max cache time for SponsorBlock files (in seconds)
-            </label>
-            <input type="number" min="0" asp-for="CacheSBlockLifetime" class="form-control" />
-            <i>
-                Zero indicates to cache forever.
-                Recommendation is between 1 (86400) and 7 (@(86400*7)) days.
-                Only successful responses with at least one range are cached.
-            </i>
+        <div class="col-md-6">
+            <h2>SponsorBlock</h2>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" asp-for="UseSponsorBlock" value="True" />
+                    Use SponsorBlock
+                </label>
+            </div>
+            <div class="form-group">
+                <label>
+                    SponsorBlock server
+                </label>
+                <input type="text" asp-for="SponsorBlockServer" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label>
+                    Max cache time for SponsorBlock files (in seconds)
+                </label>
+                <input type="number" min="0" asp-for="CacheSBlockLifetime" class="form-control" />
+                <i>
+                    Zero indicates to cache forever.
+                    Recommendation is between 1 (86400) and 7 (@(86400*7)) days.
+                    Only successful responses with at least one range are cached.
+                </i>
+            </div>
         </div>
     </div>
 
     <h2>Streaming options</h2>
+    <div class="row">
+        <div class="col-md-6">
+            <label>
+                <input type="checkbox" asp-for="SimulateRealStream" value="True" />
+                Simulate live streaming speed
+            </label>
+        </div>
+    </div>
+    <p class="auto-help">
+        <i>
+            If set, the application will send the data as fast as it's consumed for streaming
+            (with a 3 second extra buffer).
+            If you disable this, data is sent as fast as possible.
+            If the primary use case for this installation is to live stream content,
+            you want to leave this enabled to avoid the connection being closed by the server
+            if your application stops consuming data for a long time when it has built up a large buffer.
+            As of this writing, firefox is such a candidate.
+            If the main purpose is for downloading,
+            disable this to get faster speeds.
+        </i>
+    </p>
     <div class="row">
         <div class="col-md-6 form-group">
             <label>
@@ -159,19 +173,21 @@ else
         </div>
     </div>
     <div class="row">
-        <div class="col-md-6 form-group">
+        <div class="col-md-6">
             <label>
                 <input type="checkbox" asp-for="MarkAds" value="True" />
                 Mark ads in MP3 header
-            </label><br />
-            <i>
-                This sets the "private" bit in the MP3 headers that contain ads.
-                This would allow an application to automatically mark them to the user,
-                or to silence/remove them.
-                If this option is unset, the "private" bit will be unset in all MP3 headers.
-            </i>
+            </label>
         </div>
     </div>
+    <p class="auto-help">
+        <i>
+            This sets the "private" bit in the MP3 headers that contain ads.
+            This would allow an application to automatically mark them to the user,
+            or to silence/remove them.
+            If this option is unset, the "private" bit will be cleared in all MP3 headers.
+        </i>
+    </p>
     <div class="row">
         <div class="col-md-6 form-group">
             <label>
@@ -185,23 +201,25 @@ else
         </div>
     </div>
     <div class="row">
-        <div class="col-md-4 form-group">
+        <div class="col-md-4">
             <label>
                 Maximum number of video ids per stream
             </label>
             <input type="number" min="0" max="1000" asp-for="MaxStreamIds" class="form-control" />
-            <i>
-                Zero indicates no limit.<br />
-                Once this limit is reached,
-                the system stops adding more ids to the stream list.
-                Regardless of this setting, there's a hard limit of
-                @YtStream.YtDl.YoutubeDl.MaxPlaylistEntries items per individual playlist.
-                This will stop most bad people from overloading the system
-                by trying to stream multiple huge playlists.
-                There is no exception for administrators either.
-            </i>
+            Zero indicates no limit.
         </div>
     </div>
+    <p class="auto-help">
+        <i>
+            Once this limit is reached,
+            the system stops adding more ids to the stream list.
+            Regardless of this setting, there's a hard limit of
+            @YtStream.YtDl.YoutubeDl.MaxPlaylistEntries items per individual playlist.
+            This will stop most bad people from overloading the system
+            by trying to stream multiple huge playlists.
+            There is no exception for administrators either.
+        </i>
+    </p>
 
     <div class="row">
         <div class="col-md-4 form-group">
@@ -209,8 +227,6 @@ else
             <select asp-for="AudioBitrate" asp-items="Tools.HtmlEnumSwapList<YtStream.MP3.Bitrate>()" class="form-control"></select>
             <i>Default recommended bitrate: @Tools.SwapEnumName(YtStream.MP3.Bitrate.kbps192)</i>
         </div>
-    </div>
-    <div class="row">
         <div class="col-md-4 form-group">
             <label>Frequency</label>
             <select asp-for="AudioFrequency" asp-items="Tools.HtmlEnumSwapList<YtStream.MP3.Frequency>()" class="form-control"></select>

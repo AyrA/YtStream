@@ -138,6 +138,35 @@ var tools = {
         }
     };
 
+    var registerHelp = function (e) {
+        var helpLink = document.createElement("a");
+        var div = document.createElement("div");
+        div.style.display = "none";
+        while (e.childNodes.length) {
+            div.appendChild(e.childNodes[0]);
+        }
+        helpLink.textContent = "[Help]";
+        helpLink.href = "#";
+        helpLink.addEventListener("click", function (evt) {
+            evt.preventDefault();
+            if (this.dataset.help === "open") {
+                div.style.display = "none";
+                this.style.fontStyle = null;
+                this.dataset.help = "close";
+            }
+            else {
+                this.style.fontStyle = "italic";
+                div.style.display = "block";
+                this.dataset.help = "open";
+            }
+        });
+        e.appendChild(helpLink);
+        e.appendChild(div);
+    }
+
+    Array.from(qa(".auto-help")).forEach(function (v) {
+        registerHelp(v);
+    });
     Array.from(qa(".copy-on-click")).forEach(function (v) {
         v.addEventListener("click", copyTextEvent);
     });

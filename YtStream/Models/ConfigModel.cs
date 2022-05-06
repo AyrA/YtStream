@@ -36,6 +36,11 @@ namespace YtStream.Models
         public bool RequireAccount { get; set; }
 
         /// <summary>
+        /// Stream data as fast as it's consumed instead of as fast as possible
+        /// </summary>
+        public bool SimulateRealStream { get; set; }
+
+        /// <summary>
         /// Maximum age for MP3 files in seconds
         /// </summary>
         /// <remarks>

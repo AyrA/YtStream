@@ -86,7 +86,11 @@ namespace YtStream.MP3
         public static async Task CutMp3Async(IEnumerable<TimeRange> Ranges, Stream Source, MP3CutTargetStreamConfig Output)
         {
             TimeRange[] R;
-            double TimeMS = 0.0;
+            //Total audio time of the enire MP3 that has been processed
+            double TotalTimeMS = 0.0;
+            //Audio time of the cut MP3 that has been processed
+            double CutTimeMS = 0.0;
+            Stopwatch GlobalTimer = Stopwatch.StartNew();
             //If null, the caller wants to filter invalid data only
             if (Ranges == null)
             {
@@ -152,12 +156,16 @@ namespace YtStream.MP3
                         //Stream too short for audio data
                         return;
                     }
-                    var Skip = R.Any(m => m.IsInRange(TimeMS / 1000.0));
+                    var Skip = R.Any(m => m.IsInRange(TotalTimeMS / 1000.0));
                     var Streams = Output.Streams.Where(m => !m.Faulted).ToArray();
                     //No more streams remaining to write to
                     if (Streams.Length == 0)
                     {
                         return;
+                    }
+                    if (!Skip)
+                    {
+                        CutTimeMS += Parsed.AudioLengthMS;
                     }
                     foreach (var Info in Streams)
                     {
@@ -177,17 +185,26 @@ namespace YtStream.MP3
                         }
                     }
 
-                    if (SW.IsRunning && TimeMS > 1000.0 && TimeMS < SW.ElapsedMilliseconds)
+                    if (SW.IsRunning && TotalTimeMS > 1000.0 && TotalTimeMS < SW.ElapsedMilliseconds)
                     {
                         Output.SetTimeout(true);
                         SW.Stop();
                     }
-                    TimeMS += Parsed.AudioLengthMS;
+                    TotalTimeMS += Parsed.AudioLengthMS;
                     //Read next header
                     if (!await GuaranteedRead(Header, 0, Header.Length, Source))
                     {
                         //Stream too short for next header
                         return;
+                    }
+                    //Delay only if a functioning live stream remains
+                    if (Streams.Any(m => m.LiveStream && !m.Faulted))
+                    {
+                        //Permit a 3 second buffer
+                        while (CutTimeMS > GlobalTimer.ElapsedMilliseconds + 3000)
+                        {
+                            await Task.Delay(200);
+                        }
                     }
                 }
             }
