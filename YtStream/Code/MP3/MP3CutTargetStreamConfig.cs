@@ -125,6 +125,15 @@ namespace YtStream.MP3
         public bool SkipOnTimeout { get; }
 
         /// <summary>
+        /// Gets if this stream is used for live streaming
+        /// </summary>
+        /// <remarks>
+        /// If this is true, <see cref="MP3Cut"/> will stream data in real time
+        /// instead of trying to get it out as fast as possible.
+        /// </remarks>
+        public bool LiveStream { get; }
+
+        /// <summary>
         /// Gets if the stream is in a faulted state
         /// </summary>
         public bool Faulted { get; private set; }
@@ -136,13 +145,14 @@ namespace YtStream.MP3
         /// <param name="isUncut">true to receive all MP3 data, false to receive cut data only</param>
         /// <param name="canFault">true to permit faulting, false otherwise</param>
         /// <param name="skipOnTimeout">true to no longer write to this stream on a slow stream timeout</param>
-        public MP3CutTargetStreamInfo(Stream stream, bool isUncut, bool canFault, bool skipOnTimeout)
+        public MP3CutTargetStreamInfo(Stream stream, bool isUncut, bool canFault, bool skipOnTimeout, bool liveStream)
         {
             Stream = stream ?? throw new ArgumentNullException(nameof(stream));
             if (!stream.CanWrite)
             {
                 throw new ArgumentException(nameof(stream) + " not writable");
             }
+            LiveStream = liveStream;
             IsUncut = isUncut;
             CanFault = canFault;
             SkipOnTimeout = skipOnTimeout;

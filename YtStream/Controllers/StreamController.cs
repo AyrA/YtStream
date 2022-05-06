@@ -112,7 +112,7 @@ namespace YtStream.Controllers
                     break;
                 }
                 var OutputStreams = new MP3CutTargetStreamConfig();
-                OutputStreams.AddStream(new MP3CutTargetStreamInfo(Response.Body, false, true, true));
+                OutputStreams.AddStream(new MP3CutTargetStreamInfo(Response.Body, false, true, true, true));
                 var setCache = true;
                 var filename = Tools.GetIdName(ytid) + ".mp3";
                 var ranges = await SponsorBlockCache.GetRangesAsync(ytid, Settings);
@@ -187,7 +187,7 @@ namespace YtStream.Controllers
                 if (setCache)
                 {
                     CacheStream = MP3.WriteFile(filename);
-                    OutputStreams.AddStream(new MP3CutTargetStreamInfo(CacheStream, true, false, false));
+                    OutputStreams.AddStream(new MP3CutTargetStreamInfo(CacheStream, true, false, false, false));
                 }
                 using (var Mp3Data = converter.ConvertToMp3(url))
                 {

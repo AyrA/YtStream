@@ -20,7 +20,7 @@ namespace YtStream.MP3
         public static void FilterMp3(Stream Source, Stream Dest)
         {
             var Conf = new MP3CutTargetStreamConfig();
-            Conf.AddStream(new MP3CutTargetStreamInfo(Dest, true, false, false));
+            Conf.AddStream(new MP3CutTargetStreamInfo(Dest, true, false, false, false));
             CutMp3(null, Source, Conf);
         }
 
@@ -32,7 +32,7 @@ namespace YtStream.MP3
         public static Task FilterMp3Async(Stream Source, Stream Dest)
         {
             var Conf = new MP3CutTargetStreamConfig();
-            Conf.AddStream(new MP3CutTargetStreamInfo(Dest, true, false, false));
+            Conf.AddStream(new MP3CutTargetStreamInfo(Dest, true, false, false, false));
             return CutMp3Async(null, Source, Conf);
         }
 
