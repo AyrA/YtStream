@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace YtStream
+namespace YtStream.YtDl
 {
     /// <summary>
     /// Represents the JSON result of youtube dl

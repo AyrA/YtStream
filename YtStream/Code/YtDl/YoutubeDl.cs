@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace YtStream
+namespace YtStream.YtDl
 {
     /// <summary>
     /// Provides a youtube-dl interface
@@ -138,12 +138,18 @@ namespace YtStream
             var PSI = new ProcessStartInfo(executable, Args)
             {
                 UseShellExecute = false,
-                RedirectStandardOutput = true
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
             };
             using (var P = Process.Start(PSI))
             {
-                var Lines = await P.StandardOutput.ReadToEndAsync();
-                var Items = Lines.Trim().Split('\n').Where(m => Tools.IsYoutubeId(m.Trim())).ToArray();
+                var Lines = (await P.StandardOutput.ReadToEndAsync()).Trim();
+                var Error = (await P.StandardError.ReadToEndAsync()).Trim();
+                if (Error.Length > 0)
+                {
+                    throw new YoutubeDlException(Error);
+                }
+                var Items = Lines.Split('\n').Where(m => Tools.IsYoutubeId(m.Trim())).ToArray();
                 PlCache[Playlist] = new PlaylistInfo(Items);
                 return Items;
             }
@@ -175,13 +181,21 @@ namespace YtStream
             var PSI = new ProcessStartInfo(executable, $"--skip-download --dump-json --format bestaudio {Tools.IdToUrl(Id)}")
             {
                 UseShellExecute = false,
-                RedirectStandardOutput = true
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
             };
             using (var P = Process.Start(PSI))
             {
-                var Result = (await P.StandardOutput.ReadToEndAsync()).FromJson<YoutubeDlResult>();
-                IdCache[Id] = new AudioInfo(Result);
-                return Result;
+
+                var Body = await P.StandardOutput.ReadToEndAsync();
+                var Error = (await P.StandardError.ReadToEndAsync()).Trim();
+                var Result = Body.FromJson<YoutubeDlResult>();
+                if (Result != null)
+                {
+                    IdCache[Id] = new AudioInfo(Result);
+                    return Result;
+                }
+                throw new YoutubeDlException(Error);
             }
         }
 
@@ -200,8 +214,8 @@ namespace YtStream
             catch (Exception ex)
             {
                 Logger.LogWarning("Failed to obtain YT stream url", ex.Message);
+                throw;
             }
-            return null;
         }
 
         /// <summary>

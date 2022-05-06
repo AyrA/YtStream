@@ -128,6 +128,10 @@ namespace YtStream
         /// <returns>Error view</returns>
         protected IActionResult Error(Exception ex)
         {
+            if (HttpContext.Response.StatusCode < 400)
+            {
+                HttpContext.Response.StatusCode = 500;
+            }
             return View("Error", new ErrorViewModel(ex));
         }
     }

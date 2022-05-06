@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using YtStream.Ad;
 using YtStream.MP3;
+using YtStream.YtDl;
 
 namespace YtStream.Controllers
 {
@@ -158,7 +159,25 @@ namespace YtStream.Controllers
                     AudioFrequency = Settings.AudioFrequency,
                     AudioRate = Settings.AudioBitrate
                 };
-                var url = await ytdl.GetAudioUrl(ytid);
+                string url;
+                try
+                {
+                    url = await ytdl.GetAudioUrl(ytid);
+                }
+                catch(YoutubeDlException ex)
+                {
+                    //If this is the only id, return an error to the client.
+                    //We can't do this otherwise.
+                    if (ids.Length == 1)
+                    {
+                        return Error(ex);
+                    }
+                    url = null;
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
                 if (string.IsNullOrEmpty(url))
                 {
                     _logger.LogWarning("No YT url for {0} (invalid or restricted video id)", ytid);
