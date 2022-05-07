@@ -299,6 +299,12 @@ namespace YtStream
             return $"-ab {(int)AudioRate}k -vn -ar {(int)AudioFrequency} -acodec mp3 -f mp3 -y pipe:1";
         }
 
+        /// <summary>
+        /// Gets the version of ffmpeg
+        /// </summary>
+        /// <param name="executable">ffmpeg executable</param>
+        /// <returns>version string</returns>
+        /// <remarks>This will abort after 5 seconds if the application won't terminate</remarks>
         public static async Task<string> GetVersion(string executable)
         {
             var PSI = new ProcessStartInfo(executable, "-version")
