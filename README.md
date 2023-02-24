@@ -2,7 +2,7 @@
 Live Youtube to MP3 transcoder
 
 This is a much more advanced version of [php-ytstream](https://github.com/AyrA/php-ytstream)
-written in ASP.NET Core.
+written in ASP.NET Core using .NET 6.
 
 ## Terms and abbreviations used in this document
 
@@ -56,7 +56,7 @@ No manual editing of your configuration is necessary.
 ### Restrictions for streaming
 
 You can restrict streaming to registered users only.
-You can also disable registration, essentially creating a private streaming platform.
+You can also disable registration, creating a private streaming platform.
 
 ### Intermissions
 
@@ -71,6 +71,7 @@ SBlock operates on a custom license that requires attribution.
 [See here for licensing details](https://github.com/ajayyy/SponsorBlock/wiki/Database-and-API-License)
 
 The gist of it is that you cannot run YtStream as a commercial service under this license.
+However, the license only applies if you use SBlock.
 
 ## The AGPL
 
@@ -87,8 +88,15 @@ For the exact details, see the `LICENSE` file.
 3. Run `YtStream.exe`
 4. Go to http://localhost:5000
 
+YtStream is built in a way that allows it to function in one of three ways:
+
+- Standalone (as shown above) which also works as GGI backend
+- Using IIS
+- As Windows Service 
+
 Note: Commits are generally only pushed to master after building them locally.
-This means you should be able to download and build this project from source as well.
+This means you should be able to download and build
+the latest version of this project from source as well.
 
 ### File system layout
 
@@ -99,16 +107,19 @@ YtStream creates the following files and folders in the application directory:
 | Cache         | Folder | Holds cached files. Can be freely moved or disabled entirely |
 | accounts.json | File   | Holds user accounts                                          |
 | config.json   | File   | Holds application settings                                   |
+| ads.json      | File   | Holds the intermission configuration                         |
 
 The cache location can be changed in the settings. This will not move existing cached content.
 
-The JSON files are only written to when you make changes to the settings or user accounts.
+The JSON files are only written to when you make changes to the settings, user accounts,
+or intermissions.
 The application can run on a readonly file system as long as you don't do that.
 
 **CAUTION!** Do not directly edit the JSON files while the application is running.
 The changes may not be reflected in the application, and they may be overwritten.
 There is nothing in the settings or account file you cannot configure in the application itself.
-If you do invalid edits the application may refuse to start.
+If you do invalid edits the application may refuse to start,
+or it may force itself into lockdown mode.
 
 ### Dependencies
 
@@ -137,8 +148,8 @@ You can also listen for TLS connections, dynamic ports, and unix sockets.
 This type of application is normally run behind a reverse proxy.
 There is nothing that makes it inherently unsafe to directly run it on port 80 or 443 though.
 
-Apache and Nginx are popular web servers that support reverse proxying.
-Apache also runs on Windows.
+Apache and Nginx are popular web servers that support reverse proxying on Linux.
+Apache also runs on Windows, but IIS may be preferred there.
 
 ## Initial configuration
 
@@ -295,7 +306,7 @@ The file dialog supports multi select of files.
 ### Audio format
 
 Ads can be in any format that FFmpeg understands (most video and audio formats).
-FFmpeg will pick the first (or primary) audio channel and convert that to MP3.
+FFmpeg will pick the first (or primary) audio stream and convert that to MP3.
 Other information such as video channels or metadata is discarded.
 
 The ad is only converted if it's not in the configured MP3 format.
@@ -316,4 +327,6 @@ Deleting an ad will automatically remove it from all categories too.
 
 Ads are transparently injected into the stream and are therefore unblockable.
 
-You can enable a setting that marks ads using the "private" bit in the MP3 header.
+If you're required to somehow make them detectable,
+you can enable a setting that marks ads using the "private" bit in the MP3 header.
+This would allow a machine to detect whether an audio block belongs to an ad or not.
