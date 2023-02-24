@@ -17,6 +17,9 @@ namespace YtStream
         /// <param name="args"></param>
         public static void Main(string[] args)
         {
+#if DEBUG
+            Environment.SetEnvironmentVariable("DOTNET_STARTUP_HOOKS", "");
+#endif
             //Set current directory because for services it's wrong.
             using (var P = Process.GetCurrentProcess())
             {
