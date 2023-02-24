@@ -1,6 +1,6 @@
 ﻿@{
     var Settings = (ConfigModel)ViewBag.Settings;
-    var Acc = (AccountInfo)ViewBag.User;
+    var Acc = (AccountInfoModel)ViewBag.User;
     var Msg = (string)ViewBag.CookieMessage;
     var AFToken = Tools.ParseAntiforgery(Html.AntiForgeryToken());
 }
@@ -39,7 +39,7 @@
                                 <a class="nav-link text-dark" asp-controller="Home" asp-action="Builder">Stream URL builder</a>
                             </li>
                         }
-                        @if (User.Identity.IsAuthenticated && Acc.Roles.HasFlag(UserRoles.Administrator))
+                        @if (User.Identity.IsAuthenticated && Acc.Roles.HasFlag(YtStream.Enums.UserRoles.Administrator))
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-controller="Manage" asp-action="Index">Settings</a>

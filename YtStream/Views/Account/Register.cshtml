@@ -1,5 +1,6 @@
 ﻿@{
     var ErrMsg = (string)ViewBag.ErrMsg;
+    var minPwSize = YtStream.Services.Accounts.UserManagerService.PasswordMinLength;
     ViewData["Title"] = "Register";
 }
 @if (!string.IsNullOrEmpty(ErrMsg))
@@ -21,7 +22,7 @@
         <div class="form-group col-md-4">
             <label>Password</label>
             <input type="password" class="form-control password-check" name="password" id="password"
-                   minlength="@UserManager.PasswordMinLength"
+                   minlength="@minPwSize"
                    required placeholder="Password" />
         </div>
     </div>
@@ -29,7 +30,7 @@
         <div class="form-group col-md-4">
             <label>Password</label>
             <input type="password" class="form-control password-match" name="passwordRepeat" id="passwordRepeat"
-                   minlength="@UserManager.PasswordMinLength"
+                   minlength="@minPwSize"
                    required placeholder="Password" />
         </div>
     </div>

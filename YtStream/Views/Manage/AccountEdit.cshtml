@@ -1,4 +1,6 @@
-﻿@model AccountInfo
+﻿@using YtStream.Enums;
+@using YtStream.Services.Accounts;
+@model AccountInfoModel
 @{
     ViewData["Title"] = "Edit account";
     var PermText = new Dictionary<UserRoles, string>();
@@ -9,7 +11,7 @@
 <form asp-action="AccountRename" asp-route-id="@Model.Username" class="form-group">
     <div class="row">
         <div class="col-md-4">
-            <input type="text" pattern="@UserManager.NamePattern" required
+            <input type="text" pattern="@UserManagerService.NamePattern" required
                    name="username" class="form-control" value="@Model.Username" />
         </div>
         <div class="col-md-4">
@@ -25,13 +27,13 @@
         <div class="col-md-4">
             <label>Password</label>
             <input type="password" class="form-control password-check" name="password" id="password"
-                   minlength="@UserManager.PasswordMinLength"
+                   minlength="@UserManagerService.PasswordMinLength"
                    required placeholder="Password" />
         </div>
         <div class="col-md-4">
             <label>Password</label>
             <input type="password" class="form-control password-match" name="passwordRepeat" id="passwordRepeat"
-                   minlength="@UserManager.PasswordMinLength"
+                   minlength="@UserManagerService.PasswordMinLength"
                    required placeholder="Password" />
         </div>
     </div>

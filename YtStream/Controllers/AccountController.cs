@@ -5,8 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
-using YtStream.Accounts;
+using YtStream.Enums;
 using YtStream.Models;
+using YtStream.Models.Accounts;
+using YtStream.Services;
+using YtStream.Services.Accounts;
 
 namespace YtStream.Controllers
 {
@@ -15,7 +18,8 @@ namespace YtStream.Controllers
     {
         private readonly ILogger _logger;
 
-        public AccountController(ILogger<StreamController> Logger)
+        public AccountController(ILogger<StreamController> Logger, ConfigService config,
+            UserManagerService userManager) : base(config, userManager)
         {
             _logger = Logger;
         }
@@ -31,7 +35,7 @@ namespace YtStream.Controllers
             if (CurrentUser.Roles.HasFlag(UserRoles.Administrator))
             {
                 CurrentUser.DisableAds = !CurrentUser.DisableAds;
-                UserManager.Save();
+                _userManager.Save();
                 return RedirectWithMessage("Index", "Ad settings changed");
             }
             return Forbid();
@@ -42,11 +46,11 @@ namespace YtStream.Controllers
         {
             if (CurrentUser.CheckPassword(Password))
             {
-                var CanDelete = UserManager.CanDeleteOrDisable(CurrentUser.Username);
+                var CanDelete = _userManager.CanDeleteOrDisable(CurrentUser.Username);
                 if (CanDelete)
                 {
-                    UserManager.DeleteUser(CurrentUser.Username);
-                    UserManager.Save();
+                    _userManager.DeleteUser(CurrentUser.Username);
+                    _userManager.Save();
                     await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                     _logger.LogInformation("User deleted: {0}", CurrentUser.Username);
                     return RedirectToAction("Index", "Home");
@@ -66,7 +70,7 @@ namespace YtStream.Controllers
         [HttpGet, ActionName("DeleteAccount")]
         public IActionResult DeleteAccountGet()
         {
-            ViewBag.CanDelete = UserManager.CanDeleteOrDisable(CurrentUser.Username);
+            ViewBag.CanDelete = _userManager.CanDeleteOrDisable(CurrentUser.Username);
             return View();
         }
 
@@ -76,7 +80,7 @@ namespace YtStream.Controllers
             ViewBag.Changed = false;
             if (CurrentUser.CheckPassword(model.OldPassword))
             {
-                if (UserManager.Rules.IsComplexPassword(model.NewPassword))
+                if (_userManager.Rules.IsComplexPassword(model.NewPassword))
                 {
                     if (model.NewPassword == model.OldPassword)
                     {
@@ -112,13 +116,13 @@ namespace YtStream.Controllers
         public async Task<IActionResult> ChangeNamePost(string Username)
         {
             ViewBag.Changed = false;
-            var TestUser = UserManager.GetUser(Username);
+            var TestUser = _userManager.GetUser(Username);
             if (TestUser == null)
             {
                 var OldUser = CurrentUser.Username;
                 ViewBag.Changed = true;
                 CurrentUser.Username = Username;
-                UserManager.Save();
+                _userManager.Save();
                 _logger.LogInformation("Username change: {0} --> {1}", OldUser, Username);
                 //Change username by signing in again
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -143,7 +147,7 @@ namespace YtStream.Controllers
             if (Key != Guid.Empty)
             {
                 CurrentUser.RemoveKey(Key);
-                UserManager.Save();
+                _userManager.Save();
             }
             return RedirectToAction("ManageKeys");
         }
@@ -153,10 +157,10 @@ namespace YtStream.Controllers
         {
             if (!string.IsNullOrEmpty(KeyName))
             {
-                if (CurrentUser.ApiKeys.Length < UserManager.MaxKeysPerUser)
+                if (CurrentUser.ApiKeys.Length < _userManager.MaxKeysPerUser)
                 {
-                    CurrentUser.AddKey(new UserApiKey() { Name = KeyName });
-                    UserManager.Save();
+                    CurrentUser.AddKey(new UserApiKeyModel() { Name = KeyName });
+                    _userManager.Save();
                 }
             }
             return RedirectToAction("ManageKeys");
@@ -174,10 +178,10 @@ namespace YtStream.Controllers
             {
                 if (password == passwordRepeat)
                 {
-                    AccountInfo NewUser;
+                    AccountInfoModel NewUser;
                     try
                     {
-                        NewUser = UserManager.AddUser(userName, password, UserManager.HasUsers ? UserRoles.User : UserRoles.User | UserRoles.Administrator);
+                        NewUser = _userManager.AddUser(userName, password, _userManager.HasUsers ? UserRoles.User : UserRoles.User | UserRoles.Administrator);
                     }
                     catch (Exception ex)
                     {
@@ -213,7 +217,7 @@ namespace YtStream.Controllers
         [AllowAnonymous, HttpGet, ActionName("Login")]
         public IActionResult LoginGet()
         {
-            if (!UserManager.HasUsers)
+            if (!_userManager.HasUsers)
             {
                 return RedirectToAction("Register");
             }
@@ -235,7 +239,7 @@ namespace YtStream.Controllers
             {
                 return RedirectToAction("Login");
             }
-            var Account = UserManager.GetUser(userName);
+            var Account = _userManager.GetUser(userName);
             if (Account != null && Account.Enabled && Account.CheckPassword(password))
             {
                 _logger.LogInformation("User authenticated: {0}", Account.Username);
@@ -266,7 +270,7 @@ namespace YtStream.Controllers
         private bool AllowRegister()
         {
             return Settings.PublicRegistration ||
-                !UserManager.HasUsers ||
+                !_userManager.HasUsers ||
                 (User.Identity.IsAuthenticated && User.IsInRole(UserRoles.Administrator.ToString()));
         }
     }

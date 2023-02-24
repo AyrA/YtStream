@@ -21,21 +21,21 @@ namespace YtStream
         /// <summary>
         /// Creates a new cache instance
         /// </summary>
-        /// <param name="CachePath">Cache path</param>
-        /// <param name="DefaultCacheLifetime">Default object lifetime</param>
-        public CacheHandler(string CachePath, TimeSpan DefaultCacheLifetime)
+        /// <param name="cachePath">Cache path</param>
+        /// <param name="defaultCacheLifetime">Default object lifetime</param>
+        public CacheHandler(string cachePath, TimeSpan defaultCacheLifetime)
         {
-            if (string.IsNullOrWhiteSpace(CachePath))
+            if (string.IsNullOrWhiteSpace(cachePath))
             {
-                throw new ArgumentException($"'{nameof(CachePath)}' cannot be null or whitespace.", nameof(CachePath));
+                throw new ArgumentException($"'{nameof(cachePath)}' cannot be null or whitespace.", nameof(cachePath));
             }
-            if (DefaultCacheLifetime.Ticks < 0)
+            if (defaultCacheLifetime.Ticks < 0)
             {
-                throw new ArgumentOutOfRangeException("Cache time cannot be negative");
+                throw new ArgumentOutOfRangeException(nameof(defaultCacheLifetime), "Cache time cannot be negative");
             }
-            Directory.CreateDirectory(CachePath);
-            this.CachePath = Directory.CreateDirectory(CachePath).FullName;
-            this.DefaultCacheLifetime = DefaultCacheLifetime;
+            Directory.CreateDirectory(cachePath);
+            CachePath = Directory.CreateDirectory(cachePath).FullName;
+            DefaultCacheLifetime = defaultCacheLifetime;
         }
 
         /// <summary>
@@ -232,7 +232,7 @@ namespace YtStream
                 {
                     try
                     {
-                        using (var FS = File.Open(Path.Combine(Cache.BaseDirectory, BaseName), FileMode.CreateNew))
+                        using (var FS = File.Open(Path.Combine(CachePath, BaseName), FileMode.CreateNew))
                         {
                             FS.Close();
                         }

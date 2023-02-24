@@ -1,4 +1,5 @@
-﻿@{
+﻿@using YtStream.Services.Accounts;
+@{
 	ViewData["Title"] = "Change user name";
 	var Changed = ViewBag.Changed != null && (bool)ViewBag.Changed;
 }
@@ -21,7 +22,7 @@
 		<div class="col-md-4">
 			<label>New user name</label>
 			<input type="text" name="Username" required value="@User.Identity.Name"
-				class="form-control" pattern="@UserManager.NamePattern" />
+                   class="form-control" pattern="@UserManagerService.NamePattern" />
 		</div>
 	</div>
 	<div class="row form-group">

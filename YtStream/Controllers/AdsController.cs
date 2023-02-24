@@ -5,8 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using YtStream.Ad;
+using YtStream.Enums;
 using YtStream.Models;
+using YtStream.Services;
+using YtStream.Services.Accounts;
+using YtStream.Services.Mp3;
 
 namespace YtStream.Controllers
 {
@@ -15,13 +18,26 @@ namespace YtStream.Controllers
     {
         public const long ReqLimit = 50_000_000;
 
-        private ILogger _logger;
-        private readonly CacheHandler Handler;
+        private readonly ILogger _logger;
+        private readonly CacheService _cacheService;
+        private readonly AdsService _adsService;
+        private readonly Mp3ConverterService _mp3ConverterService;
+        private readonly Mp3InfoService _mp3InfoService;
+        private readonly Mp3CutService _mp3CutService;
+        private readonly CacheHandler _cacheHandler;
 
-        public AdsController(ILogger<AdsController> Logger) : base()
+        public AdsController(ILogger<AdsController> Logger, ConfigService config,
+            UserManagerService userManager, CacheService cacheService,
+            AdsService adsService, Mp3ConverterService mp3ConverterService,
+            Mp3InfoService mp3InfoService, Mp3CutService mp3CutService) : base(config, userManager)
         {
             _logger = Logger;
-            Handler = Cache.GetHandler(Cache.CacheType.AudioSegments, 0);
+            _cacheService = cacheService;
+            _adsService = adsService;
+            _mp3ConverterService = mp3ConverterService;
+            _mp3InfoService = mp3InfoService;
+            _mp3CutService = mp3CutService;
+            _cacheHandler = cacheService.GetHandler(CacheTypeEnum.AudioSegments, 0);
         }
 
         public IActionResult Index()
@@ -33,7 +49,7 @@ namespace YtStream.Controllers
         {
             try
             {
-                return File(Handler.ReadFile(id), "audio/mpeg");
+                return File(_cacheHandler.ReadFile(id), "audio/mpeg");
             }
             catch (Exception ex)
             {
@@ -42,11 +58,11 @@ namespace YtStream.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public IActionResult Add(AdType Type, string Filename)
+        public IActionResult Add(AdTypeEnum Type, string Filename)
         {
             try
             {
-                if (!Enum.IsDefined(typeof(AdType), Type))
+                if (!Enum.IsDefined(typeof(AdTypeEnum), Type))
                 {
                     throw new ArgumentException($"Invalid ad type: {Type}");
                 }
@@ -54,12 +70,11 @@ namespace YtStream.Controllers
                 {
                     throw new ArgumentException($"'{nameof(Filename)}' cannot be null or whitespace.", nameof(Filename));
                 }
-                if (!Handler.HasFileInCache(Filename))
+                if (!_cacheHandler.HasFileInCache(Filename))
                 {
                     throw new FileNotFoundException($"{Filename} not found in server library");
                 }
-                var AdHandler = new Ads();
-                AdHandler.AddFile(Filename, Type);
+                _adsService.AddFile(Filename, Type);
                 return RedirectWithMessage("Index", $"File added to {Type}");
             }
             catch (Exception ex)
@@ -69,11 +84,11 @@ namespace YtStream.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public IActionResult Remove(string Filename, AdType Type)
+        public IActionResult Remove(string Filename, AdTypeEnum Type)
         {
             try
             {
-                if (!Enum.IsDefined(typeof(AdType), Type))
+                if (!Enum.IsDefined(typeof(AdTypeEnum), Type))
                 {
                     throw new ArgumentException($"Invalid ad type: {Type}");
                 }
@@ -81,8 +96,7 @@ namespace YtStream.Controllers
                 {
                     throw new ArgumentException($"'{nameof(Filename)}' cannot be null or whitespace.", nameof(Filename));
                 }
-                var AdHandler = new Ads();
-                AdHandler.RemoveFile(Filename, Type);
+                _adsService.RemoveFile(Filename, Type);
                 return RedirectWithMessage("Index", $"File removed from category '{Type}'");
             }
             catch (Exception ex)
@@ -92,11 +106,11 @@ namespace YtStream.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
-        public IActionResult Delete(string Filename, AdType Type)
+        public IActionResult Delete(string Filename, AdTypeEnum Type)
         {
             try
             {
-                if (!Enum.IsDefined(typeof(AdType), Type))
+                if (!Enum.IsDefined(typeof(AdTypeEnum), Type))
                 {
                     throw new ArgumentException($"Invalid ad type: {Type}");
                 }
@@ -104,8 +118,7 @@ namespace YtStream.Controllers
                 {
                     throw new ArgumentException($"'{nameof(Filename)}' cannot be null or whitespace.", nameof(Filename));
                 }
-                var AdHandler = new Ads();
-                AdHandler.DeleteFile(Filename);
+                _adsService.DeleteFile(Filename);
                 return RedirectWithMessage("Index", $"File deleted from the system");
             }
             catch (Exception ex)
@@ -127,94 +140,86 @@ namespace YtStream.Controllers
             {
                 return View("Error", new ErrorViewModel(new ArgumentException("No file uploaded")));
             }
-            var Uploaded = new List<string>();
-            using (var FFmpeg = new Converter(Settings.FfmpegPath, null))
+            var uploadedFiles = new List<string>();
+            foreach (var F in Request.Form.Files)
             {
-                FFmpeg.AudioFrequency = Settings.AudioFrequency;
-                FFmpeg.AudioRate = Settings.AudioBitrate;
-                foreach (var F in Request.Form.Files)
+                _logger.LogDebug("Processing ad: {0}", F.FileName);
+                if (F.Length == 0)
                 {
-                    _logger.LogDebug("Processing ad: {0}", F.FileName);
-                    if (F.Length == 0)
+                    _logger.LogWarning("Empty ad uploaded: {0}", F.FileName);
+                    continue;
+                }
+                var destPath = _cacheHandler.GetNoConfictName(Path.ChangeExtension(F.FileName, ".mp3"));
+                using var MS = new MemoryStream();
+                await F.CopyToAsync(MS);
+                MS.Position = 0;
+                _logger.LogDebug("Copied {0} into memory", F.FileName);
+                if (F.FileName.ToLower().EndsWith(".mp3"))
+                {
+                    _logger.LogDebug("Check if {0} is good MP3", F.FileName);
+                    try
                     {
-                        _logger.LogWarning("Empty ad uploaded: {0}", F.FileName);
-                        continue;
-                    }
-                    var Dest = Handler.GetNoConfictName(Path.ChangeExtension(F.FileName, ".mp3"));
-                    using (var MS = new MemoryStream())
-                    {
-                        await F.CopyToAsync(MS);
+                        var Header1 = _mp3InfoService.GetFirstHeader(MS);
                         MS.Position = 0;
-                        _logger.LogDebug("Copied {0} into memory", F.FileName);
-                        if (F.FileName.ToLower().EndsWith(".mp3"))
+                        if (_mp3InfoService.IsCBR(MS))
                         {
-                            _logger.LogDebug("Check if {0} is good MP3", F.FileName);
-                            try
+                            if (Header1.AudioFrequency == Settings.AudioFrequency && Header1.AudioRate == Settings.AudioBitrate)
                             {
-                                var Header1 = MP3.MP3.GetFirstHeader(MS);
-                                MS.Position = 0;
-                                if (MP3.MP3.IsCBR(MS))
+                                _logger.LogDebug("{0} is good MP3", F.FileName);
+                                //File OK as is. Copy to cache
+                                using (var cacheTarget = _cacheHandler.WriteFile(destPath))
                                 {
-                                    if (Header1.AudioFrequency == Settings.AudioFrequency && Header1.AudioRate == Settings.AudioBitrate)
-                                    {
-                                        _logger.LogDebug("{0} is good MP3", F.FileName);
-                                        //File OK as is. Copy to cache
-                                        using (var Target = Handler.WriteFile(Dest))
-                                        {
-                                            await MP3.MP3Cut.FilterMp3Async(MS, Target);
-                                        }
-                                        Uploaded.Add(Dest);
-                                        _logger.LogInformation("{0} was copied as-is", F.FileName);
-                                        continue;
-                                    }
+                                    await _mp3CutService.FilterMp3Async(MS, cacheTarget);
                                 }
-                                _logger.LogInformation("{0} is different from current MP3 settings. Force conversion", F.FileName);
-                            }
-                            catch
-                            {
-                                //NOOP. Invalid MP3. Try regular conversion
-                            }
-                        }
-                        //If we're here the MP3 is either not in the required format, or it's not an MP3
-                        MS.Position = 0;
-                        var ConvertTask = FFmpeg.ConvertToMp3(MS);
-                        using (var Target = new MemoryStream())
-                        {
-                            _logger.LogDebug("Begin conversion of {0}", F.FileName);
-                            using (ConvertTask.StandardOutputStream)
-                            {
-                                var OutputTask = ConvertTask.StandardOutputStream.CopyToAsync(Target);
-                                await ConvertTask.CopyStreamResult;
-                                //Close input stream or ffmpeg will never exit as it waits for more data
-                                ConvertTask.StandardInputStream.Close();
-                                await OutputTask;
-                            }
-                            _logger.LogDebug("Waiting for source to drain");
-                            await ConvertTask.CopyStreamResult;
-                            _logger.LogInformation("{0} converted. Result is {1} bytes", F.FileName, Target.Length);
-                            Target.Position = 0;
-                            try
-                            {
-                                MP3.MP3.GetFirstHeader(Target);
-                            }
-                            catch
-                            {
-                                _logger.LogWarning("{0} failed to convert. Output lacks MP3 frames", F.FileName);
-                                //File is invalid
+                                uploadedFiles.Add(destPath);
+                                _logger.LogInformation("{0} was copied as-is", F.FileName);
                                 continue;
                             }
-                            Target.Position = 0;
-                            using (var FS = Handler.WriteFile(Dest))
-                            {
-                                await MP3.MP3Cut.FilterMp3Async(Target, FS);
-                            }
-                            Uploaded.Add(Dest);
-                            _logger.LogInformation("{0} added to cache", Dest);
                         }
+                        _logger.LogInformation("{0} is different from current MP3 settings. Force conversion", F.FileName);
+                    }
+                    catch
+                    {
+                        //NOOP. Invalid MP3. Try regular conversion
                     }
                 }
+                //If we're here the MP3 is either not in the required format, or it's not an MP3
+                MS.Position = 0;
+                var convertTask = _mp3ConverterService.ConvertToMp3(MS);
+                using var convertTarget = new MemoryStream();
+                _logger.LogDebug("Begin conversion of {0}", F.FileName);
+                using (convertTask.StandardOutputStream)
+                {
+                    var outputTask = convertTask.StandardOutputStream.CopyToAsync(convertTarget);
+                    await convertTask.CopyStreamResult;
+                    //Close input stream or ffmpeg will never exit as it waits for more data
+                    convertTask.StandardInputStream.Close();
+                    await outputTask;
+                }
+                _logger.LogDebug("Waiting for source to drain");
+                await convertTask.CopyStreamResult;
+                _logger.LogInformation("{0} converted. Result is {1} bytes", F.FileName, convertTarget.Length);
+                convertTarget.Position = 0;
+                try
+                {
+                    _mp3InfoService.GetFirstHeader(convertTarget);
+                }
+                catch
+                {
+                    _logger.LogWarning("{0} failed to convert. Output lacks MP3 frames", F.FileName);
+                    //File is invalid
+                    continue;
+                }
+                convertTarget.Position = 0;
+                using (var FS = _cacheHandler.WriteFile(destPath))
+                {
+                    await _mp3CutService.FilterMp3Async(convertTarget, FS);
+                }
+                uploadedFiles.Add(destPath);
+                _logger.LogInformation("{0} added to cache", destPath);
             }
-            return RedirectWithMessage("Index", "Files uploaded and processed: " + string.Join(", ", Uploaded));
+
+            return RedirectWithMessage("Index", "Files uploaded and processed: " + string.Join(", ", uploadedFiles));
         }
     }
 }

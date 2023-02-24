@@ -1,12 +1,13 @@
-﻿@{
+﻿@inject YtStream.Services.LockService _lockService
+@{
     ViewData["Title"] = "Change application lock";
     var Settings = (ConfigModel)ViewBag.Settings;
     var HasSettings = Settings != null && Settings.IsValid();
 
-    var LockMsg = Startup.Locked || !HasSettings ? "Locked. Streaming functionality unavailable" : "Unlocked. Streaming functionality available";
-    var divClass = Startup.Locked || !HasSettings ? "danger" : "success";
-    var btnClass = Startup.Locked || !HasSettings ? "success" : "danger";
-    var btnValue = Startup.Locked || !HasSettings ? "Unlock" : "Lock";
+    var LockMsg =  _lockService.Locked || !HasSettings ? "Locked. Streaming functionality unavailable" : "Unlocked. Streaming functionality available";
+    var divClass = _lockService.Locked || !HasSettings ? "danger" : "success";
+    var btnClass = _lockService.Locked || !HasSettings ? "success" : "danger";
+    var btnValue = _lockService.Locked || !HasSettings ? "Unlock" : "Lock";
 }
 <form method="post" asp-action="ChangeLock">
     <div class="form-group alert alert-@divClass">

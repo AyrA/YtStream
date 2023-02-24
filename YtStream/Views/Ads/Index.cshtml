@@ -1,14 +1,16 @@
-﻿@{
-    var Handler = new YtStream.Ad.Ads();
+﻿@using YtStream.Enums;
+@inject YtStream.Services.AdsService _adsService
+@{
     ViewData["Title"] = "Manage ads";
+    //Todo: Very ugly. Should move this value somewhere else
     var SizeLimit = YtStream.Controllers.AdsController.ReqLimit;
-    var AdLists = new Dictionary<string, YtStream.Ad.AdType>()
+    var AdLists = new Dictionary<string, AdTypeEnum>()
 {
-        { "Intro", YtStream.Ad.AdType.Intro },
-        { "Intermission", YtStream.Ad.AdType.Inter },
-        { "Outro", YtStream.Ad.AdType.Outro },
+        { "Intro", AdTypeEnum.Intro },
+        { "Intermission", AdTypeEnum.Inter },
+        { "Outro", AdTypeEnum.Outro },
     };
-    var Files = Handler.GetFiles().ToArray();
+    var files = _adsService.GetFiles().ToArray();
 }
 <h1>Manage ads</h1>
 <p>
@@ -36,17 +38,17 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var Ad in Handler.GetList(KnownType.Value))
+            @foreach (var ad in _adsService.GetList(KnownType.Value))
             {
                 <tr>
                     <td>
-                        @Ad
-                        [<a href="#@Ad" class="play-link">Play</a>]
+                        @ad
+                        [<a href="#@ad" class="play-link">Play</a>]
                     </td>
                     <td>
                         <form method="post" asp-action="Remove" class="form-inline">
                             <input type="hidden" name="Type" value="@KnownType.Value" />
-                            <input type="hidden" name="Filename" value="@Ad" />
+                            <input type="hidden" name="Filename" value="@ad" />
                             <input type="submit" value="Remove" class="btn btn-warning" />
                         </form>
                     </td>
@@ -58,7 +60,7 @@
                         <input type="hidden" name="Type" value="@KnownType.Value" />
                         <select class="form-control" required name="Filename">
                             <option value="">-- Add file --</option>
-                            @foreach (var F in Files.Where(m => !m.Type.HasFlag(KnownType.Value)))
+                            @foreach (var F in files.Where(m => !m.Type.HasFlag(KnownType.Value)))
                             {
                                 <option value="@F.Filename">@F.Filename</option>
                             }
@@ -90,7 +92,7 @@
 </p>
 
 <h2>Delete</h2>
-@foreach (var F in Files)
+@foreach (var F in files)
 {
     <div class="form-group">
         <form method="post" asp-action="Delete" class="form-inline">

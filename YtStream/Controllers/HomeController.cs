@@ -1,14 +1,15 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using YtStream.Models;
+using YtStream.Services;
+using YtStream.Services.Accounts;
 
 namespace YtStream.Controllers
 {
     public class HomeController : BaseController
     {
-        public HomeController()
+        public HomeController(ConfigService config, UserManagerService userManager) : base(config, userManager)
         {
         }
 

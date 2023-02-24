@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using YtStream.MP3;
+using YtStream.Enums;
+using YtStream.Interfaces;
+using YtStream.Services;
+using YtStream.Services.Mp3;
 
 namespace YtStream.Models
 {
@@ -10,11 +13,6 @@ namespace YtStream.Models
     /// </summary>
     public class ConfigModel : IValidateable
     {
-        /// <summary>
-        /// File name where config is stored
-        /// </summary>
-        public const string ConfigFileName = "config.json";
-
         /// <summary>
         /// Path to cache main directory
         /// </summary>
@@ -110,7 +108,7 @@ namespace YtStream.Models
         /// Enable or disable streaming ads for administrators
         /// </summary>
         public bool AdminAds { get; set; }
-        
+
         /// <summary>
         /// Sets whether ads should be marked
         /// </summary>
@@ -123,12 +121,12 @@ namespace YtStream.Models
         /// <summary>
         /// Audio bitrate for MP3 conversion
         /// </summary>
-        public Bitrate AudioBitrate { get; set; }
+        public Mp3BitrateEnum AudioBitrate { get; set; }
 
         /// <summary>
         /// Audio frequency for MP3 conversion
         /// </summary>
-        public Frequency AudioFrequency { get; set; }
+        public Mp3FrequencyEnum AudioFrequency { get; set; }
 
         /// <summary>
         /// Initializes a configuration with defaults
@@ -137,37 +135,28 @@ namespace YtStream.Models
         {
             UseCache = true;
             UseSponsorBlock = true;
-            SponsorBlockServer = SponsorBlock.DefaultHost;
-            CachePath = Path.Combine(Startup.BasePath, "Cache");
-            FfmpegPath = Path.Combine(Startup.BasePath, "Tools", "ffmpeg.exe");
-            YoutubedlPath = Path.Combine(Startup.BasePath, "Tools", "youtube-dl.exe");
+            SponsorBlockServer = SponsorBlockService.DefaultHost;
+            CachePath = Path.Combine(AppContext.BaseDirectory, "Cache");
+            FfmpegPath = Path.Combine(AppContext.BaseDirectory, "Tools", "ffmpeg.exe");
+            YoutubedlPath = Path.Combine(AppContext.BaseDirectory, "Tools", "youtube-dl.exe");
             //Cache MP3 forever
             CacheMp3Lifetime = 0;
             //7 days
-            CacheSBlockLifetime = Tools.SponsorBlockCacheTime;
+            CacheSBlockLifetime = SponsorBlockCacheService.SponsorBlockCacheTime;
             MaxKeysPerUser = 10;
             //Default MP3 settings
-            AudioBitrate = Converter.DefaultRate;
-            AudioFrequency = Converter.DefaultFrequency;
-        }
-
-        /// <summary>
-        /// Save this instance to the default configuration file
-        /// </summary>
-        public void Save()
-        {
-            var F = Path.Combine(Startup.BasePath, ConfigFileName);
-            File.WriteAllText(F, this.ToJson(true));
+            AudioBitrate = Mp3ConverterService.DefaultRate;
+            AudioFrequency = Mp3ConverterService.DefaultFrequency;
         }
 
         public string[] GetValidationMessages()
         {
             var Messages = new List<string>();
-            if (!Enum.IsDefined(typeof(Bitrate), AudioBitrate))
+            if (!Enum.IsDefined(typeof(Mp3BitrateEnum), AudioBitrate))
             {
                 Messages.Add("Audio bitrate has an invalid value");
             }
-            if (!Enum.IsDefined(typeof(Frequency), AudioFrequency))
+            if (!Enum.IsDefined(typeof(Mp3FrequencyEnum), AudioFrequency))
             {
                 Messages.Add("Audio frequency has an invalid value");
             }
@@ -205,7 +194,7 @@ namespace YtStream.Models
             {
                 if (string.IsNullOrWhiteSpace(SponsorBlockServer))
                 {
-                    Messages.Add($"Sponsorblock server address not set. Default would be {SponsorBlock.DefaultHost}");
+                    Messages.Add($"Sponsorblock server address not set. Default would be {SponsorBlockService.DefaultHost}");
                 }
                 else if (Uri.CheckHostName(SponsorBlockServer) != UriHostNameType.Dns)
                 {
@@ -236,13 +225,23 @@ namespace YtStream.Models
             return GetValidationMessages().Length == 0;
         }
 
+        /*
+        /// <summary>
+        /// Save this instance to the default configuration file
+        /// </summary>
+        public void Save()
+        {
+            var F = Path.Combine(AppContext.BaseDirectory, ConfigService.ConfigFileName);
+            File.WriteAllText(F, this.ToJson(true));
+        }
+
         /// <summary>
         /// Loads settings from the default confgiuration file
         /// </summary>
         /// <returns>Settings. Defaults if no file was found</returns>
         public static ConfigModel Load()
         {
-            var F = Path.Combine(Startup.BasePath, ConfigFileName);
+            var F = Path.Combine(AppContext.BaseDirectory, ConfigService.ConfigFileName);
             try
             {
                 return File.ReadAllText(F).FromJson<ConfigModel>(true);
@@ -252,5 +251,6 @@ namespace YtStream.Models
                 return new ConfigModel();
             }
         }
+        //*/
     }
 }

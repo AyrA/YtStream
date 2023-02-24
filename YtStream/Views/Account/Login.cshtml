@@ -1,5 +1,6 @@
 ﻿@{
     ViewData["Title"] = "Login";
+    var minPwSize = YtStream.Services.Accounts.UserManagerService.PasswordMinLength;
 }
 
 <div class="row">
@@ -14,7 +15,7 @@
             <div class="form-group">
                 <label>Password</label>
                 <input type="password" class="form-control" name="password" id="password"
-                       minlength="@UserManager.PasswordMinLength"
+                       minlength="@minPwSize"
                        required placeholder="Password" />
             </div>
             <div class="form-check">

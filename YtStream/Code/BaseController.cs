@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System;
 using System.Threading.Tasks;
-using YtStream.Accounts;
 using YtStream.Models;
+using YtStream.Models.Accounts;
+using YtStream.Services;
+using YtStream.Services.Accounts;
 
 namespace YtStream
 {
@@ -13,6 +15,8 @@ namespace YtStream
     /// </summary>
     public class BaseController : Controller
     {
+        protected readonly UserManagerService _userManager;
+
         /// <summary>
         /// Current system configuration
         /// </summary>
@@ -22,7 +26,7 @@ namespace YtStream
         /// Currently logged on user
         /// </summary>
         /// <remarks>This is null if not logged on</remarks>
-        public AccountInfo CurrentUser { get; private set; }
+        public AccountInfoModel CurrentUser { get; private set; }
 
         /// <summary>
         /// Gets the cookie message
@@ -36,11 +40,12 @@ namespace YtStream
         /// <summary>
         /// Basic initialization
         /// </summary>
-        public BaseController()
+        public BaseController(ConfigService config, UserManagerService userManager)
         {
+            _userManager = userManager;
             try
             {
-                Settings = ConfigModel.Load();
+                Settings = config.GetConfiguration();
             }
             catch
             {
@@ -59,7 +64,7 @@ namespace YtStream
             CookieMessage = null;
             if (User.Identity.IsAuthenticated)
             {
-                CurrentUser = UserManager.GetUser(User.Identity.Name);
+                CurrentUser = _userManager.GetUser(User.Identity.Name);
                 //Terminate user session if the user is no longer existing or enabled
                 if (CurrentUser == null || !CurrentUser.Enabled)
                 {
@@ -86,7 +91,7 @@ namespace YtStream
         /// <remarks>If the user is not found, CurrentUser will be set to null</remarks>
         public void SetApiUser(Guid ApiKey)
         {
-            CurrentUser = UserManager.GetUser(ApiKey);
+            CurrentUser = _userManager.GetUser(ApiKey);
         }
 
         /// <summary>

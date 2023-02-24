@@ -1,8 +1,14 @@
+using AyrA.AutoDI;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting.WindowsServices;
 using System;
-using System.Diagnostics;
-using System.IO;
 
 namespace YtStream
 {
@@ -20,35 +26,69 @@ namespace YtStream
 #if DEBUG
             Environment.SetEnvironmentVariable("DOTNET_STARTUP_HOOKS", "");
 #endif
-            //Set current directory because for services it's wrong.
-            using (var P = Process.GetCurrentProcess())
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions()
             {
-                var BaseDir = Path.GetDirectoryName(P.MainModule.FileName);
-                while (!Directory.Exists(Path.Combine(BaseDir, "wwwroot")))
-                {
-                    var NewDir = Path.GetFullPath(Path.Combine(BaseDir, ".."));
-                    if (NewDir == BaseDir)
-                    {
-                        throw new Exception("Unable to find path to 'wwwroot' folder");
-                    }
-                    BaseDir = NewDir;
-                }
-                Environment.CurrentDirectory = BaseDir;
-            }
-            CreateHostBuilder(args).Build().Run();
-        }
+                Args = args,
+                ContentRootPath = WindowsServiceHelpers.IsWindowsService() ? AppContext.BaseDirectory : default
+            });
 
-        /// <summary>
-        /// Cnstruct hosting environment
-        /// </summary>
-        /// <param name="args">Command line arguments</param>
-        /// <returns>Hosting environment</returns>
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .UseWindowsService()
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                });
+            builder.Services.AddLogging();
+
+            //Register as a windows service
+            builder.Host.UseWindowsService(options =>
+            {
+                options.ServiceName = "YtStream";
+            });
+
+            //Configure cookie based authentication
+            builder.Services.Configure<CookiePolicyOptions>(options =>
+            {
+                options.CheckConsentNeeded = context => false;
+                options.MinimumSameSitePolicy = SameSiteMode.Strict;
+            });
+            builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
+
+            //Autoregister services
+            AutoDIExtensions.DebugLogging = builder.Environment.IsDevelopment();
+            builder.Services.AutoRegisterCurrentAssembly();
+
+            //Give us access to the IUrlHelper in services
+            builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>()
+                .AddScoped(x =>
+                    x.GetRequiredService<IUrlHelperFactory>()
+                        .GetUrlHelper(x.GetRequiredService<IActionContextAccessor>().ActionContext));
+
+            // Add services to the container.
+            var mvc = builder.Services.AddControllersWithViews();
+
+            if (builder.Environment.IsDevelopment())
+            {
+                mvc.AddRazorRuntimeCompilation();
+            }
+
+            var app = builder.Build();
+
+            // Configure the HTTP request pipeline.
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseExceptionHandler("/Home/Exception");
+            }
+            app.UseStatusCodePagesWithReExecute("/Home/Error/{0}");
+
+            app.UseStaticFiles();
+            app.UseRouting();
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            app.MapControllerRoute(
+                name: "default",
+                pattern: "{controller=Home}/{action=Index}/{id?}");
+
+            app.Run();
+        }
     }
 }

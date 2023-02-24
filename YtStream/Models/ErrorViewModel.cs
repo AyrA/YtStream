@@ -57,7 +57,7 @@ namespace YtStream.Models
         /// Deserializes stack trace lines
         /// </summary>
         /// <returns>Stack trace</returns>
-        public StackTraceInfo[] ParseStackTrace()
+        public StackTraceInfoModel[] ParseStackTrace()
         {
             if (Error == null)
             {
@@ -65,12 +65,12 @@ namespace YtStream.Models
             }
             if (Error.StackTrace == null)
             {
-                return new StackTraceInfo[0];
+                return new StackTraceInfoModel[0];
             }
             return Error.StackTrace
                 .Trim()
                 .Split('\n')
-                .Select(m => new StackTraceInfo(m.Trim()))
+                .Select(m => new StackTraceInfoModel(m.Trim()))
                 .ToArray();
         }
     }

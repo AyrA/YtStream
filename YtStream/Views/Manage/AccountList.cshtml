@@ -1,4 +1,5 @@
-﻿@model AccountInfo[]
+﻿@using YtStream.Services.Accounts;
+@model AccountInfoModel[]
 @{
     ViewData["Title"] = "Manage accounts";
 }
@@ -49,7 +50,7 @@
         <div class="form-group col-md-4">
             <label>Password</label>
             <input type="password" class="form-control password-check" name="password" id="password"
-                   minlength="@UserManager.PasswordMinLength"
+                   minlength="@UserManagerService.PasswordMinLength"
                    required placeholder="Password" />
         </div>
     </div>
@@ -57,7 +58,7 @@
         <div class="form-group col-md-4">
             <label>Password</label>
             <input type="password" class="form-control password-match" name="passwordRepeat" id="passwordRepeat"
-                   minlength="@UserManager.PasswordMinLength"
+                   minlength="@UserManagerService.PasswordMinLength"
                    required placeholder="Password" />
         </div>
     </div>

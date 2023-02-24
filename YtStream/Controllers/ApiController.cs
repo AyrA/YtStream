@@ -1,14 +1,30 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using YtStream.Services;
+using YtStream.Services.Accounts;
+using YtStream.Services.YT;
 
 namespace YtStream.Controllers
 {
     public class ApiController : BaseController
     {
+        private readonly YtCacheService _ytCacheService;
+        private readonly SponsorBlockCacheService _sponsorBlockCacheService;
+        private readonly YtApiService _ytApiService;
+
+        public ApiController(ConfigService config, UserManagerService userManager,
+            YtCacheService ytCacheService,
+            SponsorBlockCacheService sponsorBlockCacheService,
+            YtApiService ytApiService) : base(config, userManager)
+        {
+            _ytCacheService = ytCacheService;
+            _sponsorBlockCacheService = sponsorBlockCacheService;
+            _ytApiService = ytApiService;
+        }
+
         public override void OnActionExecuting(ActionExecutingContext context)
         {
             if (Settings.RequireAccount && !User.Identity.IsAuthenticated)
@@ -33,22 +49,21 @@ namespace YtStream.Controllers
                     return Error(ex);
                 }
             }
-            var data = YT.YtCache.Get(id, out bool found);
+            var data = _ytCacheService.Get(id, out bool found);
             if (Tools.IsYoutubePlaylist(id))
             {
                 if (found || IsHead())
                 {
                     return Json(data);
                 }
-                var API = new YT.YtApi(Settings.YtApiKey);
-                var Result = await API.GetPlaylistInfoAsync(id);
+                var Result = await _ytApiService.GetPlaylistInfoAsync(id);
                 if (Result == null)
                 {
-                    YT.YtCache.Set(id, null, TimeSpan.FromDays(1));
+                    _ytCacheService.Set(id, null, TimeSpan.FromDays(1));
                     Tools.SetExpiration(Response, TimeSpan.FromDays(1));
                     return NotFound();
                 }
-                YT.YtCache.Set(id, Result, TimeSpan.FromHours(1));
+                _ytCacheService.Set(id, Result, TimeSpan.FromHours(1));
                 Tools.SetExpiration(Response, TimeSpan.FromHours(1));
                 return Json(Result.Select(m => new
                 {
@@ -62,11 +77,10 @@ namespace YtStream.Controllers
                 {
                     return Json(data);
                 }
-                var API = new YT.YtApi(Settings.YtApiKey);
-                var Result = await API.GetVideoInfo(id);
+                var Result = await _ytApiService.GetVideoInfo(id);
                 if (Result == null)
                 {
-                    YT.YtCache.Set(id, null, TimeSpan.FromDays(1));
+                    _ytCacheService.Set(id, null, TimeSpan.FromDays(1));
                     Tools.SetExpiration(Response, TimeSpan.FromDays(1));
                     return NotFound();
                 }
@@ -75,7 +89,7 @@ namespace YtStream.Controllers
                     title = Result.Title,
                     id = id
                 };
-                YT.YtCache.Set(id, Obj, TimeSpan.FromHours(1));
+                _ytCacheService.Set(id, Obj, TimeSpan.FromHours(1));
                 Tools.SetExpiration(Response, TimeSpan.FromHours(1));
                 return Json(Obj);
             }
@@ -96,7 +110,7 @@ namespace YtStream.Controllers
                 {
                     return Json(null);
                 }
-                return Json(await SponsorBlockCache.GetRangesAsync(id, Settings));
+                return Json(await _sponsorBlockCacheService.GetRangesAsync(id));
             }
             return BadRequest("Invalid youtube id");
         }

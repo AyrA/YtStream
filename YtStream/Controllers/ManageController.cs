@@ -5,8 +5,12 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using YtStream.Accounts;
+using YtStream.Enums;
+using YtStream.Extensions;
 using YtStream.Models;
+using YtStream.Models.Accounts;
+using YtStream.Services;
+using YtStream.Services.Accounts;
 
 namespace YtStream.Controllers
 {
@@ -14,10 +18,23 @@ namespace YtStream.Controllers
     public class ManageController : BaseController
     {
         private readonly ILogger _logger;
+        private readonly string _basePath;
+        private readonly BrotliService _brotli;
+        private readonly CacheService _cache;
+        private readonly LockService _lock;
+        private readonly ConfigService _config;
 
-        public ManageController(ILogger<StreamController> Logger)
+        public ManageController(ILogger<StreamController> Logger, ConfigService config,
+            UserManagerService userManager,
+            BasePathService basePath, BrotliService brotli,
+            CacheService cache, LockService lockService) : base(config, userManager)
         {
             _logger = Logger;
+            _basePath = basePath.BasePath;
+            _brotli = brotli;
+            _cache = cache;
+            _lock = lockService;
+            _config = config;
         }
 
         [HttpGet]
@@ -31,13 +48,13 @@ namespace YtStream.Controllers
         [HttpGet]
         public IActionResult CacheInfo()
         {
-            return View(Cache.GetHandler(Cache.CacheType.MP3, Settings.CacheMp3Lifetime));
+            return View(_cache.GetHandler(CacheTypeEnum.MP3, Settings.CacheMp3Lifetime));
         }
 
         [HttpPost, ValidateAntiForgeryToken]
         public IActionResult CacheClean()
         {
-            var Handler = Cache.GetHandler(Cache.CacheType.MP3, Settings.CacheMp3Lifetime);
+            var Handler = _cache.GetHandler(CacheTypeEnum.MP3, Settings.CacheMp3Lifetime);
             try
             {
                 var Msg = $"Deleted {Handler.ClearStale()} expired files from cache";
@@ -55,7 +72,7 @@ namespace YtStream.Controllers
             try
             {
                 Tools.CheckFormConfirmation(Request.Form);
-                var Handler = Cache.GetHandler(Cache.CacheType.MP3, Settings.CacheMp3Lifetime);
+                var Handler = _cache.GetHandler(CacheTypeEnum.MP3, Settings.CacheMp3Lifetime);
                 var Count = Handler.Purge();
                 _logger.LogInformation("MP3 cache purge: Deleted {0} files", Count);
                 return RedirectWithMessage("CacheInfo", $"Deleted {Count} files from cache");
@@ -84,11 +101,11 @@ namespace YtStream.Controllers
                 switch (id)
                 {
                     case "accounts":
-                        Filename = System.IO.Path.Combine(Startup.BasePath, UserManager.FileName);
+                        Filename = System.IO.Path.Combine(_basePath, UserManagerService.FileName);
                         Fakename = "backup.ytacc";
                         break;
                     case "config":
-                        Filename = System.IO.Path.Combine(Startup.BasePath, ConfigModel.ConfigFileName);
+                        Filename = System.IO.Path.Combine(_basePath, ConfigService.ConfigFileName);
                         Fakename = "backup.ytconf";
                         break;
                     default:
@@ -103,7 +120,7 @@ namespace YtStream.Controllers
             {
                 using (var FS = System.IO.File.OpenRead(Filename))
                 {
-                    byte[] Result = await Brotli.Compress(FS);
+                    byte[] Result = await _brotli.Compress(FS);
                     HttpContext.Response.Headers.Add("Content-Disposition", $"attachment; filename=\"{Fakename}\"");
                     return File(Result, "application/octet-stream");
                 }
@@ -147,7 +164,7 @@ namespace YtStream.Controllers
         [HttpGet]
         public IActionResult AccountList()
         {
-            return View(UserManager.GetUsers());
+            return View(_userManager.GetUsers());
         }
 
         [HttpGet, ActionName("AccountDelete")]
@@ -166,13 +183,13 @@ namespace YtStream.Controllers
         [HttpPost, ActionName("AccountDelete"), ValidateAntiForgeryToken]
         public IActionResult AccountDeletePost(string id)
         {
-            AccountInfo Acc;
+            AccountInfoModel Acc;
             try
             {
                 //If we do not allow the user to delete itself we guarantee that at least one administrator is remaining.
                 Tools.CheckFormConfirmation(Request.Form);
                 Acc = GetAccount(id);
-                UserManager.DeleteUser(id);
+                _userManager.DeleteUser(id);
             }
             catch (Exception ex)
             {
@@ -185,7 +202,7 @@ namespace YtStream.Controllers
         [HttpGet]
         public IActionResult AccountEdit(string id)
         {
-            AccountInfo Acc;
+            AccountInfoModel Acc;
             try
             {
                 Acc = GetAccount(id);
@@ -200,7 +217,7 @@ namespace YtStream.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public IActionResult AccountRename(string id, string username)
         {
-            AccountInfo Acc;
+            AccountInfoModel Acc;
             if (id != null && username != null)
             {
                 if (id == username)
@@ -216,20 +233,20 @@ namespace YtStream.Controllers
                         //This bypasses validation because user names are case-insensitive
                         //and thus validation would always fail
                         Acc.Username = username;
-                        UserManager.Save();
+                        _userManager.Save();
                         return RedirectWithMessage("AccountEdit", null, $"Renamed to {username}", new { id = username });
                     }
                     //Regular renaming action
-                    if (UserManager.GetUser(username) != null)
+                    if (_userManager.GetUser(username) != null)
                     {
                         throw new InvalidOperationException("An account with this name already exists");
                     }
-                    if (!UserManager.IsValidUsername(username, false))
+                    if (!_userManager.IsValidUsername(username, false))
                     {
                         throw new FormatException("Invalid user name");
                     }
                     Acc.Username = username;
-                    UserManager.Save();
+                    _userManager.Save();
                     return RedirectWithMessage("AccountEdit", null, $"Renamed to {username}", new { id = username });
                 }
                 catch (Exception ex)
@@ -247,7 +264,7 @@ namespace YtStream.Controllers
             {
                 if (password == passwordRepeat)
                 {
-                    AccountInfo NewUser = UserManager.AddUser(userName, password, UserRoles.User);
+                    AccountInfoModel NewUser = _userManager.AddUser(userName, password, UserRoles.User);
                     _logger.LogInformation("User {0} registered by {1}", NewUser.Username, CurrentUser.Username);
                 }
                 else
@@ -277,8 +294,8 @@ namespace YtStream.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public IActionResult AccountPasswordChange(string id, string password, string passwordRepeat)
         {
-            AccountInfo Acc;
-            var PI = new UserPasswordRules();
+            AccountInfoModel Acc;
+            var PI = new UserPasswordRuleModel();
             try
             {
                 Acc = GetAccount(id);
@@ -291,7 +308,7 @@ namespace YtStream.Controllers
                     throw new ArgumentException("passwords do not match");
                 }
                 Acc.SetPassword(password);
-                UserManager.Save();
+                _userManager.Save();
             }
             catch (Exception ex)
             {
@@ -303,7 +320,7 @@ namespace YtStream.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public IActionResult AccountPermission(string id)
         {
-            AccountInfo Acc;
+            AccountInfoModel Acc;
             UserRoles Role = 0;
             try
             {
@@ -327,7 +344,7 @@ namespace YtStream.Controllers
                     }
                 }
                 Acc.Roles = Role;
-                UserManager.Save();
+                _userManager.Save();
             }
             catch (Exception ex)
             {
@@ -339,7 +356,7 @@ namespace YtStream.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public IActionResult AccountSetOptions(string id, bool noads)
         {
-            AccountInfo Acc;
+            AccountInfoModel Acc;
             try
             {
                 if (!HttpContext.Request.HasFormContentType)
@@ -348,7 +365,7 @@ namespace YtStream.Controllers
                 }
                 Acc = GetAccount(id);
                 Acc.DisableAds = noads;
-                UserManager.Save();
+                _userManager.Save();
             }
             catch (Exception ex)
             {
@@ -366,8 +383,8 @@ namespace YtStream.Controllers
         {
             try
             {
-                //Locking is always possible
-                if (Startup.Locked)
+                //Locking is always possible, but unlocking requires a valid configuration
+                if (_lock.Locked)
                 {
                     if (Settings == null || !Settings.IsValid())
                     {
@@ -377,10 +394,18 @@ namespace YtStream.Controllers
             }
             catch (Exception ex)
             {
-                Startup.Locked = true;
+                _lock.Lock();
+                _logger.LogError(ex, "Failed to validate settings");
                 return View("Error", new ErrorViewModel(ex));
             }
-            Startup.Locked = !Startup.Locked;
+            if (_lock.Locked)
+            {
+                _lock.Unlock();
+            }
+            else
+            {
+                _lock.Lock();
+            }
             return RedirectWithMessage("ChangeLock", "Application lock changed");
         }
 
@@ -408,8 +433,7 @@ namespace YtStream.Controllers
             {
                 return View(model);
             }
-            model.Save();
-            Startup.ApplySettings(model);
+            _config.SaveConfiguration(model);
             return RedirectWithMessage("Config", "Settings saved and applied");
         }
 
@@ -419,8 +443,8 @@ namespace YtStream.Controllers
 
         private IActionResult ChangeUserEnabled(string Username, bool State)
         {
-            AccountInfo Acc;
-            var Msg = (State ? "enabled" : "disabled");
+            AccountInfoModel Acc;
+            var Msg = State ? "enabled" : "disabled";
             try
             {
                 Acc = GetAccount(Username, false);
@@ -430,17 +454,17 @@ namespace YtStream.Controllers
                 return View("Error", new ErrorViewModel(ex));
             }
             Acc.Enabled = State;
-            UserManager.Save();
+            _userManager.Save();
             return RedirectWithMessage("AccountList", $"User {Username} was {Msg}");
         }
 
-        private AccountInfo GetAccount(string Username, bool AllowSelf = false)
+        private AccountInfoModel GetAccount(string Username, bool AllowSelf = false)
         {
             if (string.IsNullOrEmpty(Username))
             {
                 throw new ArgumentNullException(nameof(Username), "User name not specified");
             }
-            var Acc = UserManager.GetUser(Username);
+            var Acc = _userManager.GetUser(Username);
             if (Acc == null)
             {
                 throw new ArgumentException("User not found: " + nameof(Username));
@@ -457,13 +481,12 @@ namespace YtStream.Controllers
         {
             using (var S = formFile.OpenReadStream())
             {
-                var data = (await Brotli.Decompress(S)).Utf8().FromJson<ConfigModel>(true);
+                var data = (await _brotli.Decompress(S)).Utf8().FromJson<ConfigModel>(true);
                 if (!data.IsValid())
                 {
                     throw new Exception(string.Join("\r\n", data.GetValidationMessages()));
                 }
-                data.Save();
-                Startup.ApplySettings(data);
+                _config.SaveConfiguration(data);
             }
             return RedirectWithMessage("Backup", "Settings imported");
         }
@@ -472,7 +495,7 @@ namespace YtStream.Controllers
         {
             using (var S = formFile.OpenReadStream())
             {
-                var data = (await Brotli.Decompress(S)).Utf8().FromJson<AccountInfo[]>(true);
+                var data = (await _brotli.Decompress(S)).Utf8().FromJson<AccountInfoModel[]>(true);
                 if (data.Length < 1)
                 {
                     throw new Exception("Imported user list is empty");
@@ -487,8 +510,8 @@ namespace YtStream.Controllers
                     throw new Exception("Imported user list has invalid entries. " +
                         $"First invalid user is '{Invalid.Username}'. Error: '{Invalid.GetValidationMessages()[0]}'");
                 }
-                await System.IO.File.WriteAllTextAsync(System.IO.Path.Combine(Startup.BasePath, UserManager.FileName), data.ToJson(true));
-                UserManager.Reload();
+                await System.IO.File.WriteAllTextAsync(System.IO.Path.Combine(_basePath, UserManagerService.FileName), data.ToJson(true));
+                _userManager.Reload();
             }
             return RedirectWithMessage("Backup", "User accounts imported");
         }

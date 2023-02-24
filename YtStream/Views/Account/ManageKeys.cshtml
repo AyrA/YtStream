@@ -2,8 +2,10 @@
 @{
     ViewData["Title"] = "Stream key management";
     var Settings = (ConfigModel)ViewBag.Settings;
-    var User = (AccountInfo)ViewBag.User;
+    var User = (AccountInfoModel)ViewBag.User;
 }
+@inject YtStream.Services.Accounts.UserManagerService _userManager
+
 @if (Settings != null)
 {
     if (Settings.RequireAccount)
@@ -11,9 +13,11 @@
         <p>
             Stream keys can be used to stream media on devices that don't support logging into this application,
             for example an internet radio device.<br />
-            @if(UserManager.MaxKeysPerUser > 0)
+            @if (_userManager.MaxKeysPerUser > 0)
             {
-                <span>You can create up to @UserManager.MaxKeysPerUser keys</span><br />
+                <span>You can create up to @_userManager.MaxKeysPerUser keys</span>
+
+                <br />
             }
             <a asp-action="Info" asp-controller="Home">Click here to see how to use stream keys</a>
         </p>
@@ -54,7 +58,7 @@
     </tbody>
 </table>
 <h2>Create a key</h2>
-@if (User.ApiKeys.Length < UserManager.MaxKeysPerUser)
+@if (User.ApiKeys.Length < _userManager.MaxKeysPerUser)
 {
     <form method="post" asp-action="CreateKey">
         <div class="row form-group">

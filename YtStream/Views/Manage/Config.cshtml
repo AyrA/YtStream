@@ -1,4 +1,8 @@
-﻿@model ConfigModel
+﻿@using YtStream.Enums;
+@using YtStream.Services.Mp3;
+@using YtStream.Services;
+@inject ConfigService _configService
+@model ConfigModel
 @{
     ViewData["Title"] = "Settings";
     var ErrMsg = (string)ViewBag.ErrorMessage;
@@ -8,7 +12,7 @@
     {
         try
         {
-            ConfigModel.Load();
+            _configService.GetConfiguration();
             ErrMsg = "Configuration is null";
 
         }
@@ -21,7 +25,7 @@
     {
         try
         {
-            FfmpegVersion = await Converter.GetVersion(Model.FfmpegPath);
+            FfmpegVersion = await Mp3ConverterService.GetVersion(Model.FfmpegPath);
         }
         catch (Exception ex)
         {
@@ -30,7 +34,7 @@
         }
         try
         {
-            ytdlVersion = await new YtStream.YtDl.YoutubeDl(Model.YoutubedlPath).GetVersion();
+            ytdlVersion = await YoutubeDlService.GetVersion(Model.YoutubedlPath);
         }
         catch (Exception ex)
         {
@@ -240,7 +244,7 @@ else
             Once this limit is reached,
             the system stops adding more ids to the stream list.
             Regardless of this setting, there's a hard limit of
-            @YtStream.YtDl.YoutubeDl.MaxPlaylistEntries items per individual playlist.
+            @YoutubeDlService.MaxPlaylistEntries items per individual playlist.
             This will stop most bad people from overloading the system
             by trying to stream multiple huge playlists.
             There is no exception for administrators either.
@@ -250,13 +254,13 @@ else
     <div class="row">
         <div class="col-md-4 form-group">
             <label>Bitrate</label>
-            <select asp-for="AudioBitrate" asp-items="Tools.HtmlEnumSwapList<YtStream.MP3.Bitrate>()" class="form-control"></select>
-            <i>Default recommended bitrate: @Tools.SwapEnumName(YtStream.MP3.Bitrate.kbps192)</i>
+            <select asp-for="AudioBitrate" asp-items="Tools.HtmlEnumSwapList<Mp3BitrateEnum>()" class="form-control"></select>
+            <i>Default recommended bitrate: @Tools.SwapEnumName(Mp3BitrateEnum.kbps192)</i>
         </div>
         <div class="col-md-4 form-group">
             <label>Frequency</label>
-            <select asp-for="AudioFrequency" asp-items="Tools.HtmlEnumSwapList<YtStream.MP3.Frequency>()" class="form-control"></select>
-            <i>Default recommended frequency: @Tools.SwapEnumName(YtStream.MP3.Frequency.Hz44100)</i>
+            <select asp-for="AudioFrequency" asp-items="Tools.HtmlEnumSwapList<Mp3FrequencyEnum>()" class="form-control"></select>
+            <i>Default recommended frequency: @Tools.SwapEnumName(Mp3FrequencyEnum.Hz44100)</i>
         </div>
     </div>
     <div class="row">
@@ -275,10 +279,10 @@ else
                 Increasing the values will not yield better quality,
                 simply because the material from Youtube is not of better quality,
                 but it will consume more bandwidth.
-                You can reduce the Bitrate to @Tools.SwapEnumName(YtStream.MP3.Bitrate.kbps128) if bandwidth is a concern
+                You can reduce the Bitrate to @Tools.SwapEnumName(Mp3BitrateEnum.kbps128) if bandwidth is a concern
                 without sacrificing audio quality too much.
                 If you plan on using this system purely for voice content and want to save as much bandwidth as possible,
-                you can reduce the bitrate to around @Tools.SwapEnumName(YtStream.MP3.Bitrate.kbps64)
+                you can reduce the bitrate to around @Tools.SwapEnumName(Mp3BitrateEnum.kbps64)
                 and still get acceptable results.
             </p>
             <p>

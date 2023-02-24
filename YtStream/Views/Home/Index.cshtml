@@ -1,4 +1,6 @@
 ﻿@model ConfigModel
+@inject YtStream.Services.ConfigService _configService
+@inject YtStream.Services.LockService _lockService
 @{
     ViewData["Title"] = "Home Page";
     string ErrorMessage = null;
@@ -6,7 +8,7 @@
     {
         try
         {
-            ConfigModel.Load();
+            _configService.GetConfiguration();
             ErrorMessage = "Configuration is null";
 
         }
@@ -49,7 +51,7 @@
             </p>
         </div>
     }
-    @if (Startup.Locked)
+    @if (_lockService.Locked)
     {
         <div class="alert alert-warning">
             This application is currently locked, and streaming is not available.
