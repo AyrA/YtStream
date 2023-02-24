@@ -98,12 +98,6 @@ namespace YtStream
             });
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
             services.AddControllersWithViews();
-            services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
-            {
-                //Required for the BufferedStream to dispose correctly.
-                //No writes will actually be performed because we always call FlushAsync() before disposing.
-                options.AllowSynchronousIO = true;
-            });
         }
 
         /// <summary>
