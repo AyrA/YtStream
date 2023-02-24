@@ -36,5 +36,7 @@ artifacts/
 
 #Cached YtStream resources
 Cache/
+#Things I do not want you to see
 accounts.json
 config.json
+ads.json
