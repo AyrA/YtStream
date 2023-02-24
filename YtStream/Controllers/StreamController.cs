@@ -325,6 +325,10 @@ namespace YtStream.Controllers
 
         private bool ShouldPlayAds()
         {
+            if (CurrentUser == null)
+            {
+                return true;
+            }
             return !CurrentUser.DisableAds &&
                 (Settings.AdminAds || !CurrentUser.Roles.HasFlag(Accounts.UserRoles.Administrator));
         }
