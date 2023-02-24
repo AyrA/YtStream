@@ -43,7 +43,10 @@ namespace YtStream.YtDl
         /// Cached version
         /// </summary>
         private string version = null;
-        private ILogger Logger;
+        /// <summary>
+        /// Logging interface
+        /// </summary>
+        private readonly ILogger Logger;
 
         /// <summary>
         /// Creates a new instance
@@ -145,7 +148,9 @@ namespace YtStream.YtDl
             {
                 var Lines = (await P.StandardOutput.ReadToEndAsync()).Trim();
                 var Error = (await P.StandardError.ReadToEndAsync()).Trim();
-                if (Error.Length > 0)
+                //Only consider errors if there was no regular output.
+                //Otherwise they're likely just warnings.
+                if (Error.Length > 0 && Lines.Length == 0)
                 {
                     throw new YoutubeDlException(Error);
                 }
