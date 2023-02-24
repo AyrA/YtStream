@@ -97,7 +97,10 @@ namespace YtStream.Controllers
             if (IsHead())
             {
                 _logger.LogInformation("Early termination on HEAD request");
-                Tools.SetAudioHeaders(Response);
+                if (Tools.SetAudioHeaders(Response))
+                {
+                    await Response.StartAsync();
+                }
                 return new EmptyResult();
             }
             var MP3 = Cache.GetHandler(Cache.CacheType.MP3, Settings.CacheMp3Lifetime);
@@ -147,7 +150,10 @@ namespace YtStream.Controllers
                         if (CacheStream.Length > 0)
                         {
                             _logger.LogInformation("Using cache for {0}", filename);
-                            Tools.SetAudioHeaders(Response);
+                            if (Tools.SetAudioHeaders(Response))
+                            {
+                                await Response.StartAsync();
+                            }
                             using (var S = GetAd(AdHandler, CurrentAdType))
                             {
                                 await MP3Cut.SendAd(S, Response.Body, MarkAds);
@@ -163,7 +169,10 @@ namespace YtStream.Controllers
                         }
                     }
                 }
+
+                /////////////////////////////////////////////////////////////
                 //At this point we need to go live to youtube to get the file
+
                 var ytdl = new YoutubeDl(Settings.YoutubedlPath);
                 var converter = new Converter(Settings.FfmpegPath, await ytdl.GetUserAgent())
                 {
@@ -202,7 +211,11 @@ namespace YtStream.Controllers
                 }
                 using (var Mp3Data = converter.ConvertToMp3(url))
                 {
-                    Tools.SetAudioHeaders(Response);
+                    if (Tools.SetAudioHeaders(Response))
+                    {
+                        await Response.StartAsync();
+                    }
+
                     if (CacheStream != null)
                     {
                         _logger.LogInformation("Downloading {0} from YT and populate cache", ytid);
