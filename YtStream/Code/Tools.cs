@@ -177,11 +177,13 @@ namespace YtStream
         {
             if (!response.HasStarted)
             {
-                response.ContentType = "audio/mpeg";
-                response.Headers.Add("transferMode.dlna.org", "Streaming");
-                response.Headers.Add("contentFeatures.dlna.org", "DLNA.ORG_PN=MP3;DLNA.ORG_OP=01;DLNA.ORG_FLAGS=01700000000000000000000000000000");
+                //response.ContentType = "audio/mpeg";
+                response.Headers.ContentType = "audio/mpeg";
+                response.Headers.TryAdd("transferMode.dlna.org", "Streaming");
+                response.Headers.TryAdd("contentFeatures.dlna.org", "DLNA.ORG_PN=MP3;DLNA.ORG_OP=01;DLNA.ORG_FLAGS=01700000000000000000000000000000");
+                return true;
             }
-            return response.HasStarted;
+            return false;
         }
 
         /// <summary>
