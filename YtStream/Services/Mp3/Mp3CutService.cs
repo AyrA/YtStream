@@ -19,36 +19,36 @@ namespace YtStream.Services.Mp3
         /// <summary>
         /// Filters invalid MP3 data and writes clean MP3 to the destination
         /// </summary>
-        /// <param name="Source">Source stream</param>
-        /// <param name="Dest">Target stream</param>
-        public void FilterMp3(Stream Source, Stream Dest)
+        /// <param name="source">Source stream</param>
+        /// <param name="dest">Target stream</param>
+        public void FilterMp3(Stream source, Stream dest)
         {
             var Conf = new Mp3CutTargetStreamConfigModel();
-            Conf.AddStream(new Mp3CutTargetStreamInfoModel(Dest, true, false, false, false));
-            CutMp3(null, Source, Conf);
+            Conf.AddStream(new Mp3CutTargetStreamInfoModel(dest, true, false, false, false));
+            CutMp3(null, source, Conf);
         }
 
         /// <summary>
         /// Filters invalid MP3 data and writes clean MP3 to the destination
         /// </summary>
-        /// <param name="Source">Source stream</param>
-        /// <param name="Dest">Target stream</param>
-        public Task FilterMp3Async(Stream Source, Stream Dest)
+        /// <param name="source">Source stream</param>
+        /// <param name="dest">Target stream</param>
+        public Task FilterMp3Async(Stream source, Stream dest)
         {
             var Conf = new Mp3CutTargetStreamConfigModel();
-            Conf.AddStream(new Mp3CutTargetStreamInfoModel(Dest, true, false, false, false));
-            return CutMp3Async(null, Source, Conf);
+            Conf.AddStream(new Mp3CutTargetStreamInfoModel(dest, true, false, false, false));
+            return CutMp3Async(null, source, Conf);
         }
 
         /// <summary>
         /// Cuts an MP3 file according to ranges.
         /// Also removes any non-audio bytes.
         /// </summary>
-        /// <param name="Ranges">
+        /// <param name="ranges">
         /// Rages to cut.
         /// Can be null or an empty enumeration to filter for audio only
         /// </param>
-        /// <param name="Source">
+        /// <param name="source">
         /// Source stream with uncut, unfiltered MP3 data
         /// </param>
         /// <param name="Target">
@@ -61,9 +61,9 @@ namespace YtStream.Services.Mp3
         /// <param name="PreventStalling">
         /// Aborts conversion if set to true and speed falls below 1x playback speed
         /// </param>
-        public void CutMp3(IEnumerable<TimeRangeModel> Ranges, Stream Source, Mp3CutTargetStreamConfigModel Output)
+        public void CutMp3(IEnumerable<TimeRangeModel> ranges, Stream source, Mp3CutTargetStreamConfigModel output)
         {
-            CutMp3Async(Ranges, Source, Output).Wait();
+            CutMp3Async(ranges, source, output).Wait();
         }
 
         /// <summary>
