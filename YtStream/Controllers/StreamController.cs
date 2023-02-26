@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using YtStream.Enums;
+using YtStream.Models;
 using YtStream.Models.Mp3;
 using YtStream.Services;
 using YtStream.Services.Accounts;
@@ -92,38 +93,30 @@ namespace YtStream.Controllers
             return View();
         }
 
-        public async Task<IActionResult> Order(string id)
+        [HttpGet, ActionName("Send")]
+        public async Task<IActionResult> SendAsync(string id)
         {
-            return await PerformStream(await ExpandIdList(SplitIds(id)), ShouldPlayAds(), ShouldMarkAds());
-        }
+            //We do not bind the model as parameter in the method because we want custom boolean parser
+            var model = new StreamOptionsModel(Request.Query);
 
-        public async Task<IActionResult> Random(string id)
-        {
-            return await PerformStream(Tools.Shuffle(await ExpandIdList(SplitIds(id))), ShouldPlayAds(), ShouldMarkAds());
-        }
-
-        private async Task<IActionResult> PerformStream(string[] ids, bool includeAds, bool markAds)
-        {
-            var CurrentAdType = AdTypeEnum.Intro;
-
+            var ids = await ExpandIdList(SplitIds(id));
             if (ids == null || ids.Length == 0)
             {
                 return NotFound("No id specified");
             }
-            var inv = ids.FirstOrDefault(m => !Tools.IsYoutubeId(m));
-            if (inv != null)
+            if (ids.Any(m => !Tools.IsYoutubeId(m)))
             {
-                return BadRequest($"Invalid id: {inv}");
+                return BadRequest($"Invalid id: {ids.FirstOrDefault(m => !Tools.IsYoutubeId(m))}");
             }
             if (IsHead())
             {
                 _logger.LogInformation("Early termination on HEAD request");
-                if (Tools.SetAudioHeaders(Response))
-                {
-                    await Response.StartAsync();
-                }
+                Tools.SetAudioHeaders(Response);
                 return new EmptyResult();
             }
+            var includeAds = ShouldPlayAds();
+            var markAds = ShouldMarkAds();
+            var currentAdType = AdTypeEnum.Intro;
             var mp3CacheHandler = _cacheService.GetHandler(CacheTypeEnum.MP3, Settings.CacheMp3Lifetime);
             var skipped = 0;
             Mp3CutTargetStreamConfigModel outputStreams = null;
@@ -134,153 +127,171 @@ namespace YtStream.Controllers
                 var os = outputStreams;
                 os?.SetTimeout(false);
             });
-            _logger.LogInformation("Preparing response for {0} ids", ids.Length);
+            _logger.LogInformation("Preparing response for {count} ids", ids.Length);
 
-            foreach (var ytid in ids)
+            for (var iteration = 0; iteration < model.Repeat; iteration++)
             {
-                //Stop streaming if the client is gone or the application has been locked
-                if (_lockService.Locked || cancelToken.IsCancellationRequested)
+                if (model.Random)
                 {
-                    break;
+                    ids = Tools.Shuffle(ids);
                 }
-                outputStreams = new Mp3CutTargetStreamConfigModel();
-                outputStreams.AddStream(new Mp3CutTargetStreamInfoModel(Response.Body, false, true, true, Settings.SimulateRealStream));
-                var setCache = true;
-                var filename = Tools.GetIdName(ytid) + ".mp3";
-                var ranges = await _sponsorBlockCacheService.GetRangesAsync(ytid);
-                _logger.LogInformation("{0} has {1} ranges", filename, ranges.Length);
-                FileStream CacheStream = null;
-                try
+                foreach (var ytid in ids)
                 {
-                    CacheStream = mp3CacheHandler.OpenIfNotStale(filename);
-                }
-                catch
-                {
-                    _logger.LogWarning("Could not open {0} from cache. Will perform a direct YT stream", filename);
-                    //If this doesn't works, the file is currently being written to.
-                    //In that case we directly go to youtube but do not create a cached file.
-                    setCache = false;
-                }
-                if (CacheStream != null)
-                {
-                    using (CacheStream)
+                    //Stop streaming if the client is gone or the application has been locked
+                    if (_lockService.Locked || cancelToken.IsCancellationRequested)
                     {
-                        if (CacheStream.Length > 0)
+                        break;
+                    }
+                    //Configure client output
+                    outputStreams = new Mp3CutTargetStreamConfigModel();
+                    outputStreams.AddStream(new Mp3CutTargetStreamInfoModel(Response.Body, model.Raw, true, true, model.Stream));
+
+                    var setCache = true;
+                    var filename = Tools.GetIdName(ytid) + ".mp3";
+                    var ranges = model.Raw ? Array.Empty<TimeRangeModel>() : await _sponsorBlockCacheService.GetRangesAsync(ytid);
+                    _logger.LogInformation("{file} has {count} ranges", filename, ranges.Length);
+
+                    //Try to get file from cache first
+                    FileStream cacheStream = null;
+                    try
+                    {
+                        cacheStream = mp3CacheHandler.OpenIfNotStale(filename);
+                    }
+                    catch
+                    {
+                        _logger.LogWarning("Could not open {file} from cache. Will perform a direct YT stream", filename);
+                        //If this doesn't works, the file is currently being written to.
+                        //In that case we directly go to youtube but do not create a cached file.
+                        setCache = false;
+                    }
+
+                    //File in cache found. Use that
+                    if (cacheStream != null)
+                    {
+                        using (cacheStream)
                         {
-                            _logger.LogInformation("Using cache for {0}", filename);
-                            if (Tools.SetAudioHeaders(Response))
+                            if (cacheStream.Length > 0)
                             {
-                                await Response.StartAsync();
+                                _logger.LogInformation("Using cache for {file}", filename);
+                                if (Tools.SetAudioHeaders(Response))
+                                {
+                                    await Response.StartAsync();
+                                }
+                                using (var S = GetAd(currentAdType))
+                                {
+                                    await _mp3CutService.SendAd(S, Response.Body, markAds);
+                                }
+                                currentAdType = AdTypeEnum.Inter;
+                                await _mp3CutService.CutMp3Async(ranges, cacheStream, outputStreams);
+                                await Response.Body.FlushAsync();
+                                continue;
                             }
-                            using (var S = GetAd(CurrentAdType))
+                            else
                             {
-                                await _mp3CutService.SendAd(S, Response.Body, markAds);
+                                _logger.LogWarning("{filename} is empty. Falling back to stream from YT", filename);
                             }
-                            CurrentAdType = AdTypeEnum.Inter;
-                            await _mp3CutService.CutMp3Async(ranges, CacheStream, outputStreams);
-                            await Response.Body.FlushAsync();
-                            continue;
+                        }
+                    }
+
+                    /////////////////////////////////////////////////////////////
+                    //At this point we need to go live to youtube to get the file
+
+                    string url;
+                    try
+                    {
+                        url = await _youtubeDlService.GetAudioUrl(ytid);
+                    }
+                    catch (YoutubeDlException ex)
+                    {
+                        //If this is the only id, return an error to the client.
+                        //We can't do this otherwise.
+                        if (ids.Length == 1)
+                        {
+                            return Error(ex);
+                        }
+                        url = null;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Non-YT related download error from YTDL for id {id}", ytid);
+                        throw;
+                    }
+
+                    if (string.IsNullOrEmpty(url))
+                    {
+                        _logger.LogWarning("No YT url for {id} (invalid or restricted video id)", ytid);
+                        ++skipped;
+                        continue;
+                    }
+                    if (setCache)
+                    {
+                        _logger.LogInformation("Saving video {id} to cache as {filename}", ytid, filename);
+                        cacheStream = mp3CacheHandler.WriteFile(filename);
+                        outputStreams.AddStream(new Mp3CutTargetStreamInfoModel(cacheStream, true, false, false, false));
+                    }
+
+                    using (var mp3Data = _mp3ConverterService.ConvertToMp3(url))
+                    {
+                        if (Tools.SetAudioHeaders(Response))
+                        {
+                            await Response.StartAsync();
+                        }
+
+                        if (cacheStream != null)
+                        {
+                            _logger.LogInformation("Downloading video {id} from YT and populate cache", ytid);
+                            using (cacheStream)
+                            {
+                                using (var S = GetAd(currentAdType))
+                                {
+                                    await _mp3CutService.SendAd(S, Response.Body, markAds);
+                                }
+                                currentAdType = AdTypeEnum.Inter;
+                                await _mp3CutService.CutMp3Async(ranges, mp3Data, outputStreams);
+                                if (cacheStream.Position == 0)
+                                {
+                                    _logger.LogError("Error downloading video {id} from YT. Output is empty", url);
+                                    return Error(new Exception($"Error downloading {url} from YT. Output is empty"));
+                                }
+                            }
                         }
                         else
                         {
-                            _logger.LogWarning("{0} is empty. Falling back to stream from YT", filename);
-                        }
-                    }
-                }
-
-                /////////////////////////////////////////////////////////////
-                //At this point we need to go live to youtube to get the file
-
-                string url;
-                try
-                {
-                    url = await _youtubeDlService.GetAudioUrl(ytid);
-                }
-                catch (YoutubeDlException ex)
-                {
-                    //If this is the only id, return an error to the client.
-                    //We can't do this otherwise.
-                    if (ids.Length == 1)
-                    {
-                        return Error(ex);
-                    }
-                    url = null;
-                }
-                catch (Exception)
-                {
-                    throw;
-                }
-                if (string.IsNullOrEmpty(url))
-                {
-                    _logger.LogWarning("No YT url for {0} (invalid or restricted video id)", ytid);
-                    ++skipped;
-                    continue;
-                }
-                if (setCache)
-                {
-                    CacheStream = mp3CacheHandler.WriteFile(filename);
-                    outputStreams.AddStream(new Mp3CutTargetStreamInfoModel(CacheStream, true, false, false, false));
-                }
-                using (var Mp3Data = _mp3ConverterService.ConvertToMp3(url))
-                {
-                    if (Tools.SetAudioHeaders(Response))
-                    {
-                        await Response.StartAsync();
-                    }
-
-                    if (CacheStream != null)
-                    {
-                        _logger.LogInformation("Downloading {0} from YT and populate cache", ytid);
-                        using (CacheStream)
-                        {
-                            using (var S = GetAd(CurrentAdType))
+                            //Same download task as above but without writing to cache
+                            _logger.LogInformation("Downloading video {id} from YT without populating cache", ytid);
+                            using (var S = GetAd(currentAdType))
                             {
                                 await _mp3CutService.SendAd(S, Response.Body, markAds);
                             }
-                            CurrentAdType = AdTypeEnum.Inter;
-                            await _mp3CutService.CutMp3Async(ranges, Mp3Data, outputStreams);
-                            if (CacheStream.Position == 0)
-                            {
-                                _logger.LogError("Error downloading {0} from YT. Output is empty", url);
-                                return Error(new Exception($"Error downloading {url} from YT. Output is empty"));
-                            }
+                            currentAdType = AdTypeEnum.Inter;
+                            await _mp3CutService.CutMp3Async(ranges, mp3Data, outputStreams);
                         }
-                    }
-                    else
-                    {
-                        _logger.LogInformation("Downloading {0} from YT without populating cache", ytid);
-                        using (var S = GetAd(CurrentAdType))
+                        //Flush all data before attempting the next file
+                        await Response.Body.FlushAsync();
+
+                        if (outputStreams.HasTimeout)
                         {
-                            await _mp3CutService.SendAd(S, Response.Body, markAds);
+                            _logger.LogWarning("An output stream had a timeout. Aborting processing");
+                            break;
                         }
-                        CurrentAdType = AdTypeEnum.Inter;
-                        await _mp3CutService.CutMp3Async(ranges, Mp3Data, outputStreams);
+                        if (outputStreams.HasFaultedStreams())
+                        {
+                            _logger.LogWarning("An output stream faulted. Aborting processing");
+                            break;
+                        }
                     }
-                    //Flush all data before attempting the next file
-                    await Response.Body.FlushAsync();
+                    if (skipped == ids.Length)
+                    {
+                        _logger.LogWarning("None of the ids {list} yielded usable results", ids);
+                        return NotFound();
+                    }
                 }
-                if (outputStreams.HasTimeout)
-                {
-                    _logger.LogWarning("An output stream had a timeout. Aborting processing");
-                    break;
-                }
-                if (outputStreams.HasFaultedStreams())
-                {
-                    _logger.LogWarning("An output stream faulted. Aborting processing");
-                    break;
-                }
-            }
-            if (skipped == ids.Length)
-            {
-                _logger.LogWarning("None of the ids yielded usable results");
-                return NotFound();
             }
             using (var S = GetAd(AdTypeEnum.Outro))
             {
                 await _mp3CutService.SendAd(S, Response.Body, markAds);
             }
             _logger.LogInformation("Stream request complete");
-
             return new EmptyResult();
         }
 
@@ -335,13 +346,13 @@ namespace YtStream.Controllers
                     var Name = _adsService.GetRandomAdName(Type);
                     if (Name != null)
                     {
-                        _logger.LogInformation("Playing ad: {0}", Name);
+                        _logger.LogInformation("Playing ad: {name}", Name);
                         return _adsService.GetAd(Name);
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning("Failed to send ad. Reason: {0}", ex.Message);
+                    _logger.LogWarning(ex, "Failed to send ad. Reason: {reason}", ex.Message);
                 }
             }
             return Stream.Null;

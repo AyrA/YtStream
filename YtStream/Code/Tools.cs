@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -34,26 +33,6 @@ namespace YtStream
         /// Regex of a regular playlist
         /// </summary>
         private static readonly Regex PlRegex = new(@"^PL(?:[\dA-F]{16}|[\w\-]{32})$");
-
-        /// <summary>
-        /// Get response from web request with exception handling
-        /// </summary>
-        /// <param name="req">request</param>
-        /// <returns>response</returns>
-        /// <remarks>
-        /// This only handles a <see cref="WebException"/>
-        /// </remarks>
-        public async static Task<HttpWebResponse> GetResponseAsync(HttpWebRequest req)
-        {
-            try
-            {
-                return (HttpWebResponse)await req.GetResponseAsync();
-            }
-            catch (WebException ex)
-            {
-                return (HttpWebResponse)ex.Response;
-            }
-        }
 
         /// <summary>
         /// Shuffles an array in an unbiased way
