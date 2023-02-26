@@ -27,7 +27,7 @@
         if (id) {
             if (p.dataset.id !== id) {
                 p.dataset.id = id;
-                p.src = location.origin + "/Stream/Order/" + id;
+                p.src = location.origin + "/Stream/Send/" + id;
                 p.play();
             }
             else {
@@ -57,7 +57,7 @@
             var videoCell = row.appendChild(document.createElement("td"));
             var videoLink = videoCell.appendChild(document.createElement("a"));
             videoLink.textContent = v.title;
-            videoLink.href = "/Stream/Order/" + v.id;
+            videoLink.href = "/Stream/Send/" + v.id;
             videoLink.setAttribute("target", "_blank");
 
             //Buttons
@@ -113,12 +113,54 @@
             }
             renderList();
         });
-        q("#tbGeneratedUrl").disabled = list.length === 0;
+        renderUrl();
+    };
+
+    var renderUrl = function () {
+        const urlField = q("#tbGeneratedUrl");
+        urlField.disabled = list.length === 0;
+        var params = {};
+        console.log("Video list", list);
+        var url = location.origin + "/Stream/Send/" + list.map(v => v.id).join(',');
+
+        var add = function (field, defaultValue) {
+            if (!field || !field.reportValidity) {
+                console.error("Called add() with invalid argument:", field);
+                return;
+            }
+            if (!field.reportValidity()) {
+                return;
+            }
+            var v = field.value;
+            if (v === defaultValue) {
+                return;
+            }
+            if (field.type === "checkbox") {
+                v = field.checked ? "y" : null;
+            }
+            if (v) {
+                params[field.name] = v;
+            }
+        };
+
+        add(q("#cbRandom"));
+        add(q("#tbRepeat"), "1");
+        add(q("#cbStream"));
+        add(q("#tbBuffer"), q("#cbStream").checked ? "3" : q("#tbBuffer").value);
+        add(q("#cbRaw"));
+
+        console.log("URL arguments:", params);
+
         if (list.length > 0) {
-            var type = q("#rbPlayTypeOrder").checked ? "Order" : "Random";
-            q("#tbGeneratedUrl").value = location.origin + "/Stream/" + type + "/" + list.map(v => v.id).join(",");
-        } else {
-            q("#tbGeneratedUrl").value = "Please add at least one video";
+            if (Object.keys(params).length > 0) {
+                url += "?" + Object.keys(params).map(function (k) {
+                    return encodeURIComponent(k) + "=" + encodeURIComponent(params[k]);
+                }).join("&");
+            }
+            urlField.value = url;
+        }
+        else {
+            urlField.value = "Please add at least one video";
         }
     };
 
@@ -246,10 +288,19 @@
     q("#idSelectModal .modal-footer button").addEventListener("click", modalSelectBtn);
 
     //Event for URL type change
-    q("#rbPlayTypeOrder").addEventListener("change", renderList);
-    //Add label click events because JS is dumb
-    q("#rbPlayTypeOrder").parentNode.addEventListener("click", renderList);
-    q("#rbPlayTypeRandom").parentNode.addEventListener("click", renderList);
+    "cbRandom,tbRepeat,cbStream,tbBuffer,cbRaw".split(",").forEach(function (v) {
+        var e = q("#" + v);
+        if (!e) {
+            console.error("Element with id", v, "not found");
+            return;
+        }
+        e.addEventListener("change", renderList);
+        e.addEventListener("input", renderList);
+        //Add label click events because JS is dumb
+        if (e.parentNode.nodeName === "LABEL") {
+            e.parentNode.addEventListener("label", renderList);
+        }
+    });
 
     renderList();
 })(tools.q);

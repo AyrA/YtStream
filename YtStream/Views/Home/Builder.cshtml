@@ -1,5 +1,6 @@
 ﻿@{
     ViewData["Title"] = "Stream URL builder";
+    var Settings = (ConfigModel)ViewBag.Settings;
 }
 <h1>Stream URL builder</h1>
 <noscript>
@@ -17,20 +18,49 @@
     or you can also paste an entire YouTube URL to have it extracted.
 </p>
 
-<div class="form-inline form-group">
-    <input type="text" id="tbUrl" class="form-control" placeholder="Youtube URL" />&nbsp;
-    <input type="button" class="btn btn-primary" id="btnAddId" value="Add" />
+<div class="row">
+    <div class="col-md-6">
+        <div class="input-group mb-1">
+            <input type="text" id="tbUrl" class="form-control" placeholder="Youtube URL" />
+            <div class="input-group-append">
+                <button type="button" class="btn btn-primary" id="btnAddId">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h2>Options</h2>
+<div class="row">
+    <div class="col-md-4">
+        <label>Repeat count</label>
+        <input type="number" name="repeat" id="tbRepeat" value="1" min="1" max="@StreamOptionsModel.MaxRepetitions" class="form-control" />
+    </div>
+    <div class="col-md-4">
+        <div>
+            <label><input type="checkbox" name="stream" id="cbStream" /> Simulate real-time streaming</label>
+        </div>
+        <div class="input-group">
+            <input type="number" name="buffer" id="tbBuffer" value="3" min="1" max="@StreamOptionsModel.MaxBufferSize" class="form-control" />
+            <div class="input-group-append">
+                <span class="input-group-text">Seconds</span>
+            </div>
+            <i>
+                Increase this value if you experience stuttering
+            </i>
+        </div>
+    </div>
+    <div class="col-md-4">
+        @if (Settings.UseSponsorBlock)
+        {
+            <label><input type="checkbox" name="raw" id="cbRaw" /> Do not cut non-music sections</label>
+            <label><input type="checkbox" name="random" id="cbRandom" /> Play in random order</label>
+        }
+    </div>
 </div>
 
 <h2>URL</h2>
 <div class="row">
-    <div class="col-md-6">
-        <label><input type="radio" name="rbPlayType" id="rbPlayTypeOrder" value="Order" checked /> Ordered</label>
-        <label><input type="radio" name="rbPlayType" id="rbPlayTypeRandom" value="Random" /> Random</label>
-    </div>
-</div>
-<div class="row">
-    <div class="col-md-6">
+    <div class="col-md-12">
         <input type="text" readonly id="tbGeneratedUrl" class="form-control" />
     </div>
 </div>
@@ -120,6 +150,6 @@
 </div>
 
 @section Scripts
-{
+    {
     <script src="~/js/builder.view.js" asp-append-version="true" defer></script>
 }
