@@ -156,6 +156,10 @@ namespace YtStream.Controllers
                     try
                     {
                         cacheStream = mp3CacheHandler.OpenIfNotStale(filename);
+                        if (cacheStream != null)
+                        {
+                            mp3CacheHandler.Poke(filename);
+                        }
                     }
                     catch
                     {

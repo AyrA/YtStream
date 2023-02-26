@@ -41,104 +41,104 @@ namespace YtStream
         /// <summary>
         /// Gets the full path for the given file name
         /// </summary>
-        /// <param name="FileName">File name</param>
+        /// <param name="fileName">File name</param>
         /// <returns>Full file path</returns>
-        private string GetPath(string FileName)
+        private string GetPath(string fileName)
         {
-            var P = Path.GetFullPath(Path.Combine(CachePath, FileName));
+            var P = Path.GetFullPath(Path.Combine(CachePath, fileName));
             if (P.StartsWith(CachePath + Path.DirectorySeparatorChar))
             {
                 return P;
             }
-            throw new IOException($"{FileName} outside of {CachePath}");
+            throw new IOException($"{fileName} outside of {CachePath}");
         }
 
         /// <summary>
         /// Gets the full path for the given file name
         /// </summary>
-        /// <param name="FileName">File name</param>
+        /// <param name="fileName">File name</param>
         /// <returns>Full file path</returns>
-        public string GetCacheFileName(string FileName)
+        public string GetCacheFileName(string fileName)
         {
-            return GetPath(FileName);
+            return GetPath(fileName);
         }
 
         /// <summary>
         /// Checks if the given file exists in the cache
         /// </summary>
-        /// <param name="FileName">File name</param>
+        /// <param name="fileName">File name</param>
         /// <returns>true if file exists.</returns>
         /// <remarks>Does not check if the file is stale</remarks>
-        public bool HasFileInCache(string FileName)
+        public bool HasFileInCache(string fileName)
         {
-            return File.Exists(GetPath(FileName));
+            return File.Exists(GetPath(fileName));
         }
 
         /// <summary>
         /// Gets the age of the file
         /// </summary>
-        /// <param name="FileName">File name</param>
+        /// <param name="fileName">File name</param>
         /// <returns>File age</returns>
-        public DateTime GetFileAge(string FileName)
+        public DateTime GetFileAge(string fileName)
         {
-            return File.GetLastWriteTimeUtc(GetPath(FileName));
+            return File.GetLastWriteTimeUtc(GetPath(fileName));
         }
 
         /// <summary>
         /// Opens a cache file for reading
         /// </summary>
-        /// <param name="FileName">File name</param>
+        /// <param name="fileName">File name</param>
         /// <returns>File</returns>
-        public FileStream ReadFile(string FileName)
+        public FileStream ReadFile(string fileName)
         {
-            return File.OpenRead(GetPath(FileName));
+            return File.OpenRead(GetPath(fileName));
         }
 
         /// <summary>
         /// Creates or appends to a file
         /// </summary>
-        /// <param name="FileName">File name</param>
-        /// <param name="Append">true to append instead of overwrite</param>
+        /// <param name="fileName">File name</param>
+        /// <param name="append">true to append instead of overwrite</param>
         /// <returns>File</returns>
-        public FileStream WriteFile(string FileName, bool Append = false)
+        public FileStream WriteFile(string fileName, bool append = false)
         {
-            if (Append)
+            if (append)
             {
-                return File.Open(GetPath(FileName), FileMode.Append);
+                return File.Open(GetPath(fileName), FileMode.Append);
             }
-            return File.Create(GetPath(FileName));
+            return File.Create(GetPath(fileName));
         }
 
         /// <summary>
         /// Opens a file for reading if it's not stale
         /// </summary>
-        /// <param name="FileName">File name</param>
+        /// <param name="fileName">File name</param>
         /// <returns>File, or null if stale or not found</returns>
-        public FileStream OpenIfNotStale(string FileName)
+        public FileStream OpenIfNotStale(string fileName)
         {
-            return OpenIfNotStale(FileName, DefaultCacheLifetime);
+            return OpenIfNotStale(fileName, DefaultCacheLifetime);
         }
 
         /// <summary>
         /// Opens a file for reading if it's not stale
         /// </summary>
-        /// <param name="FileName">File name</param>
-        /// <param name="MaxAge">Maximum allowed file age</param>
+        /// <param name="fileName">File name</param>
+        /// <param name="maxAge">Maximum allowed file age</param>
         /// <returns>File, or null if stale or not found</returns>
-        public FileStream OpenIfNotStale(string FileName, TimeSpan MaxAge)
+        public FileStream OpenIfNotStale(string fileName, TimeSpan maxAge)
         {
             try
             {
                 var stale = false;
-                var FS = ReadFile(FileName);
+                var FS = ReadFile(fileName);
                 //Never stale if zero
-                if (FS != null && MaxAge.Ticks == 0)
+                if (FS != null && maxAge.Ticks == 0)
                 {
                     return FS;
                 }
                 try
                 {
-                    stale = IsStale(FileName, MaxAge);
+                    stale = IsStale(fileName, maxAge);
                 }
                 catch
                 {
@@ -159,15 +159,33 @@ namespace YtStream
         }
 
         /// <summary>
-        /// Deletes the given file
+        /// Updates the last write timestamp to the current date
         /// </summary>
-        /// <param name="FileName">File name</param>
-        /// <returns>true if deleted. False if failed or not found</returns>
-        public bool DeleteFile(string FileName)
+        /// <param name="fileName">File name</param>
+        /// <returns>true, if time was updated</returns>
+        public bool Poke(string fileName)
         {
             try
             {
-                File.Delete(GetPath(FileName));
+                File.SetLastWriteTimeUtc(GetPath(fileName), DateTime.UtcNow);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Deletes the given file
+        /// </summary>
+        /// <param name="fileName">File name</param>
+        /// <returns>true if deleted. False if failed or not found</returns>
+        public bool DeleteFile(string fileName)
+        {
+            try
+            {
+                File.Delete(GetPath(fileName));
             }
             catch
             {
@@ -179,11 +197,11 @@ namespace YtStream
         /// <summary>
         /// Imports an existing file into the cache
         /// </summary>
-        /// <param name="Filename">File name</param>
-        /// <param name="Move">
+        /// <param name="filename">File name</param>
+        /// <param name="move">
         /// If true, the file is moved instead of copied
         /// </param>
-        /// <param name="AvoidConflict">
+        /// <param name="avoidConflict">
         /// If true, the file name is changed if needed to avoid conflicts.
         /// If false, the destination is overwritten
         /// </param>
@@ -191,24 +209,24 @@ namespace YtStream
         /// Final file name under which the file is stored.
         /// </returns>
         /// <remarks>
-        /// The result is usually the file name component from <paramref name="Filename"/>,
-        /// but it may differ if <paramref name="AvoidConflict"/> is used and a conflict was present.
+        /// The result is usually the file name component from <paramref name="filename"/>,
+        /// but it may differ if <paramref name="avoidConflict"/> is used and a conflict was present.
         /// </remarks>
-        public string ImportFile(string Filename, bool Move = false, bool AvoidConflict = true)
+        public string ImportFile(string filename, bool move = false, bool avoidConflict = true)
         {
-            var BaseName = Path.GetFileName(Filename);
-            if (AvoidConflict)
+            var BaseName = Path.GetFileName(filename);
+            if (avoidConflict)
             {
-                BaseName = GetNoConfictName(Filename, true);
+                BaseName = GetNoConfictName(filename, true);
             }
             var Dest = Path.Combine(CachePath, BaseName);
-            if (Move)
+            if (move)
             {
-                File.Move(Filename, Dest, true);
+                File.Move(filename, Dest, true);
             }
             else
             {
-                File.Copy(Filename, Dest, true);
+                File.Copy(filename, Dest, true);
             }
             return BaseName;
         }
@@ -216,19 +234,19 @@ namespace YtStream
         /// <summary>
         /// Gets a file name that doesn't conflicts with existing names in the cache
         /// </summary>
-        /// <param name="Filename">File name. Path component is discarded</param>
-        /// <param name="CreateFile">If set, the file with the final name is created empty</param>
+        /// <param name="filename">File name. Path component is discarded</param>
+        /// <param name="createFile">If set, the file with the final name is created empty</param>
         /// <returns>Conflict free file name</returns>
         /// <remarks>
         /// Conflict prevention is done by adding an incremental counter if the initial name caused a conflict.
         /// </remarks>
-        public string GetNoConfictName(string Filename, bool CreateFile = false)
+        public string GetNoConfictName(string filename, bool createFile = false)
         {
-            var BaseName = Path.GetFileName(Filename);
+            var BaseName = Path.GetFileName(filename);
             var Index = 0;
             do
             {
-                if (CreateFile)
+                if (createFile)
                 {
                     try
                     {
@@ -241,7 +259,7 @@ namespace YtStream
                     catch
                     {
                         ++Index;
-                        BaseName = Path.GetFileNameWithoutExtension(Filename) + $"_{Index}" + Path.GetExtension(Filename);
+                        BaseName = Path.GetFileNameWithoutExtension(filename) + $"_{Index}" + Path.GetExtension(filename);
                     }
                 }
                 else
@@ -249,7 +267,7 @@ namespace YtStream
                     if (File.Exists(Path.Combine(CachePath, BaseName)))
                     {
                         ++Index;
-                        BaseName = Path.GetFileNameWithoutExtension(Filename) + $"_{Index}" + Path.GetExtension(Filename);
+                        BaseName = Path.GetFileNameWithoutExtension(filename) + $"_{Index}" + Path.GetExtension(filename);
                     }
                     else
                     {
@@ -262,31 +280,31 @@ namespace YtStream
         /// <summary>
         /// Gets how long until the given file becomes stale
         /// </summary>
-        /// <param name="FileName">File name</param>
+        /// <param name="fileName">File name</param>
         /// <returns>Time to stale</returns>
-        public TimeSpan TimeToStale(string FileName)
+        public TimeSpan TimeToStale(string fileName)
         {
-            return TimeToStale(FileName, DefaultCacheLifetime);
+            return TimeToStale(fileName, DefaultCacheLifetime);
         }
 
         /// <summary>
         /// Gets how long until the given file becomes stale
         /// </summary>
-        /// <param name="FileName">File name</param>
-        /// <param name="MaxAge">Stale cutoff</param>
+        /// <param name="fileName">File name</param>
+        /// <param name="maxAge">Stale cutoff</param>
         /// <returns>Time to stale. Zero if not found or already stale</returns>
-        public TimeSpan TimeToStale(string FileName, TimeSpan MaxAge)
+        public TimeSpan TimeToStale(string fileName, TimeSpan maxAge)
         {
-            if (MaxAge.Ticks == 0)
+            if (maxAge.Ticks == 0)
             {
                 return TimeSpan.MaxValue;
             }
             try
             {
-                var Age = DateTime.UtcNow.Subtract(GetFileAge(FileName));
-                if (Age <= MaxAge)
+                var Age = DateTime.UtcNow.Subtract(GetFileAge(fileName));
+                if (Age <= maxAge)
                 {
-                    return MaxAge - Age;
+                    return maxAge - Age;
                 }
             }
             catch
@@ -299,54 +317,54 @@ namespace YtStream
         /// <summary>
         /// Checks if the file is stale
         /// </summary>
-        /// <param name="FileName">File name</param>
+        /// <param name="fileName">File name</param>
         /// <returns>true if stale</returns>
-        public bool IsStale(string FileName)
+        public bool IsStale(string fileName)
         {
-            return IsStale(FileName, DefaultCacheLifetime);
+            return IsStale(fileName, DefaultCacheLifetime);
         }
 
         /// <summary>
         /// Checks if the file is stale
         /// </summary>
-        /// <param name="FileName">File name</param>
-        /// <param name="MaxAge">Time to stale</param>
+        /// <param name="fileName">File name</param>
+        /// <param name="maxAge">Time to stale</param>
         /// <returns>true if stale</returns>
-        public bool IsStale(string FileName, TimeSpan MaxAge)
+        public bool IsStale(string fileName, TimeSpan maxAge)
         {
-            if (MaxAge.Ticks < 0)
+            if (maxAge.Ticks < 0)
             {
                 return true;
             }
-            var F = GetPath(FileName);
+            var F = GetPath(fileName);
             if (!File.Exists(F))
             {
                 return true;
             }
             //A timeout of zero is never stale
-            return MaxAge.Ticks > 0 && DateTime.UtcNow.Subtract(File.GetLastWriteTimeUtc(F)) >= MaxAge;
+            return maxAge.Ticks > 0 && DateTime.UtcNow.Subtract(File.GetLastWriteTimeUtc(F)) >= maxAge;
         }
 
         /// <summary>
         /// Checks if the file is stale
         /// </summary>
-        /// <param name="FileName">File name</param>
-        /// <param name="Seconds">Time to stale</param>
+        /// <param name="fileName">File name</param>
+        /// <param name="seconds">Time to stale</param>
         /// <returns>true if stale</returns>
-        public bool IsStale(string FileName, int Seconds)
+        public bool IsStale(string fileName, int seconds)
         {
-            return IsStale(FileName, TimeSpan.FromSeconds(Seconds));
+            return IsStale(fileName, TimeSpan.FromSeconds(seconds));
         }
 
         /// <summary>
         /// Checks if the file is stale
         /// </summary>
-        /// <param name="FileName">File name</param>
-        /// <param name="MaxAge">Date before which it is stale</param>
+        /// <param name="fileName">File name</param>
+        /// <param name="maxAge">Date before which it is stale</param>
         /// <returns>true if stale</returns>
-        public bool IsStale(string FileName, DateTime MaxAge)
+        public bool IsStale(string fileName, DateTime maxAge)
         {
-            return IsStale(FileName, DateTime.UtcNow.Subtract(MaxAge.ToUniversalTime()));
+            return IsStale(fileName, DateTime.UtcNow.Subtract(maxAge.ToUniversalTime()));
         }
 
         /// <summary>
@@ -361,17 +379,17 @@ namespace YtStream
         /// <summary>
         /// Deletes all stale files
         /// </summary>
-        /// <param name="MaxAge">Maximum allowed file age</param>
+        /// <param name="maxAge">Maximum allowed file age</param>
         /// <returns>Number of deleted files</returns>
-        public int ClearStale(TimeSpan MaxAge)
+        public int ClearStale(TimeSpan maxAge)
         {
-            if (MaxAge.Ticks == 0)
+            if (maxAge.Ticks == 0)
             {
                 return 0;
             }
             int Removed = 0;
             var DI = new DirectoryInfo(CachePath);
-            var Cutoff = DateTime.UtcNow.Subtract(MaxAge);
+            var Cutoff = DateTime.UtcNow.Subtract(maxAge);
             foreach (var FI in DI.EnumerateFiles(CachePath))
             {
                 if (FI.LastWriteTimeUtc < Cutoff)
