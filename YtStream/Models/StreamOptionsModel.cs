@@ -9,11 +9,11 @@ namespace YtStream.Models
         /// <summary>
         /// Maximum number of seconds the client can buffer ahead
         /// </summary>
-        private const int MaxBufferSize = 20;
+        public const int MaxBufferSize = 20;
         /// <summary>
         /// Maximum number of repetitions
         /// </summary>
-        private const int MaxRepetitions = 99;
+        public const int MaxRepetitions = 99;
 
         public StreamOptionsModel()
         {
@@ -86,10 +86,6 @@ namespace YtStream.Models
         /// Ideal for actual streaming applications
         /// </summary>
         public bool Stream { get; private set; }
-        /// <summary>
-        /// Shuffles the list if multiple ids are present
-        /// </summary>
-        public bool Shuffle { get; private set; }
         /// <summary>
         /// Send streaming data raw to the client, meaning no cutting will be performed
         /// </summary>
