@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using AyrA.AutoDI;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,7 @@ using YtStream.Models.YT;
 
 namespace YtStream.Services.YT
 {
+    [AutoDIRegister(AutoDIType.Transient)]
     public class YtApiService
     {
         /// <summary>
@@ -123,14 +125,17 @@ namespace YtStream.Services.YT
 
         private async Task<string> GetJson(Uri url)
         {
+            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
             var req = new HttpClient();
             var msg = new HttpRequestMessage
             {
                 RequestUri = url,
                 Method = HttpMethod.Get
             };
+            msg.Headers.Accept.Clear();
             msg.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            msg.Headers.UserAgent.Add(new ProductInfoHeaderValue("YtStream +https://github.com/AyrA/YtStream"));
+            msg.Headers.UserAgent.Clear();
+            msg.Headers.TryAddWithoutValidation("User-Agent", $"YtStream/{version} +https://github.com/AyrA/YtStream");
 
             try
             {
