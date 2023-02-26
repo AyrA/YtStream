@@ -179,10 +179,14 @@ namespace YtStream.Controllers
                                 }
                                 using (var S = GetAd(currentAdType))
                                 {
-                                    await _mp3CutService.SendAd(S, Response.Body, markAds);
+                                    var delay = await _mp3CutService.SendAd(S, Response.Body, markAds);
+                                    if (model.Stream)
+                                    {
+                                        await Task.Delay(TimeSpan.FromMilliseconds(delay));
+                                    }
                                 }
                                 currentAdType = AdTypeEnum.Inter;
-                                await _mp3CutService.CutMp3Async(ranges, cacheStream, outputStreams);
+                                await _mp3CutService.CutMp3Async(ranges, cacheStream, outputStreams, model.Buffer);
                                 await Response.Body.FlushAsync();
                                 continue;
                             }
@@ -244,10 +248,14 @@ namespace YtStream.Controllers
                             {
                                 using (var S = GetAd(currentAdType))
                                 {
-                                    await _mp3CutService.SendAd(S, Response.Body, markAds);
+                                    var delay = await _mp3CutService.SendAd(S, Response.Body, markAds);
+                                    if (model.Stream)
+                                    {
+                                        await Task.Delay(TimeSpan.FromMilliseconds(delay));
+                                    }
                                 }
                                 currentAdType = AdTypeEnum.Inter;
-                                await _mp3CutService.CutMp3Async(ranges, mp3Data, outputStreams);
+                                await _mp3CutService.CutMp3Async(ranges, mp3Data, outputStreams, model.Buffer);
                                 if (cacheStream.Position == 0)
                                 {
                                     _logger.LogError("Error downloading video {id} from YT. Output is empty", url);
@@ -261,10 +269,14 @@ namespace YtStream.Controllers
                             _logger.LogInformation("Downloading video {id} from YT without populating cache", ytid);
                             using (var S = GetAd(currentAdType))
                             {
-                                await _mp3CutService.SendAd(S, Response.Body, markAds);
+                                var delay = await _mp3CutService.SendAd(S, Response.Body, markAds);
+                                if (model.Stream)
+                                {
+                                    await Task.Delay(TimeSpan.FromMilliseconds(delay));
+                                }
                             }
                             currentAdType = AdTypeEnum.Inter;
-                            await _mp3CutService.CutMp3Async(ranges, mp3Data, outputStreams);
+                            await _mp3CutService.CutMp3Async(ranges, mp3Data, outputStreams, model.Buffer);
                         }
                         //Flush all data before attempting the next file
                         await Response.Body.FlushAsync();
@@ -289,7 +301,11 @@ namespace YtStream.Controllers
             }
             using (var S = GetAd(AdTypeEnum.Outro))
             {
-                await _mp3CutService.SendAd(S, Response.Body, markAds);
+                var delay = await _mp3CutService.SendAd(S, Response.Body, markAds);
+                if (model.Stream)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(delay));
+                }
             }
             _logger.LogInformation("Stream request complete");
             return new EmptyResult();
