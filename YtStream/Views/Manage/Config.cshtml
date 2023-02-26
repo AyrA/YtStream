@@ -147,6 +147,9 @@ else
                     <input type="checkbox" asp-for="UseSponsorBlock" value="True" />
                     Use SponsorBlock
                 </label>
+                <i>
+                    Even if enabled, clients have the ability to disable this on a per-stream basis
+                </i>
             </div>
             <div class="form-group">
                 <label>
@@ -169,27 +172,6 @@ else
     </div>
 
     <h2>Streaming options</h2>
-    <div class="row">
-        <div class="col-md-6">
-            <label>
-                <input type="checkbox" asp-for="SimulateRealStream" value="True" />
-                Simulate live streaming speed
-            </label>
-        </div>
-    </div>
-    <p class="auto-help">
-        <i>
-            If set, the application will send the data as fast as it's consumed for streaming
-            (with a 3 second extra buffer).
-            If you disable this, data is sent as fast as possible.
-            If the primary use case for this installation is to live stream content,
-            you want to leave this enabled to avoid the connection being closed by the server
-            if your application stops consuming data for a long time when it has built up a large buffer.
-            As of this writing, firefox is such a candidate.
-            If the main purpose is for downloading,
-            disable this to get faster speeds.
-        </i>
-    </p>
     <div class="row">
         <div class="col-md-6 form-group">
             <label>
