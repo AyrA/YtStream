@@ -148,7 +148,7 @@ namespace YtStream.Controllers
 
                     var setCache = true;
                     var filename = Tools.GetIdName(ytid) + ".mp3";
-                    var ranges = model.Raw ? Array.Empty<TimeRangeModel>() : await _sponsorBlockCacheService.GetRangesAsync(ytid);
+                    var ranges = model.Raw || !Settings.UseSponsorBlock ? Array.Empty<TimeRangeModel>() : await _sponsorBlockCacheService.GetRangesAsync(ytid);
                     _logger.LogInformation("{file} has {count} ranges", filename, ranges.Length);
 
                     //Try to get file from cache first
