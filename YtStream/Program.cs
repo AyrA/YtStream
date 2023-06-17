@@ -5,9 +5,11 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.WindowsServices;
+using Microsoft.Extensions.Logging;
 using System;
 
 namespace YtStream
@@ -32,7 +34,18 @@ namespace YtStream
                 ContentRootPath = WindowsServiceHelpers.IsWindowsService() ? AppContext.BaseDirectory : default
             });
 
-            builder.Services.AddLogging();
+            //Adds file based logger
+            builder.Services.AddLogging(loggingBuilder =>
+            {
+                var basePath = builder.Configuration.GetValue<string>("Config:BasePath");
+                loggingBuilder.AddFile(@"{1}\Logs\app_{0:yyyy}-{0:MM}-{0:dd}.log", fileLoggerOpts =>
+                {
+                    fileLoggerOpts.FormatLogFileName = fName =>
+                    {
+                        return string.Format(fName, DateTime.UtcNow, basePath);
+                    };
+                });
+            });
 
             //Register as a windows service
             builder.Host.UseWindowsService(options =>
