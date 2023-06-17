@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using YtStream.Models.YT;
 using YtStream.Services;
 using YtStream.Services.Accounts;
 using YtStream.Services.YT;
@@ -49,12 +50,12 @@ namespace YtStream.Controllers
                     return Error(ex);
                 }
             }
-            var data = _ytCacheService.Get(id, out bool found);
             if (Tools.IsYoutubePlaylist(id))
             {
+                var data = _ytCacheService.Get(id, out bool found) as YtSnippetModel[];
                 if (found || IsHead())
                 {
-                    return Json(data);
+                    return Json(data?.Select(m => m.ToApiModel()));
                 }
                 var Result = await _ytApiService.GetPlaylistInfoAsync(id);
                 if (Result == null)
@@ -65,17 +66,14 @@ namespace YtStream.Controllers
                 }
                 _ytCacheService.Set(id, Result, TimeSpan.FromHours(1));
                 Tools.SetExpiration(Response, TimeSpan.FromHours(1));
-                return Json(Result.Select(m => new
-                {
-                    title = m.Title,
-                    id = m.ResourceId.VideoId
-                }));
+                return Json(Result.Select(m => m.ToApiModel()));
             }
             else if (Tools.IsYoutubeId(id))
             {
+                var data = _ytCacheService.Get(id, out bool found) as YtSnippetModel;
                 if (found || IsHead())
                 {
-                    return Json(data);
+                    return Json(data?.ToApiModel());
                 }
                 var Result = await _ytApiService.GetVideoInfo(id);
                 if (Result == null)
@@ -84,14 +82,9 @@ namespace YtStream.Controllers
                     Tools.SetExpiration(Response, TimeSpan.FromDays(1));
                     return NotFound();
                 }
-                var Obj = new
-                {
-                    title = Result.Title,
-                    id = id
-                };
-                _ytCacheService.Set(id, Obj, TimeSpan.FromHours(1));
+                _ytCacheService.Set(id, Result, TimeSpan.FromHours(1));
                 Tools.SetExpiration(Response, TimeSpan.FromHours(1));
-                return Json(Obj);
+                return Json(Result.ToApiModel());
             }
             return BadRequest("Supplied argument is not a valid video or playlist identifier");
         }

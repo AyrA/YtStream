@@ -8,6 +8,8 @@ namespace YtStream.Models.YT
     {
         public DateTime PublishedAt { get; set; }
 
+        public string Id { get; set; }
+
         public string Title { get; set; }
 
         public string Description { get; set; }
@@ -49,6 +51,20 @@ namespace YtStream.Models.YT
                 return Thumbnails.Select(m => m.Value).MaxBy(m => m.Width * m.Height);
             }
             return thumbs[0];
+        }
+
+        /// <summary>
+        /// Converts this instance into an API model
+        /// </summary>
+        /// <returns>API model</returns>
+        public Api.InfoModel ToApiModel()
+        {
+            return new Api.InfoModel()
+            {
+                Title = Title,
+                Id = Id ?? ResourceId?.VideoId,
+                Thumbnail = Thumbnails["medium"]?.Url
+            };
         }
     }
 }

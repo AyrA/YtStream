@@ -57,6 +57,11 @@ namespace YtStream.Services.YT
                 try
                 {
                     result = (await GetJson(url)).FromJson<YtResultModel>(true, true);
+                    //Copy video Id from parent container to snippet
+                    foreach (var item in result.Items)
+                    {
+                        item.Snippet.Id = item.Id;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -94,7 +99,9 @@ namespace YtStream.Services.YT
             _logger.LogInformation("Getting YT video info for {id}", videoId);
             try
             {
-                return (await GetJson(url)).FromJson<YtResultModel>(true, true).Items[0].Snippet;
+                var item = (await GetJson(url)).FromJson<YtResultModel>(true, true).Items.First();
+                item.Snippet.Id = item.Id;
+                return item.Snippet;
             }
             catch (Exception ex)
             {
