@@ -74,7 +74,7 @@ namespace YtStream.Controllers
                         SetApiUser(StreamKey);
                         if (CurrentUser != null && CurrentUser.Enabled)
                         {
-                            _logger.LogInformation("User {0}: Key based authentication success", CurrentUser.Username);
+                            _logger.LogInformation("User {username}: Key based authentication success", CurrentUser.Username);
                             await base.OnActionExecutionAsync(context, next);
                             return;
                         }
@@ -238,8 +238,19 @@ namespace YtStream.Controllers
                         outputStreams.AddStream(new Mp3CutTargetStreamInfoModel(cacheStream, true, false, false, false));
                     }
 
-                    using (var mp3Data = _mp3ConverterService.ConvertToMp3(url))
+                    //This is set to false if the converter encounters problems,
+                    //which indicates that the cached file should be deleted
+                    //Note: Currently doesn't works properly because ffmpeg often won't exit with an error code
+                    bool keepCache = true;
+
+                    using (var mp3raw = _mp3ConverterService.ConvertToMp3(url))
                     {
+                        using var mp3Data = new Code.BufferedStream(1024 * 1024);
+                        var mp3ConverterCopyTask = mp3raw.CopyToAsync(mp3Data).ContinueWith(delegate
+                        {
+                            mp3Data.EndWrite();
+                            _logger.LogInformation("Buffered stream write ended after {count} bytes", mp3Data.Length);
+                        });
                         if (Tools.SetAudioHeaders(Response))
                         {
                             await Response.StartAsync();
@@ -255,15 +266,49 @@ namespace YtStream.Controllers
                                     var delay = await _mp3CutService.SendAd(S, Response.Body, markAds);
                                     if (model.Stream)
                                     {
-                                        await Task.Delay(TimeSpan.FromMilliseconds(delay));
+                                        if (currentAdType == AdTypeEnum.Intro)
+                                        {
+                                            var sleep = delay - (model.Buffer * 1000);
+                                            if (sleep > 0)
+                                            {
+                                                await Task.Delay(TimeSpan.FromMilliseconds(sleep));
+                                            }
+                                        }
+                                        else
+                                        {
+                                            await Task.Delay(TimeSpan.FromMilliseconds(delay));
+                                        }
                                     }
                                 }
                                 currentAdType = AdTypeEnum.Inter;
                                 await _mp3CutService.CutMp3Async(ranges, mp3Data, outputStreams, model.Buffer);
-                                if (cacheStream.Position == 0)
+                                await mp3ConverterCopyTask;
+                                await _mp3ConverterService.WaitForExitAsync();
+                                if (_mp3ConverterService.LastExitCode != 0)
                                 {
-                                    _logger.LogError("Error downloading video {id} from YT. Output is empty", url);
-                                    return Error(new Exception($"Error downloading {url} from YT. Output is empty"));
+                                    keepCache = false;
+                                    _logger.LogWarning("Error downloading video {id} from YT. FFMpeg exited with code {code}",
+                                        url, _mp3ConverterService.LastExitCode);
+                                }
+                                else if (cacheStream.Position == 0)
+                                {
+                                    keepCache = false;
+                                    _logger.LogWarning("Error downloading video {id} from YT. Output is empty", url);
+                                }
+                                else
+                                {
+                                    _logger.LogInformation("Converter exited with code {code}", _mp3ConverterService.LastExitCode);
+                                }
+                            }
+                            if (!keepCache)
+                            {
+                                try
+                                {
+                                    mp3CacheHandler.DeleteFile(filename);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(ex, "Unable to delete {file} from cache", filename);
                                 }
                             }
                         }
@@ -281,6 +326,7 @@ namespace YtStream.Controllers
                             }
                             currentAdType = AdTypeEnum.Inter;
                             await _mp3CutService.CutMp3Async(ranges, mp3Data, outputStreams, model.Buffer);
+                            await mp3ConverterCopyTask;
                         }
                         //Flush all data before attempting the next file
                         await Response.Body.FlushAsync();
@@ -301,6 +347,7 @@ namespace YtStream.Controllers
                         _logger.LogWarning("None of the ids {list} yielded usable results", ids);
                         return NotFound();
                     }
+
                 }
             }
             using (var S = GetAd(AdTypeEnum.Outro))

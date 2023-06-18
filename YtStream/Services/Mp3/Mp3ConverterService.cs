@@ -61,6 +61,8 @@ namespace YtStream.Services.Mp3
         /// </summary>
         public bool IsConverting { get => P != null && !P.HasExited; }
 
+        public int LastExitCode { get; private set; } = -1;
+
         public Mp3ConverterService(ConfigService config)
         {
             var c = config.GetConfiguration();
@@ -131,9 +133,20 @@ namespace YtStream.Services.Mp3
         /// <remarks>If the process has already exited returns true immediately</remarks>
         public Task<bool> WaitForExitAsync(int MaxWaitMs = int.MaxValue)
         {
-            if (IsConverting)
+            var proc = P;
+            if (IsConverting && proc != null)
             {
-                return Task.Run(delegate { return P.WaitForExit(MaxWaitMs); });
+                return Task.Run(delegate
+                {
+                    try
+                    {
+                        return proc.WaitForExit(MaxWaitMs);
+                    }
+                    catch
+                    {
+                        return true;
+                    }
+                });
             }
             return Task.FromResult(true);
         }
@@ -172,7 +185,7 @@ namespace YtStream.Services.Mp3
             {
                 throw new InvalidOperationException("Conversion already running");
             }
-            var Args = GetArgs(SourceData);
+            var Args = GetArgs();
             var PSI = new ProcessStartInfo(executable, Args)
             {
                 UseShellExecute = false,
@@ -214,6 +227,7 @@ namespace YtStream.Services.Mp3
                 }
                 P = null;
             }
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -224,6 +238,7 @@ namespace YtStream.Services.Mp3
         private void ExitHandler(object sender, EventArgs e)
         {
             var Temp = (Process)sender;
+            LastExitCode = Temp.ExitCode;
             try
             {
                 Temp.Dispose();
@@ -241,7 +256,7 @@ namespace YtStream.Services.Mp3
         /// <param name="Arg">Stream</param>
         /// <returns>Conversion arguments for a stream</returns>
         /// <remarks><paramref name="Arg"/> is not actually touched in any way</remarks>
-        private string GetArgs(Stream Arg)
+        private string GetArgs()
         {
             return $"-i pipe:0 " + GetBaseArg();
         }
@@ -257,7 +272,7 @@ namespace YtStream.Services.Mp3
             {
                 return $"-user_agent \"{UserAgent}\" -i \"{Arg}\" " + GetBaseArg();
             }
-            return $"-i \"{Arg}\" " + GetBaseArg();
+            return $"-reconnect 1 -reconnect_on_network_error 1 -reconnect_streamed 1 -reconnect_delay_max 5 -i \"{Arg}\" " + GetBaseArg();
         }
 
         /// <summary>
