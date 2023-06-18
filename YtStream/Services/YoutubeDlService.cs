@@ -234,11 +234,29 @@ namespace YtStream.Services
         /// <summary>
         /// Gets the version of the application
         /// </summary>
+        /// <param name="executable">YtDl executable</param>
         /// <returns>Version</returns>
         /// <remarks>Version number is currently formatted as YYYY.MM.DD</remarks>
         public static async Task<string> GetVersion(string executable)
         {
             var PSI = new ProcessStartInfo(executable, "--version")
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
+            using var P = Process.Start(PSI);
+            return (await P.StandardOutput.ReadToEndAsync()).Trim();
+        }
+
+        /// <summary>
+        /// Gets the user agent used by YtDl
+        /// </summary>
+        /// <param name="executable">YtDl executable</param>
+        /// <returns>User agent string</returns>
+        /// <remarks>Use instance member <see cref="GetUserAgent()"/> instead if possible</remarks>
+        public static async Task<string> GetUserAgent(string executable)
+        {
+            var PSI = new ProcessStartInfo(executable, "--dump-user-agent")
             {
                 UseShellExecute = false,
                 RedirectStandardOutput = true

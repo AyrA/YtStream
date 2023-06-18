@@ -60,7 +60,7 @@ namespace YtStream.Services.YT
                     //Copy video Id from parent container to snippet
                     foreach (var item in result.Items)
                     {
-                        item.Snippet.Id = item.Id;
+                        item.Snippet.Id = item.Snippet.ResourceId.VideoId;
                     }
                 }
                 catch (Exception ex)

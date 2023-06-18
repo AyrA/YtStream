@@ -6,43 +6,22 @@
 @{
     ViewData["Title"] = "Settings";
     var ErrMsg = (string)ViewBag.ErrorMessage;
-    string FfmpegVersion = null;
-    string ytdlVersion = null;
+    string FfmpegVersion = ViewData["FFMpegVersion"] as string;
+    string ytdlVersion = ViewData["YtDlVersion"] as string;
+    string ytdlUA = ViewData["YtDlUa"] as string;
+
     if (Model == null)
     {
         try
         {
             _configService.GetConfiguration();
             ErrMsg = "Configuration is null";
-
         }
         catch (Exception ex)
         {
             ErrMsg = ex.Message;
         }
     }
-    else
-    {
-        try
-        {
-            FfmpegVersion = await Mp3ConverterService.GetVersion(Model.FfmpegPath);
-        }
-        catch (Exception ex)
-        {
-            ErrMsg = ex.Message;
-            FfmpegVersion = "None";
-        }
-        try
-        {
-            ytdlVersion = await YoutubeDlService.GetVersion(Model.YoutubedlPath);
-        }
-        catch (Exception ex)
-        {
-            ErrMsg = ex.Message;
-            ytdlVersion = "None";
-        }
-    }
-
 }
 <h1>Settings</h1>
 
@@ -92,8 +71,9 @@ else
                 Youtube-dl path
             </label>
             <input type="text" asp-for="YoutubedlPath" class="form-control" />
-            <a href="https://youtube-dl.org/" target="_blank" rel="noreferrer nofollow noopener">Download</a><br />
-            Selected version: <i>@ytdlVersion</i>
+            <a href="https://gitload.net/yt-dlp/yt-dlp" target="_blank" rel="noreferrer nofollow noopener">Download</a><br />
+            Selected version: <i>@ytdlVersion</i><br />
+            User agent: <i>@ytdlUA</i>
         </div>
     </div>
 
