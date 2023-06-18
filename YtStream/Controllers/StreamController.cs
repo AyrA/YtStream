@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using YtStream.Enums;
 using YtStream.Models;
 using YtStream.Models.Mp3;
+using YtStream.Models.YtDl;
 using YtStream.Services;
 using YtStream.Services.Accounts;
 using YtStream.Services.Mp3;
@@ -204,10 +205,17 @@ namespace YtStream.Controllers
                     /////////////////////////////////////////////////////////////
                     //At this point we need to go live to youtube to get the file
 
+                    YoutubeDlResultModel details;
                     string url;
                     try
                     {
-                        url = await _youtubeDlService.GetAudioUrl(ytid);
+                        details = await _youtubeDlService.GetAudioDetails(ytid);
+                        url = details.Url;
+                        if (details.Duration > Settings.MaxVideoDuration)
+                        {
+                            throw new YoutubeDlException("Video exceeds permitted duration. " +
+                                $"{TimeSpan.FromSeconds(details.Duration)} > {TimeSpan.FromSeconds(Settings.MaxVideoDuration)}");
+                        }
                     }
                     catch (YoutubeDlException ex)
                     {

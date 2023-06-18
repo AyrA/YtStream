@@ -102,6 +102,11 @@ else
                     <input type="checkbox" asp-for="UseCache" value="True" />
                     Use cache
                 </label>
+                <p>
+                    <i>
+                        If enabled, MP3 files are stored on the server
+                    </i>
+                </p>
             </div>
             <div class="form-group">
                 <label>
@@ -127,9 +132,11 @@ else
                     <input type="checkbox" asp-for="UseSponsorBlock" value="True" />
                     Use SponsorBlock
                 </label>
-                <i>
-                    Even if enabled, clients have the ability to disable this on a per-stream basis
-                </i>
+                <p>
+                    <i>
+                        Even if enabled, clients have the ability to disable this on a per-stream basis
+                    </i>
+                </p>
             </div>
             <div class="form-group">
                 <label>
@@ -157,39 +164,41 @@ else
             <label>
                 <input type="checkbox" asp-for="RequireAccount" value="True" />
                 Require account to stream
-            </label><br />
-            <i>
-                If set, people need to either be logged in or use a streaming key.
-                If disabled, anyone can stream media from this server.
-            </i>
+            </label>
+            <p>
+                <i>
+                    If set, people need to either be logged in or use a streaming key.
+                    If disabled, anyone can stream media from this server.
+                </i>
+            </p>
+            <label>
+                <input type="checkbox" asp-for="AdminAds" value="True" />
+                Play ads for administrators too
+            </label>
+            <p>
+                <i>
+                    Ads are normally not played when an administrator account streams media.
+                    You can enable ads here. Most useful for testing purposes.
+                </i>
+            </p>
         </div>
-    </div>
-    <div class="row">
         <div class="col-md-6">
             <label>
                 <input type="checkbox" asp-for="MarkAds" value="True" />
                 Mark ads in MP3 header
             </label>
+            <p class="auto-help">
+                <i>
+                    This sets the "private" bit in the MP3 headers that contain ads.
+                    This would allow an application to automatically mark them to the user,
+                    or to silence/remove them.
+                    If this option is unset, the "private" bit will be cleared in all MP3 headers.
+                </i>
+            </p>
         </div>
     </div>
-    <p class="auto-help">
-        <i>
-            This sets the "private" bit in the MP3 headers that contain ads.
-            This would allow an application to automatically mark them to the user,
-            or to silence/remove them.
-            If this option is unset, the "private" bit will be cleared in all MP3 headers.
-        </i>
-    </p>
     <div class="row">
         <div class="col-md-6 form-group">
-            <label>
-                <input type="checkbox" asp-for="AdminAds" value="True" />
-                Play ads for administrators too
-            </label><br />
-            <i>
-                Ads are normally not played when an administrator account streams media.
-                You can enable ads here. Most useful for testing purposes.
-            </i>
         </div>
     </div>
     <div class="row">
@@ -198,6 +207,13 @@ else
                 Maximum number of video ids per stream
             </label>
             <input type="number" min="0" max="1000" asp-for="MaxStreamIds" class="form-control" />
+            Zero indicates no limit.
+        </div>
+        <div class="offset-2 col-md-4">
+            <label>
+                Maximum duration per video
+            </label>
+            <input type="number" min="0" max="86400" asp-for="MaxVideoDuration" class="form-control" />
             Zero indicates no limit.
         </div>
     </div>
@@ -213,13 +229,14 @@ else
         </i>
     </p>
 
+    <h2>Converter options</h2>
     <div class="row">
         <div class="col-md-4 form-group">
             <label>Bitrate</label>
             <select asp-for="AudioBitrate" asp-items="Tools.HtmlEnumSwapList<Mp3BitrateEnum>()" class="form-control"></select>
             <i>Default recommended bitrate: @Tools.SwapEnumName(Mp3BitrateEnum.kbps192)</i>
         </div>
-        <div class="col-md-4 form-group">
+        <div class="offset-2 col-md-4 form-group">
             <label>Frequency</label>
             <select asp-for="AudioFrequency" asp-items="Tools.HtmlEnumSwapList<Mp3FrequencyEnum>()" class="form-control"></select>
             <i>Default recommended frequency: @Tools.SwapEnumName(Mp3FrequencyEnum.Hz44100)</i>

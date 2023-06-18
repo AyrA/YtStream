@@ -65,6 +65,12 @@ namespace YtStream.Models
         public int MaxStreamIds { get; set; }
 
         /// <summary>
+        /// Maximum allowed video duration in seconds.
+        /// Zero indicates no limit
+        /// </summary>
+        public int MaxVideoDuration { get; set; }
+
+        /// <summary>
         /// API key for the YT API
         /// </summary>
         /// <remarks>
@@ -167,6 +173,10 @@ namespace YtStream.Models
             {
                 Messages.Add(nameof(MaxStreamIds) + " cannot be negative. Use zero to impose no limit instead.");
             }
+            if (MaxVideoDuration < 0)
+            {
+                Messages.Add(nameof(MaxVideoDuration) + " cannot be negative. Use zero to impose no limit instead.");
+            }
             if (UseCache)
             {
                 if (string.IsNullOrWhiteSpace(CachePath))
@@ -220,32 +230,5 @@ namespace YtStream.Models
             return GetValidationMessages().Length == 0;
         }
 
-        /*
-        /// <summary>
-        /// Save this instance to the default configuration file
-        /// </summary>
-        public void Save()
-        {
-            var F = Path.Combine(AppContext.BaseDirectory, ConfigService.ConfigFileName);
-            File.WriteAllText(F, this.ToJson(true));
-        }
-
-        /// <summary>
-        /// Loads settings from the default confgiuration file
-        /// </summary>
-        /// <returns>Settings. Defaults if no file was found</returns>
-        public static ConfigModel Load()
-        {
-            var F = Path.Combine(AppContext.BaseDirectory, ConfigService.ConfigFileName);
-            try
-            {
-                return File.ReadAllText(F).FromJson<ConfigModel>(true);
-            }
-            catch (FileNotFoundException)
-            {
-                return new ConfigModel();
-            }
-        }
-        //*/
     }
 }

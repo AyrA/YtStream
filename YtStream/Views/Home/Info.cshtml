@@ -5,14 +5,20 @@
 <h1>Usage instructions</h1>
 <p>
     This system operates on the video ids or playlist ids.
-    They both can be grabbed from the address bar of your browser.
+    They both can be grabbed from the address bar of your browser.<br />
+    This page explains how to construct a stream URL manually.
+    It's better to use the <a asp-action="Builder">URL builder</a> instead,
+    because it will extract video and playlist ids from youtube URLs automatically.
 </p>
+
 <h2>Restrictions</h2>
 <p>
     You can only stream videos and playlists that can be viewed publicly and are not age restricted.
     The administrator of this system may also put restrictions in place
     about the video length or the number of videos in a single stream.
+    You can also stream content that is public but unlisted.
 </p>
+
 @if (Settings.RequireAccount)
 {
     <h2>Stream keys</h2>
@@ -22,70 +28,119 @@
         or add a stream key to the URL.
         Visit your <a asp-action="Index" asp-controller="Account">key management page</a> to get keys.
     </p>
-    <p>
-        You can use a key by adding <code>?key=&lt;stream_key_here&gt;</code> to the stream URL.
-    </p>
 }
+
 <h2>Video id</h2>
 <p>
     The video id is an 11 character string following the <code>v=</code> of a video URL.<br />
     Example: <code>https://www.youtube.com/watch?v=<b>dQw4w9WgXcQ</b></code><br />
 </p>
-<p>
-    You can supply multiple ids to a stream function to stream them in order.
-    Use commas to separate them.
-    You can even supply the same id multiple times to repeat the file.<br />
-    Example: <code>/Stream/Order/dQw4w9WgXcQ,dQw4w9WgXcQ,hJresi7z_YM,dQw4w9WgXcQ</code>
-</p>
+
 <h2>Playlist id</h2>
 <p>
-    The playlist id comes in two versions.
-    Both of them are fairly long and start with "PL"<br />
-    Format: <code>https://www.youtube.com/playlist?list=PL<b>&lt;many_characters&gt;</b></code>
+    The playlist id comes in two versions depending on how old the playlist is.
+    Both of them are fairly long and can be identified because they start with "PL"<br />
+    Format: <code>https://www.youtube.com/playlist?list=PL<b>&lt;many_characters&gt;</b></code><br />
 </p>
-<h2>Stream endpoints</h2>
+
+<h2>Multiple ids</h2>
 <p>
-    A stream endpoint is always in the format <code>/Stream/&lt;Function&gt;/&lt;Parameter&gt;</code><br />
-    The "Function" is one of the following:
+    You can supply multiple ids to a stream function to stream them as a single audio stream.
+    Use commas to separate them in the URL.<br />
+    You can supply the same id multiple times to repeat it.
+    Playlist ids and video ids can be mixed.
 </p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>Funtion</th>
-            <th>Parameter</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>Order</td>
-            <td>one or more video ids</td>
-            <td>Plays all supplied ids in the given order</td>
-        </tr>
-        <tr>
-            <td>Random</td>
-            <td>one or more video ids</td>
-            <td>Plays all supplied ids in random order</td>
-        </tr>
-        <tr>
-            <td>PlaylistOrder</td>
-            <td>one playlist id</td>
-            <td>Plays the supplied playlist in original order</td>
-        </tr>
-        <tr>
-            <td>PlaylistRandom</td>
-            <td>one playlist id</td>
-            <td>Plays the supplied playlist in random order</td>
-        </tr>
-        <tr>
-            <td>Ranges</td>
-            <td>single video id</td>
-            <td>Gets all SponsorBlock ranges for the given video</td>
-        </tr>
-        <tr>
-            <td>List</td>
-            <td>one playlist id</td>
-            <td>Gets all video ids for the given playlist</td>
-        </tr>
-    </tbody>
-</table>
+@if (Settings.MaxStreamIds > 0)
+{
+    <p class="alert alert-info">
+        The owner of this server has limited the number of ids you can have in a single stream.
+        A maximum is set to @Settings.MaxStreamIds<br />
+        Note that this takes into account the number of videos in playlists.
+        The system will stop parsing video ids and expanding playlist ids when the limit has been reached.
+    </p>
+}
+
+<h2>Stream endpoint</h2>
+<p>
+    the stream endpoint is in the format <code>/Stream/Send/&lt;ids&gt;</code><br />
+    Optional parameter may be appended to the URL.
+</p>
+
+<h2>Parameters</h2>
+<p>
+    The following URL parameters can be appended to the URL:
+</p>
+
+<h3>key</h3>
+<p>
+    This parameter is used to supply the stream key.
+</p>
+@if (Settings.RequireAccount)
+{
+    <p class="alert alert-info">
+        The server is currently configured to require an account for streaming.
+        You need to either supply the key or be logged in.
+    </p>
+}
+else
+{
+    <p class="alert alert-info">
+        The server is currently configured to permit anonymous streaming.
+        Supplying a key is not necessary
+    </p>
+}
+
+<h3>stream</h3>
+<p>
+    If this parameter is supplied with the value "y",
+    then data will be streamed to you at playback speed, rather than as fast as possible.
+    This is recommended when you stream multiple files or playlists,
+    because it avoids the buffer of your device overfilling and it closing the connection.
+</p>
+
+<h3>buffer</h3>
+<p>
+    The number of seconds to buffer when using <code>stream=y</code>.
+    It has no effect without the stream option.<br />
+    This basically is the number of seconds that the data you receive is in the future.
+    Setting this to 8 for example means you get data 8 seconds before it is needed for playback,
+    creating an 8 second buffer in your streaming client.<br />
+    The Permitted range is from 1 to @StreamOptionsModel.MaxBufferSize,
+    and the default is @StreamOptionsModel.DefaultBufferSize
+</p>
+
+<h3>repeat</h3>
+<p>
+    The number of times you want to play the entire list of files.
+    If not supplied, the id list is played once.
+    The upper limit for this parameter is @StreamOptionsModel.MaxRepetitions
+</p>
+
+<h3>random</h3>
+<p>
+    If set to "y", the id list is randomized before being played.
+</p>
+<p>
+    Note that randomizing may not work in the way you may think it does.
+    The list is randomized <b>before</b> the ids are parsed.<br />
+    This means if you mix a video id with a playlist id,
+    the video id will always appear before or after all videos in the playlist
+    because the playlist is not evaluated before it's needed in the stream.
+    Videos within the playlist will be randomized.
+</p>
+<p>
+    Conbining this parameter with <code>repeat</code> is possible.
+    The server will re-shuffle the list after every complete iteration.
+</p>
+
+<h3>raw</h3>
+<p>
+    If set to "y", the server will not try to cut non-music sections from the stream or remove invalid data.
+</p>
+@if (!Settings.UseSponsorBlock)
+{
+    <p class="alert-info">
+        This parameter is currently non-functional and globally set to "y"
+        because the administrator has disabled non-music section stripping.
+    </p>
+}
