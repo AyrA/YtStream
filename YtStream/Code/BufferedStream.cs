@@ -15,6 +15,8 @@ namespace YtStream.Code
     /// </remarks>
     public class BufferedStream : Stream
     {
+        public event BufferedStreamShrinkHandler BufferedStreamShrink = delegate { };
+
         private readonly long cutoffInterval;
         private bool disposed = false;
         private long readPtr = 0;
@@ -24,7 +26,15 @@ namespace YtStream.Code
 
         private readonly SemaphoreSlim semaphore = new(1);
 
-        private bool IsStarved => !hasWriteEnded && readPtr == writePtr;
+        /// <summary>
+        /// Gets if read operations are currently being blocked because the stream lacks data but has not ended
+        /// </summary>
+        private bool IsStarved => !hasWriteEnded && readPtr == MS.Length;
+
+        /// <summary>
+        /// Gets if write operations have been ended by calling <see cref="EndWriteOperations()"/>
+        /// </summary>
+        public bool HasWriteEnded => hasWriteEnded;
 
         public override bool CanRead => true;
 
@@ -61,7 +71,7 @@ namespace YtStream.Code
         /// <remarks>
         /// This must be called after the last data has been written to the stream
         /// </remarks>
-        public void EndWrite()
+        public void EndWriteOperations()
         {
             CheckDispose();
             hasWriteEnded = true;
@@ -94,6 +104,7 @@ namespace YtStream.Code
                     using (stream)
                     {
                         MS = new MemoryStream();
+                        BufferedStreamShrink(this, new BufferedStreamShrinkEventArgs() { CurrentSource = stream, NewSource = MS });
                         stream.CopyTo(MS);
                     }
                     readPtr = 0;
@@ -173,6 +184,7 @@ namespace YtStream.Code
                     using (stream)
                     {
                         MS = new MemoryStream();
+                        BufferedStreamShrink(this, new BufferedStreamShrinkEventArgs() { CurrentSource = stream, NewSource = MS });
                         await stream.CopyToAsync(MS, cancellationToken);
                     }
                     readPtr = 0;
@@ -231,4 +243,12 @@ namespace YtStream.Code
             }
         }
     }
+
+    public class BufferedStreamShrinkEventArgs
+    {
+        public Stream CurrentSource { get; set; }
+        public Stream NewSource { get; set; }
+    }
+
+    public delegate void BufferedStreamShrinkHandler(object sender, BufferedStreamShrinkEventArgs args);
 }

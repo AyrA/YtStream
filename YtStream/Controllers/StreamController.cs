@@ -248,7 +248,7 @@ namespace YtStream.Controllers
                         using var mp3Data = new Code.BufferedStream(1024 * 1024);
                         var mp3ConverterCopyTask = mp3raw.CopyToAsync(mp3Data).ContinueWith(delegate
                         {
-                            mp3Data.EndWrite();
+                            mp3Data.EndWriteOperations();
                             _logger.LogInformation("Buffered stream write ended after {count} bytes", mp3Data.Length);
                         });
                         if (Tools.SetAudioHeaders(Response))
