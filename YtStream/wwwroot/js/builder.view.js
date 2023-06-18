@@ -27,7 +27,7 @@
         if (id) {
             if (p.dataset.id !== id) {
                 p.dataset.id = id;
-                p.src = location.origin + "/Stream/Send/" + id;
+                p.src = location.origin + "/Stream/Send/" + id + "?stream=y";
                 p.play();
             }
             else {
@@ -54,8 +54,12 @@
             var row = document.createElement("tr");
 
             //Title and link
+            var thumbCell = row.appendChild(document.createElement("td"));
+            var thumb = thumbCell.appendChild(document.createElement("img"));
             var videoCell = row.appendChild(document.createElement("td"));
             var videoLink = videoCell.appendChild(document.createElement("a"));
+            thumb.src = v.thumbnail;
+            thumb.classList.add("thumb");
             videoLink.textContent = v.title;
             videoLink.href = "/Stream/Send/" + v.id;
             videoLink.setAttribute("target", "_blank");

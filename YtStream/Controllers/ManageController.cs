@@ -11,6 +11,7 @@ using YtStream.Models;
 using YtStream.Models.Accounts;
 using YtStream.Services;
 using YtStream.Services.Accounts;
+using YtStream.Services.Mp3;
 
 namespace YtStream.Controllers
 {
@@ -74,7 +75,7 @@ namespace YtStream.Controllers
                 Tools.CheckFormConfirmation(Request.Form);
                 var Handler = _cache.GetHandler(CacheTypeEnum.MP3, Settings.CacheMp3Lifetime);
                 var Count = Handler.Purge();
-                _logger.LogInformation("MP3 cache purge: Deleted {0} files", Count);
+                _logger.LogInformation("MP3 cache purge: Deleted {count} files", Count);
                 return RedirectWithMessage("CacheInfo", $"Deleted {Count} files from cache");
             }
             catch (Exception ex)
@@ -195,7 +196,7 @@ namespace YtStream.Controllers
             {
                 return View("Error", new ErrorViewModel(ex));
             }
-            _logger.LogInformation($"User '{Acc.Username}' deleted");
+            _logger.LogInformation("User {username} deleted", Acc.Username);
             return RedirectWithMessage("AccountList", $"User '{Acc.Username}' was deleted");
         }
 
@@ -265,7 +266,7 @@ namespace YtStream.Controllers
                 if (password == passwordRepeat)
                 {
                     AccountInfoModel NewUser = _userManager.AddUser(userName, password, UserRoles.User);
-                    _logger.LogInformation("User {0} registered by {1}", NewUser.Username, CurrentUser.Username);
+                    _logger.LogInformation("User {newname} registered by {admin}", NewUser.Username, CurrentUser.Username);
                 }
                 else
                 {
@@ -416,8 +417,27 @@ namespace YtStream.Controllers
         }
 
         [HttpGet, ActionName("Config")]
-        public IActionResult ConfigGet()
+        public async Task<IActionResult> ConfigGet()
         {
+            if (!string.IsNullOrEmpty(Settings?.FfmpegPath))
+            {
+                ViewData["FFMpegVersion"] = await Mp3ConverterService.GetVersion(Settings.FfmpegPath);
+            }
+            else
+            {
+                ViewData["FFMpegVersion"] = "None";
+            }
+            if (!string.IsNullOrEmpty(Settings?.YoutubedlPath))
+            {
+                ViewData["YtDlVersion"] = await YoutubeDlService.GetVersion(Settings.YoutubedlPath);
+                ViewData["YtDlUa"] = await YoutubeDlService.GetUserAgent(Settings.YoutubedlPath);
+            }
+            else
+            {
+                ViewData["YtDlVersion"] = "None";
+                ViewData["YtDlUa"] = "None";
+            }
+
             return View(Settings);
         }
 
@@ -464,11 +484,7 @@ namespace YtStream.Controllers
             {
                 throw new ArgumentNullException(nameof(Username), "User name not specified");
             }
-            var Acc = _userManager.GetUser(Username);
-            if (Acc == null)
-            {
-                throw new ArgumentException("User not found: " + nameof(Username));
-            }
+            var Acc = _userManager.GetUser(Username) ?? throw new ArgumentException("User not found: " + nameof(Username));
             if (!AllowSelf && Acc == CurrentUser)
             {
                 throw new Exception(Username + " is the currently logged on user. " +

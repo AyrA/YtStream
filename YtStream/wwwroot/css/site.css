@@ -10,7 +10,11 @@
     color:#0366d6;
 }
 
-/* == Automatically generated rules == */
+.thumb {
+    max-width:200px;
+}
+
+/* == Automatically generated rules below == */
 a.navbar-brand {
     white-space: normal;
     text-align: center;

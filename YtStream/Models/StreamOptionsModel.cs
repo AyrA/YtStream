@@ -11,6 +11,10 @@ namespace YtStream.Models
         /// </summary>
         public const int MaxBufferSize = 20;
         /// <summary>
+        /// Default buffer size for networked stream
+        /// </summary>
+        public const int DefaultBufferSize = 5;
+        /// <summary>
         /// Maximum number of repetitions
         /// </summary>
         public const int MaxRepetitions = 99;
@@ -18,7 +22,7 @@ namespace YtStream.Models
         public StreamOptionsModel()
         {
             Repeat = 1;
-            Buffer = 0;
+            Buffer = -1;
         }
 
         public StreamOptionsModel(IQueryCollection query) : this()
@@ -67,7 +71,14 @@ namespace YtStream.Models
                     }
                 }
                 Repeat = Math.Min(MaxRepetitions, Math.Max(1, Repeat));
-                Buffer = Math.Min(MaxBufferSize, Math.Max(1, Buffer));
+                if (Buffer == -1)
+                {
+                    Buffer = DefaultBufferSize;
+                }
+                else
+                {
+                    Buffer = Math.Min(MaxBufferSize, Math.Max(1, Buffer));
+                }
             }
         }
 
@@ -76,8 +87,8 @@ namespace YtStream.Models
         /// </summary>
         public int Repeat { get; private set; }
         /// <summary>
-        /// Gets the amount of data to buffer for the client in the range of 0 to <see cref="MaxBufferSize"/> inclusive.
-        /// The value is in seconds.
+        /// Gets the amount of data to buffer for the client in the range of 1 to <see cref="MaxBufferSize"/> inclusive.
+        /// The value is in seconds and defaults to <see cref="DefaultBufferSize"/>
         /// </summary>
         /// <remarks>Has no effect if <see cref="Stream"/> is false</remarks>
         public int Buffer { get; private set; }

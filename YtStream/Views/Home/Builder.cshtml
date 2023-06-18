@@ -40,7 +40,7 @@
             <label><input type="checkbox" name="stream" id="cbStream" /> Simulate real-time streaming</label>
         </div>
         <div class="input-group">
-            <input type="number" name="buffer" id="tbBuffer" value="3" min="1" max="@StreamOptionsModel.MaxBufferSize" class="form-control" />
+            <input type="number" name="buffer" id="tbBuffer" value="@StreamOptionsModel.DefaultBufferSize" min="1" max="@StreamOptionsModel.MaxBufferSize" class="form-control" />
             <div class="input-group-append">
                 <span class="input-group-text">Seconds</span>
             </div>
@@ -69,13 +69,14 @@
 <table class="table" id="idTable">
     <thead>
         <tr>
+            <th>&nbsp;</th>
             <th>Title</th>
             <th>Options</th>
         </tr>
     </thead>
     <tbody>
         <tr>
-            <td colspan="2"><i>List is empty</i></td>
+            <td colspan="3"><i>List is empty</i></td>
         </tr>
     </tbody>
 </table>
