@@ -23,4 +23,10 @@
     <PackageReference Include="NReco.Logging.File" Version="1.1.6" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="ads.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
