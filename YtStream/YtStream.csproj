@@ -8,12 +8,14 @@
   <ItemGroup>
     <Content Remove="accounts.json" />
     <Content Remove="config.json" />
+    <Content Remove="ads.json" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="..\.editorconfig" Link=".editorconfig" />
     <None Include="accounts.json" />
     <None Include="config.json" />
+    <None Include="ads.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,11 +24,4 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="7.0.0" />
     <PackageReference Include="NReco.Logging.File" Version="1.1.6" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Content Update="ads.json">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
 </Project>
