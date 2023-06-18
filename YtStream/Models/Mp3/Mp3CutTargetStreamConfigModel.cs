@@ -27,7 +27,7 @@ namespace YtStream.Models.Mp3
         /// Initializes a new instance
         /// </summary>
         /// <param name="streams">Pre-fill for stream list</param>
-        public Mp3CutTargetStreamConfigModel(IEnumerable<Mp3CutTargetStreamInfoModel> streams = null)
+        public Mp3CutTargetStreamConfigModel(IEnumerable<Mp3CutTargetStreamInfoModel>? streams = null)
         {
             this.streams = new List<Mp3CutTargetStreamInfoModel>();
             if (streams != null)

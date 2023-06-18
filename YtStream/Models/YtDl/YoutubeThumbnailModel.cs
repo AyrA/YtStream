@@ -30,6 +30,6 @@ namespace YtStream.Models.YtDl
         /// Image URL
         /// </summary>
         [JsonPropertyName("url")]
-        public string Url { get; set; }
+        public string? Url { get; set; }
     }
 }

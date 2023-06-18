@@ -113,11 +113,7 @@ namespace YtStream.Services.Accounts
         /// </remarks>
         public bool CanDeleteOrDisable(string Username)
         {
-            var Acc = GetUser(Username);
-            if (Acc == null)
-            {
-                throw new ArgumentException("Specified user could not be found");
-            }
+            var Acc = GetUser(Username) ?? throw new ArgumentException("Specified user could not be found");
             //Can always delete regular users
             if (!Acc.Roles.HasFlag(UserRoles.Administrator))
             {
@@ -158,13 +154,13 @@ namespace YtStream.Services.Accounts
         /// <param name="Username">User name</param>
         /// <returns>User</returns>
         /// <remarks>Returns null if no user found</remarks>
-        public AccountInfoModel GetUser(string Username)
+        public AccountInfoModel? GetUser(string? Username)
         {
             if (string.IsNullOrEmpty(Username))
             {
                 return null;
             }
-            return Accounts.FirstOrDefault(m => m.Username.ToLower() == Username.ToLower());
+            return Accounts.FirstOrDefault(m => m?.Username != null && m.Username.ToLower() == Username.ToLower());
         }
 
         /// <summary>
@@ -173,7 +169,7 @@ namespace YtStream.Services.Accounts
         /// <param name="ApiKey">API key</param>
         /// <returns>User</returns>
         /// <remarks>Returns null if no user found</remarks>
-        public AccountInfoModel GetUser(Guid ApiKey)
+        public AccountInfoModel? GetUser(Guid ApiKey)
         {
             return Accounts.FirstOrDefault(m => m.HasKey(ApiKey));
         }
@@ -220,11 +216,7 @@ namespace YtStream.Services.Accounts
         {
             lock (Locker)
             {
-                var User = GetUser(Username);
-                if (User == null)
-                {
-                    throw new ArgumentException("The supplied user name is invalid");
-                }
+                var User = GetUser(Username) ?? throw new ArgumentException("The supplied user name is invalid");
                 Accounts.Remove(User);
                 Save();
             }
@@ -288,7 +280,7 @@ namespace YtStream.Services.Accounts
                 throw new InvalidOperationException($"At least one account has more than {MaxKeysPerUser} keys");
             }
             //Prevent duplicate user names
-            if (Accounts.Length != Accounts.Select(m => m.Username.ToLower()).Distinct().Count())
+            if (Accounts.Length != Accounts.Select(m => (m.Username ?? "").ToLower()).Distinct().Count())
             {
                 throw new InvalidOperationException("Duplicate user name in list");
             }

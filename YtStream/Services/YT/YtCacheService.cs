@@ -93,9 +93,9 @@ namespace YtStream.Services.YT
         /// </summary>
         /// <param name="key">Key</param>
         /// <returns>Returns null if not found or expired</returns>
-        public object Get(string key)
+        public object? Get(string key)
         {
-            YtCacheEntry e;
+            YtCacheEntry? e;
             lock (entries)
             {
                 if (!entries.TryGetValue(key, out e))
@@ -115,13 +115,13 @@ namespace YtStream.Services.YT
         /// This allows the user to know whether a "null" return is because the object is actually null or not.
         /// </param>
         /// <returns>Object, or null if not found or expired</returns>
-        public object Get(string key, out bool exists)
+        public object? Get(string key, out bool exists)
         {
-            YtCacheEntry e;
+            YtCacheEntry? e;
             lock (entries)
             {
                 exists = entries.TryGetValue(key, out e);
-                if (!exists)
+                if (!exists || e == null)
                 {
                     return null;
                 }
@@ -148,7 +148,7 @@ namespace YtStream.Services.YT
         /// <param name="key">Key</param>
         /// <param name="data">Data</param>
         /// <param name="lifetime">Entry lifetime. Must be more than zero</param>
-        public void Set(string key, object data, TimeSpan lifetime)
+        public void Set(string key, object? data, TimeSpan lifetime)
         {
             if (lifetime > TimeSpan.Zero)
             {
@@ -179,7 +179,7 @@ namespace YtStream.Services.YT
             {
                 lock (entries)
                 {
-                    if (entries.TryGetValue(key, out YtCacheEntry e))
+                    if (entries.TryGetValue(key, out YtCacheEntry? e))
                     {
                         e.Poke(lifetime);
                         return true;
@@ -221,6 +221,7 @@ namespace YtStream.Services.YT
         public void Dispose()
         {
             disposed = true;
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -229,10 +230,10 @@ namespace YtStream.Services.YT
         private class YtCacheEntry
         {
             public DateTime Expires { get; private set; }
-            public object Value { get; set; }
+            public object? Value { get; set; }
             public bool Expired => DateTime.UtcNow > Expires;
 
-            public YtCacheEntry(object data, TimeSpan lifetime)
+            public YtCacheEntry(object? data, TimeSpan lifetime)
             {
                 Value = data;
                 Poke(lifetime);

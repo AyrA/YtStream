@@ -12,37 +12,37 @@ namespace YtStream.Models.YtDl
         /// Channel display name
         /// </summary>
         [JsonPropertyName("channel")]
-        public string Channel { get; set; }
+        public string? Channel { get; set; }
 
         /// <summary>
         /// Artist name
         /// </summary>
         [JsonPropertyName("artist")]
-        public string Artist { get; set; }
+        public string? Artist { get; set; }
 
         /// <summary>
         /// Song name
         /// </summary>
         [JsonPropertyName("track")]
-        public string Track { get; set; }
+        public string? Track { get; set; }
 
         /// <summary>
         /// Video title
         /// </summary>
         [JsonPropertyName("title")]
-        public string Title { get; set; }
+        public string? Title { get; set; }
 
         /// <summary>
         /// Video desctiption
         /// </summary>
         [JsonPropertyName("description")]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         /// <summary>
         /// Channel URL
         /// </summary>
         [JsonPropertyName("uploader_url")]
-        public string ChannelUrl { get; set; }
+        public string? ChannelUrl { get; set; }
 
         /// <summary>
         /// Audio duration in seconds
@@ -72,25 +72,25 @@ namespace YtStream.Models.YtDl
         /// Video thumbnails
         /// </summary>
         [JsonPropertyName("thumbnails")]
-        public YoutubeThumbnailModel[] Thumbnails { get; set; }
+        public YoutubeThumbnailModel[]? Thumbnails { get; set; }
 
         /// <summary>
         /// Automatically selected thumbnail URL
         /// </summary>
         /// <remarks>This is likely the .webp image</remarks>
         [JsonPropertyName("thumbnail")]
-        public string Thumbnail { get; set; }
+        public string? Thumbnail { get; set; }
 
         /// <summary>
         /// Video tags
         /// </summary>
         [JsonPropertyName("tags")]
-        public string[] Tags { get; set; }
+        public string[]? Tags { get; set; }
 
         /// <summary>
         /// Audio stream Url
         /// </summary>
         [JsonPropertyName("url")]
-        public string Url { get; set; }
+        public string? Url { get; set; }
     }
 }

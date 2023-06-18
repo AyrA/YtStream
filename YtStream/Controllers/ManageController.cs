@@ -49,12 +49,14 @@ namespace YtStream.Controllers
         [HttpGet]
         public IActionResult CacheInfo()
         {
+            RequireSettings();
             return View(_cache.GetHandler(CacheTypeEnum.MP3, Settings.CacheMp3Lifetime));
         }
 
         [HttpPost, ValidateAntiForgeryToken]
         public IActionResult CacheClean()
         {
+            RequireSettings();
             var Handler = _cache.GetHandler(CacheTypeEnum.MP3, Settings.CacheMp3Lifetime);
             try
             {
@@ -70,6 +72,7 @@ namespace YtStream.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public IActionResult CachePurge()
         {
+            RequireSettings();
             try
             {
                 Tools.CheckFormConfirmation(Request.Form);
@@ -266,7 +269,7 @@ namespace YtStream.Controllers
                 if (password == passwordRepeat)
                 {
                     AccountInfoModel NewUser = _userManager.AddUser(userName, password, UserRoles.User);
-                    _logger.LogInformation("User {newname} registered by {admin}", NewUser.Username, CurrentUser.Username);
+                    _logger.LogInformation("User {newname} registered by {admin}", NewUser.Username, CurrentUser?.Username);
                 }
                 else
                 {
@@ -321,30 +324,34 @@ namespace YtStream.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public IActionResult AccountPermission(string id)
         {
-            AccountInfoModel Acc;
-            UserRoles Role = 0;
+            AccountInfoModel? acc;
+            UserRoles role = 0;
             try
             {
                 if (!HttpContext.Request.HasFormContentType)
                 {
                     return BadRequest();
                 }
-                Acc = GetAccount(id);
-                var Roles = HttpContext.Request.Form["permission"];
-                if (Roles.Count == 0)
+                acc = GetAccount(id);
+                if (acc == null)
+                {
+                    return BadRequest();
+                }
+                var roles = HttpContext.Request.Form["permission"];
+                if (roles.Count == 0)
                 {
                     throw new InvalidOperationException("At least one role must be set");
                 }
-                foreach (var Str in Roles)
+                foreach (var str in roles)
                 {
-                    var Parsed = (UserRoles)Enum.Parse(typeof(UserRoles), Str);
-                    Role |= Parsed;
+                    var Parsed = (UserRoles)Enum.Parse(typeof(UserRoles), str!);
+                    role |= Parsed;
                     if (Parsed == UserRoles.Administrator)
                     {
-                        Role |= UserRoles.User;
+                        role |= UserRoles.User;
                     }
                 }
-                Acc.Roles = Role;
+                acc.Roles = role;
                 _userManager.Save();
             }
             catch (Exception ex)

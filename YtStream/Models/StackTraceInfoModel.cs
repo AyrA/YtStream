@@ -16,22 +16,22 @@ namespace YtStream.Models
         /// <summary>
         /// Raw message
         /// </summary>
-        public string Raw { get; private set; }
+        public string? Raw { get; private set; }
 
         /// <summary>
         /// Name of the function
         /// </summary>
-        public string Function { get; private set; }
+        public string? Function { get; private set; }
 
         /// <summary>
         /// Argument list
         /// </summary>
-        public string Arguments { get; private set; }
+        public string? Arguments { get; private set; }
 
         /// <summary>
         /// Source file name
         /// </summary>
-        public string Filename { get; private set; }
+        public string? Filename { get; private set; }
 
         /// <summary>
         /// Source code line

@@ -2,6 +2,6 @@
 {
     public class YtPlVideoModel
     {
-        public string VideoId { get; set; }
+        public string? VideoId { get; set; }
     }
 }

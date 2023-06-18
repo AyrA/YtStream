@@ -19,7 +19,7 @@ namespace YtStream.Models.Accounts
         /// <summary>
         /// Streaming keys
         /// </summary>
-        private List<UserApiKeyModel> _keys;
+        private List<UserApiKeyModel> _keys = new();
 
         /// <summary>
         /// Gets or sets if the account is enabled
@@ -41,7 +41,7 @@ namespace YtStream.Models.Accounts
         /// Gets or sets the user name used to log into the system.
         /// </summary>
         /// <remarks>This is case insensitive</remarks>
-        public string Username { get; set; }
+        public string? Username { get; set; }
 
         /// <summary>
         /// Gets or sets the hashed password.
@@ -50,7 +50,7 @@ namespace YtStream.Models.Accounts
         /// <remarks>
         /// If the value is invalid the user will be locked out until an administrator resets the password
         /// </remarks>
-        public string Password { get; set; }
+        public string? Password { get; set; }
 
         /// <summary>
         /// Gets or sets the roles this user account has
@@ -64,17 +64,18 @@ namespace YtStream.Models.Accounts
         {
             get
             {
-                return _keys?.ToArray();
+                return _keys.ToArray();
             }
             set
             {
                 if (value != null)
                 {
-                    _keys = new List<UserApiKeyModel>(value);
+                    _keys.Clear();
+                    _keys.AddRange(value);
                 }
                 else
                 {
-                    _keys = null;
+                    _keys.Clear();
                 }
             }
         }
@@ -255,6 +256,10 @@ namespace YtStream.Models.Accounts
         /// </summary>
         public ClaimsPrincipal GetIdentity()
         {
+            if (string.IsNullOrEmpty(Username))
+            {
+                throw new InvalidOperationException("Cannot create a ClaimsPrincipal instance when the Username has not been set.");
+            }
             var Claims = new Claim[]
             {
                 new Claim(ClaimTypes.Name, Username)

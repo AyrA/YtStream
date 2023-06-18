@@ -38,24 +38,24 @@ namespace YtStream
         /// Shuffles an array in an unbiased way
         /// </summary>
         /// <typeparam name="T">Array type</typeparam>
-        /// <param name="Array">Array to shuffle</param>
-        /// <param name="InPlace">true, to shuffle the array in-place</param>
+        /// <param name="array">Array to shuffle</param>
+        /// <param name="inPlace">true, to shuffle the array in-place</param>
         /// <returns>
-        /// Shuffled array. Is just a reference to <paramref name="Array"/>
+        /// Shuffled array. Is just a reference to <paramref name="array"/>
         /// if in-place shuffling is selected, or shuffling not possible.
         /// </returns>
         /// <remarks>
         /// This is basically a Fisher–Yates shuffle.
         /// Not cryptographically safe
         /// </remarks>
-        public static T[] Shuffle<T>(T[] Array, bool InPlace = false)
+        public static T[]? Shuffle<T>(T[] array, bool inPlace = false)
         {
-            if (Array != null && Array.Length > 1)
+            if (array != null && array.Length > 1)
             {
                 //List of indexes
-                var Indexes = Enumerable.Range(0, Array.Length).ToList();
+                var Indexes = Enumerable.Range(0, array.Length).ToList();
                 //Destination array
-                T[] Temp = new T[Array.Length];
+                T[] Temp = new T[array.Length];
                 for (var i = 0; i < Temp.Length; i++)
                 {
                     if (Indexes.Count > 1)
@@ -63,30 +63,30 @@ namespace YtStream
                         //Pick a random index
                         var Index = Random.Shared.Next(0, Indexes.Count);
                         //Assign value at that index to the next free slot in the destination array
-                        Temp[i] = Array[Indexes[Index]];
+                        Temp[i] = array[Indexes[Index]];
                         //Remove this index to not pick it twice
                         Indexes.RemoveAt(Index);
                     }
                     else
                     {
                         //Last remaining item doesn't needs to be random picked
-                        Temp[i] = Array[Indexes[0]];
+                        Temp[i] = array[Indexes[0]];
                     }
                 }
                 //If in-place randomization is desired,
                 //copy randomized array back
-                if (InPlace)
+                if (inPlace)
                 {
                     for (var i = 0; i < Temp.Length; i++)
                     {
-                        Array[i] = Temp[i];
+                        array[i] = Temp[i];
                     }
                     //Return reference to original array
-                    return Array;
+                    return array;
                 }
                 return Temp;
             }
-            return Array;
+            return array;
         }
 
         /// <summary>
@@ -274,8 +274,7 @@ namespace YtStream
         {
             if (!string.IsNullOrEmpty(Data))
             {
-                var bytes = Encoding.UTF8.GetBytes(Data);
-                await S.WriteAsync(bytes, 0, bytes.Length);
+                await S.WriteAsync(Encoding.UTF8.GetBytes(Data));
             }
         }
 

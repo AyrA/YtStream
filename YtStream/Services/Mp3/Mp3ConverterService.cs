@@ -40,11 +40,11 @@ namespace YtStream.Services.Mp3
         /// <summary>
         /// User agent string to use for URL requests
         /// </summary>
-        public string UserAgent { get; private set; }
+        public string? UserAgent { get; private set; }
         /// <summary>
         /// Running instance
         /// </summary>
-        private Process P;
+        private Process? P;
 
         /// <summary>
         /// Get or set audio bitrate
@@ -98,7 +98,7 @@ namespace YtStream.Services.Mp3
             {
                 using (P)
                 {
-                    P.Kill();
+                    P?.Kill();
                 }
                 P = null;
             }
@@ -120,7 +120,7 @@ namespace YtStream.Services.Mp3
         {
             if (IsConverting)
             {
-                return P.WaitForExit(MaxWaitMs);
+                return P?.WaitForExit(MaxWaitMs) ?? true;
             }
             return true;
         }
@@ -168,7 +168,7 @@ namespace YtStream.Services.Mp3
                 UseShellExecute = false,
                 RedirectStandardOutput = true
             };
-            P = Process.Start(PSI);
+            P = Process.Start(PSI) ?? throw new Exception("Failed to start process");
             P.Exited += ExitHandler;
             P.EnableRaisingEvents = true;
             return P.StandardOutput.BaseStream;
@@ -192,7 +192,7 @@ namespace YtStream.Services.Mp3
                 RedirectStandardOutput = true,
                 RedirectStandardInput = true
             };
-            P = Process.Start(PSI);
+            P = Process.Start(PSI) ?? throw new Exception("Failed to start process");
             P.Exited += ExitHandler;
             P.EnableRaisingEvents = true;
             return new AsyncStreamResultModel(
@@ -235,8 +235,12 @@ namespace YtStream.Services.Mp3
         /// </summary>
         /// <param name="sender">Process</param>
         /// <param name="e">Generic event arguments</param>
-        private void ExitHandler(object sender, EventArgs e)
+        private void ExitHandler(object? sender, EventArgs e)
         {
+            if (sender == null)
+            {
+                return;
+            }
             var Temp = (Process)sender;
             LastExitCode = Temp.ExitCode;
             try
@@ -310,7 +314,7 @@ namespace YtStream.Services.Mp3
                 UseShellExecute = false,
                 RedirectStandardOutput = true
             };
-            using (var P = Process.Start(PSI))
+            using (var P = Process.Start(PSI) ?? throw new Exception("Failed to start process"))
             {
                 var Reader = P.StandardOutput.ReadToEndAsync();
                 var Sleeper = Task.Delay(5000);

@@ -8,21 +8,21 @@ namespace YtStream.Models.YT
     {
         public DateTime PublishedAt { get; set; }
 
-        public string Id { get; set; }
+        public string? Id { get; set; }
 
-        public string Title { get; set; }
+        public string? Title { get; set; }
 
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
-        public Dictionary<string, YtThumbnailModel> Thumbnails { get; set; }
+        public Dictionary<string, YtThumbnailModel>? Thumbnails { get; set; }
 
         public int Position { get; set; }
 
-        public YtPlVideoModel ResourceId { get; set; }
+        public YtPlVideoModel? ResourceId { get; set; }
 
-        public string VideoOwnerChannelTitle { get; set; }
+        public string? VideoOwnerChannelTitle { get; set; }
 
-        public string VideoOwnerChannelId { get; set; }
+        public string? VideoOwnerChannelId { get; set; }
 
         /// <summary>
         /// Get the smallest thumbnail that has at least the specified dimensions if possible,
@@ -32,7 +32,7 @@ namespace YtStream.Models.YT
         /// <param name="MinHeight">Minimum requested height</param>
         /// <returns>Thumbnail with the given dimensions. If none found, biggest thumbnail</returns>
         /// <remarks>Returns null if <see cref="Thumbnails"/> is empty</remarks>
-        public YtThumbnailModel GetThumbnailBySize(int MinWidth, int MinHeight)
+        public YtThumbnailModel? GetThumbnailBySize(int MinWidth, int MinHeight)
         {
             //Early abort if no thumbnail exists
             if (Thumbnails == null || Thumbnails.Count == 0)
@@ -63,7 +63,7 @@ namespace YtStream.Models.YT
             {
                 Title = Title,
                 Id = Id ?? ResourceId?.VideoId,
-                Thumbnail = Thumbnails["medium"]?.Url
+                Thumbnail = (Thumbnails?.ContainsKey("medium") ?? false) ? Thumbnails["medium"]?.Url : null
             };
         }
     }

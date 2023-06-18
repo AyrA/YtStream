@@ -19,6 +19,8 @@ namespace YtStream.Controllers
 {
     public class StreamController : BaseController
     {
+        private static readonly List<Guid> busyKeys = new();
+
         private readonly ILogger<StreamController> _logger;
         private readonly LockService _lockService;
         private readonly YoutubeDlService _youtubeDlService;
@@ -64,19 +66,40 @@ namespace YtStream.Controllers
                 return;
             }
             //Do not allow the use of stream keys if we're logged in
-            if (Settings.RequireAccount && !User.Identity.IsAuthenticated)
+            if (Settings.RequireAccount && !IsAuthenticated)
             {
                 //Check if streaming key was supplied
                 var key = context.HttpContext.Request.Query["key"];
                 if (key.Count == 1)
                 {
-                    if (Guid.TryParse(key.ToString(), out Guid StreamKey))
+                    if (Guid.TryParse(key.ToString(), out Guid streamKey))
                     {
-                        SetApiUser(StreamKey);
+                        SetApiUser(streamKey);
                         if (CurrentUser != null && CurrentUser.Enabled)
                         {
                             _logger.LogInformation("User {username}: Key based authentication success", CurrentUser.Username);
-                            await base.OnActionExecutionAsync(context, next);
+                            //Ensure a key is only used once at a time
+                            lock (busyKeys)
+                            {
+                                if (busyKeys.Contains(streamKey))
+                                {
+                                    _logger.LogInformation("Key {key} already in use", streamKey);
+                                }
+                                _logger.LogInformation("Locking key {key} for streaming", streamKey);
+                                busyKeys.Add(streamKey);
+                            }
+                            try
+                            {
+                                await base.OnActionExecutionAsync(context, next);
+                            }
+                            finally
+                            {
+                                _logger.LogInformation("Unlocking key {key} for streaming", streamKey);
+                                lock (busyKeys)
+                                {
+                                    busyKeys.Remove(streamKey);
+                                }
+                            }
                             return;
                         }
                     }
@@ -97,6 +120,10 @@ namespace YtStream.Controllers
         [HttpGet, ActionName("Send")]
         public async Task<IActionResult> SendAsync(string id)
         {
+            if (Settings == null)
+            {
+                return Error(new Exception("Settings object not present"));
+            }
             //We do not bind the model as parameter in the method because we want custom boolean parser
             var model = new StreamOptionsModel(Request.Query);
 
@@ -120,7 +147,7 @@ namespace YtStream.Controllers
             var currentAdType = AdTypeEnum.Intro;
             var mp3CacheHandler = _cacheService.GetHandler(CacheTypeEnum.MP3, Settings.CacheMp3Lifetime);
             var skipped = 0;
-            Mp3CutTargetStreamConfigModel outputStreams = null;
+            Mp3CutTargetStreamConfigModel? outputStreams = null;
             var cancelToken = HttpContext.RequestAborted;
             cancelToken.Register(delegate ()
             {
@@ -134,7 +161,7 @@ namespace YtStream.Controllers
             {
                 if (model.Random)
                 {
-                    ids = Tools.Shuffle(ids);
+                    ids = Tools.Shuffle(ids) ?? throw null!;
                 }
                 foreach (var ytid in ids)
                 {
@@ -153,7 +180,7 @@ namespace YtStream.Controllers
                     _logger.LogInformation("{file} has {count} ranges", filename, ranges.Length);
 
                     //Try to get file from cache first
-                    FileStream cacheStream = null;
+                    FileStream? cacheStream = null;
                     try
                     {
                         cacheStream = mp3CacheHandler.OpenIfNotStale(filename);
@@ -205,8 +232,8 @@ namespace YtStream.Controllers
                     /////////////////////////////////////////////////////////////
                     //At this point we need to go live to youtube to get the file
 
-                    YoutubeDlResultModel details;
-                    string url;
+                    YoutubeDlResultModel? details;
+                    string? url;
                     try
                     {
                         details = await _youtubeDlService.GetAudioDetails(ytid);
@@ -372,6 +399,10 @@ namespace YtStream.Controllers
 
         private async Task<string[]> ExpandIdList(IEnumerable<string> IdList)
         {
+            if (Settings == null)
+            {
+                throw new InvalidOperationException("Settings object is not set");
+            }
             var ret = new List<string>();
             //Treat zero as maximum
             var max = Settings.MaxStreamIds > 0 ? Settings.MaxStreamIds : int.MaxValue;
@@ -435,6 +466,10 @@ namespace YtStream.Controllers
 
         private bool ShouldPlayAds()
         {
+            if (Settings == null)
+            {
+                throw new InvalidOperationException("Settings object is not set");
+            }
             if (CurrentUser == null)
             {
                 return true;
@@ -445,6 +480,10 @@ namespace YtStream.Controllers
 
         private bool ShouldMarkAds()
         {
+            if (Settings == null)
+            {
+                throw new InvalidOperationException("Settings object is not set");
+            }
             return Settings.MarkAds;
         }
     }

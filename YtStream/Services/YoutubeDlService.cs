@@ -46,11 +46,11 @@ namespace YtStream.Services
         /// <summary>
         /// Cached user agent
         /// </summary>
-        private string userAgent = null;
+        private string? userAgent = null;
         /// <summary>
         /// Cached version
         /// </summary>
-        private string version = null;
+        private string? version = null;
         /// <summary>
         /// Logging interface
         /// </summary>
@@ -93,7 +93,7 @@ namespace YtStream.Services
                 UseShellExecute = false,
                 RedirectStandardOutput = true
             };
-            using var P = Process.Start(PSI);
+            using var P = Process.Start(PSI) ?? throw new Exception("Failed to start process");
             return userAgent = (await P.StandardOutput.ReadToEndAsync()).Trim();
         }
 
@@ -129,7 +129,7 @@ namespace YtStream.Services
             CleanCache();
             lock (plCache)
             {
-                if (plCache.TryGetValue(playlist, out PlaylistInfo info))
+                if (plCache.TryGetValue(playlist, out PlaylistInfo? info))
                 {
                     if (info.Age.TotalMinutes < MaxCacheAgeMinutes)
                     {
@@ -145,7 +145,7 @@ namespace YtStream.Services
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
-            using var P = Process.Start(PSI);
+            using var P = Process.Start(PSI) ?? throw new Exception("Failed to start process");
 
             //Read STDOUT and STDERR
             var lineTask = P.StandardOutput.ReadToEndAsync();
@@ -182,7 +182,7 @@ namespace YtStream.Services
             CleanCache();
             lock (idCache)
             {
-                if (idCache.TryGetValue(id, out AudioInfo info) && !info.Expired)
+                if (idCache.TryGetValue(id, out AudioInfo? info) && !info.Expired)
                 {
                     return info.Info.JsonClone();
                 }
@@ -194,7 +194,7 @@ namespace YtStream.Services
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
             };
-            using var P = Process.Start(PSI);
+            using var P = Process.Start(PSI) ?? throw new Exception("Failed to start process");
 
             //Read STDOUT and STDERR
             var lineTask = P.StandardOutput.ReadToEndAsync();
@@ -218,7 +218,7 @@ namespace YtStream.Services
         /// <param name="id">Video id</param>
         /// <returns>Audio URL</returns>
         /// <remarks>Internally calls <see cref="GetAudioDetails(string)"/>.Url</remarks>
-        public async Task<string> GetAudioUrl(string id)
+        public async Task<string?> GetAudioUrl(string id)
         {
             try
             {
@@ -244,7 +244,7 @@ namespace YtStream.Services
                 UseShellExecute = false,
                 RedirectStandardOutput = true
             };
-            using var P = Process.Start(PSI);
+            using var P = Process.Start(PSI) ?? throw new Exception("Failed to start process");
             return (await P.StandardOutput.ReadToEndAsync()).Trim();
         }
 
@@ -261,7 +261,7 @@ namespace YtStream.Services
                 UseShellExecute = false,
                 RedirectStandardOutput = true
             };
-            using var P = Process.Start(PSI);
+            using var P = Process.Start(PSI) ?? throw new Exception("Failed to start process");
             return (await P.StandardOutput.ReadToEndAsync()).Trim();
         }
 
@@ -371,10 +371,10 @@ namespace YtStream.Services
             {
                 this.Info = Info ?? throw new ArgumentNullException(nameof(Info));
                 Expiration = DateTime.Parse(Tools.UnixZeroParse).ToUniversalTime();
-                if (Uri.TryCreate(Info.Url, UriKind.Absolute, out Uri Result) && !string.IsNullOrEmpty(Result.Query))
+                if (Uri.TryCreate(Info.Url, UriKind.Absolute, out Uri? Result) && !string.IsNullOrEmpty(Result.Query))
                 {
                     //Get the numerical part from "expire=1234"
-                    var ExpArg = Result.Query.Substring(1).Split('&').FirstOrDefault(m => m.StartsWith("expire="));
+                    var ExpArg = Result.Query.Substring(1).Split('&').First(m => m.StartsWith("expire="));
                     ExpArg = ExpArg.Substring(ExpArg.IndexOf('=') + 1);
                     if (ulong.TryParse(ExpArg, out ulong Timestamp))
                     {

@@ -12,7 +12,7 @@ namespace YtStream.Models
         /// If set to true, details are shown by default
         /// </summary>
         /// <remarks>In <see cref="Startup"/> this is set to true for the development environment</remarks>
-        public static bool DefaultDetailOption = false;
+        public static bool DefaultDetailOption { get; private set; }
 
         /// <summary>
         /// Gets if details should be shown (exception type and stack trace)
@@ -27,7 +27,7 @@ namespace YtStream.Models
         /// <summary>
         /// Random id of the request
         /// </summary>
-        public string RequestId { get; set; }
+        public string? RequestId { get; set; }
 
         /// <summary>
         /// True if RequestId passes <see cref="string.IsNullOrEmpty"/>
@@ -65,7 +65,7 @@ namespace YtStream.Models
             }
             if (Error.StackTrace == null)
             {
-                return new StackTraceInfoModel[0];
+                return Array.Empty<StackTraceInfoModel>();
             }
             return Error.StackTrace
                 .Trim()

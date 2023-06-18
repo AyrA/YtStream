@@ -42,7 +42,7 @@ namespace YtStream.Models
                     }
                     if (prop.PropertyType == typeof(string))
                     {
-                        prop.SetValue(this, (string)value);
+                        prop.SetValue(this, (string?)value);
                     }
                     else if (prop.PropertyType == typeof(int))
                     {

@@ -152,6 +152,7 @@
         add(q("#cbStream"));
         add(q("#tbBuffer"), q("#cbStream").checked ? "3" : q("#tbBuffer").value);
         add(q("#cbRaw"));
+        add(q("#tbKey"), "");
 
         console.log("URL arguments:", params);
 
@@ -292,7 +293,7 @@
     q("#idSelectModal .modal-footer button").addEventListener("click", modalSelectBtn);
 
     //Event for URL type change
-    "cbRandom,tbRepeat,cbStream,tbBuffer,cbRaw".split(",").forEach(function (v) {
+    "cbRandom,tbRepeat,cbStream,tbBuffer,cbRaw,tbKey".split(",").forEach(function (v) {
         var e = q("#" + v);
         if (!e) {
             console.error("Element with id", v, "not found");

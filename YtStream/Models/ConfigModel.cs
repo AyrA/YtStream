@@ -16,7 +16,7 @@ namespace YtStream.Models
         /// <summary>
         /// Path to cache main directory
         /// </summary>
-        public string CachePath { get; set; }
+        public string? CachePath { get; set; }
 
         /// <summary>
         /// Enable or disable cache
@@ -76,17 +76,17 @@ namespace YtStream.Models
         /// <remarks>
         /// Some features will be unavailable if this is not set
         /// </remarks>
-        public string YtApiKey { get; set; }
+        public string? YtApiKey { get; set; }
 
         /// <summary>
         /// Path to youtube-dl executable
         /// </summary>
-        public string YoutubedlPath { get; set; }
+        public string? YoutubedlPath { get; set; }
 
         /// <summary>
         /// Path to FFmpeg executable
         /// </summary>
-        public string FfmpegPath { get; set; }
+        public string? FfmpegPath { get; set; }
 
         /// <summary>
         /// Hostname of sponsorblock server
@@ -94,7 +94,7 @@ namespace YtStream.Models
         /// <remarks>
         /// Please respect the server license
         /// </remarks>
-        public string SponsorBlockServer { get; set; }
+        public string? SponsorBlockServer { get; set; }
 
         /// <summary>
         /// Enable public registration of new accounts

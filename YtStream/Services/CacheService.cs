@@ -18,7 +18,7 @@ namespace YtStream.Services
 
         public CacheService(ConfigService config)
         {
-            BaseDirectory = config.GetConfiguration().CachePath;
+            BaseDirectory = config.GetConfiguration().CachePath ?? throw new Exception("Cache path not defined");
         }
 
         /// <summary>

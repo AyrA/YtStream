@@ -33,7 +33,7 @@ namespace YtStream.Services.YT
             apiKey = c.YtApiKey;
         }
 
-        public async Task<YtSnippetModel[]> GetPlaylistInfoAsync(string playlistId, int maxItems = int.MaxValue)
+        public async Task<YtSnippetModel[]?> GetPlaylistInfoAsync(string playlistId, int maxItems = int.MaxValue)
         {
             if (!Tools.IsYoutubePlaylist(playlistId))
             {
@@ -56,10 +56,19 @@ namespace YtStream.Services.YT
             {
                 try
                 {
-                    result = (await GetJson(url)).FromJson<YtResultModel>(true, true);
+                    var str = await GetJson(url) ?? throw new Exception("Data error");
+                    result = str.FromJson<YtResultModel>(true, true);
+                    if (result.Items == null || result.Items.Length == 0)
+                    {
+                        continue;
+                    }
                     //Copy video Id from parent container to snippet
                     foreach (var item in result.Items)
                     {
+                        if (item.Snippet?.ResourceId == null)
+                        {
+                            continue;
+                        }
                         item.Snippet.Id = item.Snippet.ResourceId.VideoId;
                     }
                 }
@@ -68,11 +77,11 @@ namespace YtStream.Services.YT
                     _logger.LogError(ex, "Failed to get JSON from YT API {url}", url);
                     return null;
                 }
-                if (result == null || result.Items == null)
+                if (result?.Items == null)
                 {
                     return null;
                 }
-                ret.AddRange(result.Items.Select(m => m.Snippet));
+                ret.AddRange(result.Items.Select(m => m.Snippet)!);
                 url = BuildUrl("playlistItems", new
                 {
                     part = "snippet",
@@ -84,7 +93,7 @@ namespace YtStream.Services.YT
             return ret.Take(maxItems).ToArray();
         }
 
-        public async Task<YtSnippetModel> GetVideoInfo(string videoId)
+        public async Task<YtSnippetModel?> GetVideoInfo(string videoId)
         {
             if (!Tools.IsYoutubeId(videoId))
             {
@@ -99,8 +108,13 @@ namespace YtStream.Services.YT
             _logger.LogInformation("Getting YT video info for {id}", videoId);
             try
             {
-                var item = (await GetJson(url)).FromJson<YtResultModel>(true, true).Items.First();
-                item.Snippet.Id = item.Id;
+                var str = await GetJson(url) ?? throw new Exception("Data error");
+                var item = str.FromJson<YtResultModel>(true, true).Items?.First() ?? throw new Exception("Item is null");
+                if (item.Snippet != null)
+                {
+                    item.Snippet.Id = item.Id;
+                }
+
                 return item.Snippet;
             }
             catch (Exception ex)
@@ -113,7 +127,7 @@ namespace YtStream.Services.YT
         private Uri BuildUrl(string ytFunction, object ytParams)
         {
             var baseUrl = $"{ApiBase}{ytFunction}?key={Esc(apiKey)}";
-            List<string> encoded = null;
+            List<string>? encoded = null;
             if (ytParams != null)
             {
                 encoded = ytParams
@@ -130,7 +144,7 @@ namespace YtStream.Services.YT
             return new Uri(baseUrl);
         }
 
-        private async Task<string> GetJson(Uri url)
+        private async Task<string?> GetJson(Uri url)
         {
             var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
             var req = new HttpClient();
@@ -159,13 +173,13 @@ namespace YtStream.Services.YT
             return null;
         }
 
-        private static string Esc(object o)
+        private static string Esc(object? o)
         {
             if (o == null)
             {
                 return string.Empty;
             }
-            return Uri.EscapeDataString(o.ToString());
+            return Uri.EscapeDataString(o.ToString() ?? string.Empty);
         }
     }
 }

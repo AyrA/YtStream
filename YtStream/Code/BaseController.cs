@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using YtStream.Models;
 using YtStream.Models.Accounts;
@@ -20,13 +21,13 @@ namespace YtStream
         /// <summary>
         /// Current system configuration
         /// </summary>
-        public ConfigModel Settings { get; }
+        public ConfigModel? Settings { get; }
 
         /// <summary>
         /// Currently logged on user
         /// </summary>
         /// <remarks>This is null if not logged on</remarks>
-        public AccountInfoModel CurrentUser { get; private set; }
+        public AccountInfoModel? CurrentUser { get; private set; }
 
         /// <summary>
         /// Gets the cookie message
@@ -35,7 +36,12 @@ namespace YtStream
         /// Automatically cleared on every request.
         /// This is set on the request made after <see cref="RedirectWithMessage"/> or an overload.
         /// The message is automatically shown by the general layout razor page</remarks>
-        public string CookieMessage { get; private set; }
+        public string? CookieMessage { get; private set; }
+
+        /// <summary>
+        /// Gets if the current user is authenticated
+        /// </summary>
+        public bool IsAuthenticated => User?.Identity?.IsAuthenticated ?? false;
 
         /// <summary>
         /// Basic initialization
@@ -62,9 +68,9 @@ namespace YtStream
         public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
             CookieMessage = null;
-            if (User.Identity.IsAuthenticated)
+            if (IsAuthenticated)
             {
-                CurrentUser = _userManager.GetUser(User.Identity.Name);
+                CurrentUser = _userManager.GetUser(User.Identity?.Name);
                 //Terminate user session if the user is no longer existing or enabled
                 if (CurrentUser == null || !CurrentUser.Enabled)
                 {
@@ -101,7 +107,7 @@ namespace YtStream
         /// <param name="Message">Message to store</param>
         /// <param name="RouteData">Additional route data</param>
         /// <returns><see cref="RedirectToActionResult"/></returns>
-        public IActionResult RedirectWithMessage(string Action, string Message, object RouteData = null)
+        public IActionResult RedirectWithMessage(string? Action, string Message, object? RouteData = null)
         {
             HttpContext.Response.Cookies.Append("status", Message);
             return RedirectToAction(Action, RouteData);
@@ -115,10 +121,19 @@ namespace YtStream
         /// <param name="Message">Message to store</param>
         /// <param name="RouteData">Additional route data</param>
         /// <returns><see cref="RedirectToActionResult"/></returns>
-        public IActionResult RedirectWithMessage(string Action, string Controller, string Message, object RouteData = null)
+        public IActionResult RedirectWithMessage(string? Action, string? Controller, string Message, object? RouteData = null)
         {
             HttpContext.Response.Cookies.Append("status", Message);
             return RedirectToAction(Action, Controller, RouteData);
+        }
+
+        [MemberNotNull(nameof(Settings))]
+        public void RequireSettings()
+        {
+            if (Settings == null)
+            {
+                throw new InvalidOperationException("Settings object has not been initialized because the application is not configured or the settings are corrupt.");
+            }
         }
 
         internal bool IsHead()

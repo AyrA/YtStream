@@ -21,7 +21,7 @@
 	<div class="row form-group">
 		<div class="col-md-4">
 			<label>New user name</label>
-			<input type="text" name="Username" required value="@User.Identity.Name"
+			<input type="text" name="Username" required value="@User.Identity?.Name"
                    class="form-control" pattern="@UserManagerService.NamePattern" />
 		</div>
 	</div>

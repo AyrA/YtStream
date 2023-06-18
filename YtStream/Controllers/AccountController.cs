@@ -13,6 +13,7 @@ using YtStream.Services.Accounts;
 
 namespace YtStream.Controllers
 {
+#nullable disable
     [Authorize]
     public class AccountController : BaseController
     {
@@ -52,7 +53,7 @@ namespace YtStream.Controllers
                     _userManager.DeleteUser(CurrentUser.Username);
                     _userManager.Save();
                     await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                    _logger.LogInformation("User deleted: {0}", CurrentUser.Username);
+                    _logger.LogInformation("User deleted: {username}", CurrentUser.Username);
                     return RedirectToAction("Index", "Home");
                 }
                 else
@@ -86,7 +87,7 @@ namespace YtStream.Controllers
                     {
                         CurrentUser.SetPassword(model.NewPassword);
                         ViewBag.Changed = true;
-                        _logger.LogInformation("Password change for {0}", CurrentUser.Username);
+                        _logger.LogInformation("Password change for {username}", CurrentUser.Username);
                         return View();
                     }
                     else
@@ -123,7 +124,7 @@ namespace YtStream.Controllers
                 ViewBag.Changed = true;
                 CurrentUser.Username = Username;
                 _userManager.Save();
-                _logger.LogInformation("Username change: {0} --> {1}", OldUser, Username);
+                _logger.LogInformation("Username change: {old} --> {new}", OldUser, Username);
                 //Change username by signing in again
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, CurrentUser.GetIdentity());
@@ -188,8 +189,8 @@ namespace YtStream.Controllers
                         ViewBag.ErrMsg = ex.Message;
                         return View();
                     }
-                    _logger.LogInformation("User registered: {0}", NewUser.Username);
-                    if (!User.Identity.IsAuthenticated)
+                    _logger.LogInformation("User registered: {username}", NewUser.Username);
+                    if (!IsAuthenticated)
                     {
                         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, NewUser.GetIdentity());
                     }
@@ -221,7 +222,7 @@ namespace YtStream.Controllers
             {
                 return RedirectToAction("Register");
             }
-            if (User.Identity.IsAuthenticated)
+            if (IsAuthenticated)
             {
                 return RedirectToAction("Index", "Home");
             }
@@ -231,7 +232,7 @@ namespace YtStream.Controllers
         [AllowAnonymous, HttpPost, ActionName("Login"), ValidateAntiForgeryToken]
         public async Task<IActionResult> LoginPost(string userName, string password)
         {
-            if (User.Identity.IsAuthenticated)
+            if (IsAuthenticated)
             {
                 return RedirectToAction("Index", "Home");
             }
@@ -242,7 +243,7 @@ namespace YtStream.Controllers
             var Account = _userManager.GetUser(userName);
             if (Account != null && Account.Enabled && Account.CheckPassword(password))
             {
-                _logger.LogInformation("User authenticated: {0}", Account.Username);
+                _logger.LogInformation("User authenticated: {username}", Account.Username);
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, Account.GetIdentity());
                 return RedirectToAction("Index", "Home");
             }
@@ -250,12 +251,12 @@ namespace YtStream.Controllers
             return View();
         }
 
-        [Authorize, HttpPost, ValidateAntiForgeryToken]
+        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
             if (CurrentUser != null)
             {
-                _logger.LogInformation("User logout: {0}", CurrentUser.Username);
+                _logger.LogInformation("User logout: {username}", CurrentUser.Username);
             }
             await HttpContext.SignOutAsync();
             return RedirectToAction("Index", "Home");
@@ -269,9 +270,9 @@ namespace YtStream.Controllers
 
         private bool AllowRegister()
         {
-            return Settings.PublicRegistration ||
+            return (Settings?.PublicRegistration ?? false) ||
                 !_userManager.HasUsers ||
-                (User.Identity.IsAuthenticated && User.IsInRole(UserRoles.Administrator.ToString()));
+                (IsAuthenticated && User.IsInRole(UserRoles.Administrator.ToString()));
         }
     }
 }

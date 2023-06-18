@@ -114,7 +114,7 @@ namespace YtStream
         /// </summary>
         /// <param name="fileName">File name</param>
         /// <returns>File, or null if stale or not found</returns>
-        public FileStream OpenIfNotStale(string fileName)
+        public FileStream? OpenIfNotStale(string fileName)
         {
             return OpenIfNotStale(fileName, DefaultCacheLifetime);
         }
@@ -125,7 +125,7 @@ namespace YtStream
         /// <param name="fileName">File name</param>
         /// <param name="maxAge">Maximum allowed file age</param>
         /// <returns>File, or null if stale or not found</returns>
-        public FileStream OpenIfNotStale(string fileName, TimeSpan maxAge)
+        public FileStream? OpenIfNotStale(string fileName, TimeSpan maxAge)
         {
             try
             {
@@ -146,8 +146,8 @@ namespace YtStream
                 }
                 if (stale)
                 {
-                    FS.Close();
-                    FS.Dispose();
+                    FS?.Close();
+                    FS?.Dispose();
                     return null;
                 }
                 return FS;

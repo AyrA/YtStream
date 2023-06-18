@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,14 +23,14 @@ namespace YtStream.Code
         private long readPtr = 0;
         private long writePtr = 0;
         private bool hasWriteEnded = false;
-        private MemoryStream MS = new();
+        private MemoryStream? MS = new();
 
         private readonly SemaphoreSlim semaphore = new(1);
 
         /// <summary>
         /// Gets if read operations are currently being blocked because the stream lacks data but has not ended
         /// </summary>
-        private bool IsStarved => !hasWriteEnded && readPtr == MS.Length;
+        private bool IsStarved => !hasWriteEnded && readPtr == (MS?.Length ?? 0);
 
         /// <summary>
         /// Gets if write operations have been ended by calling <see cref="EndWriteOperations()"/>
@@ -235,9 +236,10 @@ namespace YtStream.Code
             base.Dispose(disposing);
         }
 
+        [MemberNotNull(nameof(MS))]
         private void CheckDispose()
         {
-            if (disposed)
+            if (disposed || MS == null)
             {
                 throw new ObjectDisposedException(nameof(BufferedStream));
             }
@@ -246,8 +248,8 @@ namespace YtStream.Code
 
     public class BufferedStreamShrinkEventArgs
     {
-        public Stream CurrentSource { get; set; }
-        public Stream NewSource { get; set; }
+        public Stream? CurrentSource { get; set; }
+        public Stream? NewSource { get; set; }
     }
 
     public delegate void BufferedStreamShrinkHandler(object sender, BufferedStreamShrinkEventArgs args);

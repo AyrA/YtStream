@@ -26,7 +26,7 @@ namespace YtStream.Models.Accounts
         /// <summary>
         /// Gets or sets the name
         /// </summary>
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         /// <summary>
         /// Creates a new key without a name

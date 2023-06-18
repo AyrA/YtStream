@@ -69,7 +69,7 @@ namespace YtStream
             builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>()
                 .AddScoped(x =>
                     x.GetRequiredService<IUrlHelperFactory>()
-                        .GetUrlHelper(x.GetRequiredService<IActionContextAccessor>().ActionContext));
+                        .GetUrlHelper(x.GetRequiredService<IActionContextAccessor>().ActionContext ?? throw null!));
 
             // Add services to the container.
             var mvc = builder.Services.AddControllersWithViews();

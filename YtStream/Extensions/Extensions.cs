@@ -23,11 +23,11 @@ namespace YtStream.Extensions
             {
                 if (!string.IsNullOrWhiteSpace(s))
                 {
-                    JsonSerializerOptions Opt = new JsonSerializerOptions
+                    var Opt = new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = IgnoreCase
                     };
-                    return JsonSerializer.Deserialize<T>(s, Opt);
+                    return JsonSerializer.Deserialize<T>(s, Opt)!;
                 }
             }
             catch
@@ -37,7 +37,7 @@ namespace YtStream.Extensions
                     throw;
                 }
             }
-            return default;
+            return default!;
         }
 
         /// <summary>

@@ -6,9 +6,9 @@
 @{
     ViewData["Title"] = "Settings";
     var ErrMsg = (string)ViewBag.ErrorMessage;
-    string FfmpegVersion = ViewData["FFMpegVersion"] as string;
-    string ytdlVersion = ViewData["YtDlVersion"] as string;
-    string ytdlUA = ViewData["YtDlUa"] as string;
+    string? FfmpegVersion = ViewData["FFMpegVersion"] as string;
+    string? ytdlVersion = ViewData["YtDlVersion"] as string;
+    string? ytdlUA = ViewData["YtDlUa"] as string;
 
     if (Model == null)
     {
@@ -84,7 +84,7 @@ else
                 Youtube API key
             </label>
             <input type="password" asp-for="YtApiKey" class="form-control"
-                   value="@Model.YtApiKey" placeholder="YouTube API Key" />
+                   value="@Model?.YtApiKey" placeholder="YouTube API Key" />
             <i>
                 This is optional. If you don't set this then the URL builder will be unavailable,
                 but streaming playlists will still work.

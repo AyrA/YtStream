@@ -8,16 +8,16 @@
         /// <summary>
         /// Current user password
         /// </summary>
-        public string OldPassword { get; set; }
+        public string? OldPassword { get; set; }
 
         /// <summary>
         /// New user password
         /// </summary>
-        public string NewPassword { get; set; }
+        public string? NewPassword { get; set; }
 
         /// <summary>
         /// Confirmation of new user password
         /// </summary>
-        public string ConfirmPassword { get; set; }
+        public string? ConfirmPassword { get; set; }
     }
 }

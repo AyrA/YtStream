@@ -103,7 +103,7 @@ namespace YtStream.Services
         /// </summary>
         /// <param name="Type">One or more categories</param>
         /// <returns>Ad, null if category mask yields no ads</returns>
-        public string GetRandomAdName(AdTypeEnum Type)
+        public string? GetRandomAdName(AdTypeEnum Type)
         {
             if (Type == AdTypeEnum.None)
             {
@@ -129,7 +129,7 @@ namespace YtStream.Services
             if (Collection.Count > 0)
             {
                 var Shuffled = Tools.Shuffle(Collection.Distinct().ToArray());
-                return Shuffled[Tools.GetRandom(0, Shuffled.Length)];
+                return Shuffled![Tools.GetRandom(0, Shuffled.Length)];
             }
             return null;
         }

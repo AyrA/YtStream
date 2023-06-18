@@ -19,7 +19,6 @@ namespace YtStream.Controllers
         public const long ReqLimit = 50_000_000;
 
         private readonly ILogger _logger;
-        private readonly CacheService _cacheService;
         private readonly AdsService _adsService;
         private readonly Mp3ConverterService _mp3ConverterService;
         private readonly Mp3InfoService _mp3InfoService;
@@ -32,7 +31,6 @@ namespace YtStream.Controllers
             Mp3InfoService mp3InfoService, Mp3CutService mp3CutService) : base(config, userManager)
         {
             _logger = Logger;
-            _cacheService = cacheService;
             _adsService = adsService;
             _mp3ConverterService = mp3ConverterService;
             _mp3InfoService = mp3InfoService;
@@ -130,6 +128,11 @@ namespace YtStream.Controllers
         [HttpPost, ValidateAntiForgeryToken, RequestSizeLimit(ReqLimit)]
         public async Task<IActionResult> Upload()
         {
+            if (Settings == null)
+            {
+                throw new InvalidOperationException("Settings object not set");
+            }
+
             //For each uploaded file:
             //1 . Check if it's an MP3, and if so, if it's in the currently configured format
             //2a. If the check was successful, just filter the file and store in the cache
@@ -143,20 +146,20 @@ namespace YtStream.Controllers
             var uploadedFiles = new List<string>();
             foreach (var F in Request.Form.Files)
             {
-                _logger.LogDebug("Processing ad: {0}", F.FileName);
+                _logger.LogDebug("Processing ad: {file}", F.FileName);
                 if (F.Length == 0)
                 {
-                    _logger.LogWarning("Empty ad uploaded: {0}", F.FileName);
+                    _logger.LogWarning("Empty ad uploaded: {file}", F.FileName);
                     continue;
                 }
                 var destPath = _cacheHandler.GetNoConfictName(Path.ChangeExtension(F.FileName, ".mp3"));
                 using var MS = new MemoryStream();
                 await F.CopyToAsync(MS);
                 MS.Position = 0;
-                _logger.LogDebug("Copied {0} into memory", F.FileName);
+                _logger.LogDebug("Copied {file} into memory", F.FileName);
                 if (F.FileName.ToLower().EndsWith(".mp3"))
                 {
-                    _logger.LogDebug("Check if {0} is good MP3", F.FileName);
+                    _logger.LogDebug("Check if {file} is good MP3", F.FileName);
                     try
                     {
                         var Header1 = _mp3InfoService.GetFirstHeader(MS);
@@ -165,18 +168,18 @@ namespace YtStream.Controllers
                         {
                             if (Header1.AudioFrequency == Settings.AudioFrequency && Header1.AudioRate == Settings.AudioBitrate)
                             {
-                                _logger.LogDebug("{0} is good MP3", F.FileName);
+                                _logger.LogDebug("{file} is good MP3", F.FileName);
                                 //File OK as is. Copy to cache
                                 using (var cacheTarget = _cacheHandler.WriteFile(destPath))
                                 {
                                     await _mp3CutService.FilterMp3Async(MS, cacheTarget);
                                 }
                                 uploadedFiles.Add(destPath);
-                                _logger.LogInformation("{0} was copied as-is", F.FileName);
+                                _logger.LogInformation("{file} was copied as-is", F.FileName);
                                 continue;
                             }
                         }
-                        _logger.LogInformation("{0} is different from current MP3 settings. Force conversion", F.FileName);
+                        _logger.LogInformation("{file} is different from current MP3 settings. Force conversion", F.FileName);
                     }
                     catch
                     {
@@ -187,7 +190,7 @@ namespace YtStream.Controllers
                 MS.Position = 0;
                 var convertTask = _mp3ConverterService.ConvertToMp3(MS);
                 using var convertTarget = new MemoryStream();
-                _logger.LogDebug("Begin conversion of {0}", F.FileName);
+                _logger.LogDebug("Begin conversion of {file}", F.FileName);
                 using (convertTask.StandardOutputStream)
                 {
                     var outputTask = convertTask.StandardOutputStream.CopyToAsync(convertTarget);
@@ -198,7 +201,7 @@ namespace YtStream.Controllers
                 }
                 _logger.LogDebug("Waiting for source to drain");
                 await convertTask.CopyStreamResult;
-                _logger.LogInformation("{0} converted. Result is {1} bytes", F.FileName, convertTarget.Length);
+                _logger.LogInformation("{file} converted. Result is {count} bytes", F.FileName, convertTarget.Length);
                 convertTarget.Position = 0;
                 try
                 {
@@ -206,7 +209,7 @@ namespace YtStream.Controllers
                 }
                 catch
                 {
-                    _logger.LogWarning("{0} failed to convert. Output lacks MP3 frames", F.FileName);
+                    _logger.LogWarning("{file} failed to convert. Output lacks MP3 frames", F.FileName);
                     //File is invalid
                     continue;
                 }
@@ -216,7 +219,7 @@ namespace YtStream.Controllers
                     await _mp3CutService.FilterMp3Async(convertTarget, FS);
                 }
                 uploadedFiles.Add(destPath);
-                _logger.LogInformation("{0} added to cache", destPath);
+                _logger.LogInformation("{file} added to cache", destPath);
             }
 
             return RedirectWithMessage("Index", "Files uploaded and processed: " + string.Join(", ", uploadedFiles));

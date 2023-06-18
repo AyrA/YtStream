@@ -45,7 +45,7 @@ namespace YtStream.Services.Mp3
         /// <param name="timeBuffer">
         /// Number of seconds to send in advance
         /// </param>
-        public void CutMp3(IEnumerable<TimeRangeModel> ranges, Stream source, Mp3CutTargetStreamConfigModel output, int timeBuffer)
+        public void CutMp3(IEnumerable<TimeRangeModel>? ranges, Stream source, Mp3CutTargetStreamConfigModel output, int timeBuffer)
         {
             CutMp3Async(ranges, source, output, timeBuffer).Wait();
         }
@@ -67,7 +67,7 @@ namespace YtStream.Services.Mp3
         /// <param name="timeBuffer">
         /// Number of seconds to send in advance
         /// </param>
-        public async Task CutMp3Async(IEnumerable<TimeRangeModel> ranges, Stream source, Mp3CutTargetStreamConfigModel output, int timeBuffer)
+        public async Task CutMp3Async(IEnumerable<TimeRangeModel>? ranges, Stream source, Mp3CutTargetStreamConfigModel output, int timeBuffer)
         {
             timeBuffer = Math.Max(1, timeBuffer) * 1000;
             TimeRangeModel[] R;
@@ -91,7 +91,7 @@ namespace YtStream.Services.Mp3
             }
 
             byte[] header = new byte[4];
-            Mp3HeaderModel parsed;
+            Mp3HeaderModel? parsed;
             if (!await GuaranteedRead(header, 0, header.Length, source))
             {
                 //Stream not long enough for initial header material
@@ -220,7 +220,7 @@ namespace YtStream.Services.Mp3
             }
             double sentMS = 0.0;
             byte[] header = new byte[4];
-            Mp3HeaderModel parsed;
+            Mp3HeaderModel? parsed;
             if (!await GuaranteedRead(header, 0, header.Length, source))
             {
                 //Stream not long enough for initial header material

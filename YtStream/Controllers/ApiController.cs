@@ -28,7 +28,8 @@ namespace YtStream.Controllers
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
-            if (Settings.RequireAccount && !User.Identity.IsAuthenticated)
+            RequireSettings();
+            if (Settings.RequireAccount && !IsAuthenticated)
             {
                 context.Result = RedirectToAction("Login", "Account", new { returnUrl = HttpContext.Request.Path });
                 return;
@@ -39,6 +40,7 @@ namespace YtStream.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Info(string id)
         {
+            RequireSettings();
             if (string.IsNullOrEmpty(Settings.YtApiKey))
             {
                 try

@@ -28,7 +28,7 @@ namespace YtStream.Services
         /// <summary>
         /// SBlock host
         /// </summary>
-        public string ApiHost { get; set; } = DefaultHost;
+        public string? ApiHost { get; set; } = DefaultHost;
 
         public SponsorBlockService(ConfigService config)
         {
@@ -43,7 +43,7 @@ namespace YtStream.Services
         /// List of ranges.
         /// null on severe errors.
         /// </returns>
-        public async Task<TimeRangeModel[]> GetRangesAsync(string Id)
+        public async Task<TimeRangeModel[]?> GetRangesAsync(string Id)
         {
             if (!Tools.IsYoutubeId(Id))
             {
@@ -62,10 +62,13 @@ namespace YtStream.Services
                     {
                         return null;
                     }
+
+#nullable disable //Nullable is not smart enough for LINQ
                     return Result
                         .Where(m => m.Category == Category && m.Segment != null && m.Segment.Length == 2)
                         .Select(m => new TimeRangeModel(m.Segment[0], m.Segment[1]))
                         .ToArray();
+#nullable restore
                 }
                 //Not found
                 if (Res.StatusCode == HttpStatusCode.NotFound)
@@ -86,23 +89,23 @@ namespace YtStream.Services
             /// Category of the range
             /// </summary>
             [JsonPropertyName("category")]
-            public string Category { get; set; }
+            public string? Category { get; set; }
 
             /// <summary>
             /// Type of action
             /// </summary>
             [JsonPropertyName("actionType")]
-            public string ActionType { get; set; }
+            public string? ActionType { get; set; }
 
             /// <summary>
             /// Start and End timestamp
             /// </summary>
             [JsonPropertyName("segment")]
-            public double[] Segment { get; set; }
+            public double[]? Segment { get; set; }
             /// <summary>
             /// Randomly generated id of this segment
             /// </summary>
-            public string UUID { get; set; }
+            public string? UUID { get; set; }
 
             /// <summary>
             /// Votes for this range
@@ -114,14 +117,14 @@ namespace YtStream.Services
             /// Id of user that created this range
             /// </summary>
             [JsonPropertyName("userID")]
-            public string UserID { get; set; }
+            public string? UserID { get; set; }
 
             /// <summary>
             /// Range description
             /// </summary>
             /// <remarks>This seems to always be empty as of now</remarks>
             [JsonPropertyName("description")]
-            public string Description { get; set; }
+            public string? Description { get; set; }
         }
     }
 }

@@ -5,7 +5,7 @@
 <p>
     You do not have access to the requested feature.
 </p>
-@if (User.Identity.IsAuthenticated)
+@if (User.Identity?.IsAuthenticated ?? false)
 {
     <p>
         You are currently signed in as <b>@User.Identity.Name</b>.
