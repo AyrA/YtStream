@@ -7,6 +7,10 @@
     let ptr = -1;
     let doRandom = false;
 
+    const setAutoplayMessage = function (visible) {
+        q("#autoplayInfo").style.display = visible ? "block" : "none";
+    };
+
     const videoIndex = function (id) {
         let index = -1;
         sources.forEach(function (v, i, a) {
@@ -149,22 +153,25 @@
     const play = function (id) {
         console.log("Loading and playing audio", id);
         player.src = "/Stream/Send/" + id + "?stream=y&buffer=10";
-        player.play();
-        navigator.mediaSession.playbackState = "playing";
         q("[data-videoid='" + id + "']").parentNode.parentNode.scrollIntoView();
+        const promise = player.play();
+        navigator.mediaSession.playbackState = "playing";
         setMediaInfo(sources[videoIndex(id)]);
+        return promise.then(() => setAutoplayMessage(false));
     };
 
     const playPrev = function () {
         console.debug("Before: ptr is", ptr);
-        play(prevId());
+        const promise = play(prevId());
         console.debug("After: ptr is", ptr);
+        return promise;
     };
 
     const playNext = function () {
         console.debug("Before: ptr is", ptr);
-        play(nextId());
+        const promise = play(nextId());
         console.debug("After: ptr is", ptr);
+        return promise;
     };
 
     const playButtonHandler = function (e) {
@@ -207,10 +214,11 @@
     q("#btnPause").addEventListener("click", function (e) {
         e.preventDefault();
         if (!player.src) {
-            play(sources[0].id);
-            ptr = 1;
+            ptr = 0;
+            playNext();
         }
         else {
+            setAutoplayMessage(false);
             player.paused ? player.play() : player.pause();
         }
         setPlayState();
@@ -247,4 +255,21 @@
     hookMediaEvents();
     initList();
     setMediaInfo(sources[0]);
+    if (navigator.getAutoplayPolicy) {
+        if (navigator.getAutoplayPolicy(player) === "allowed") {
+            ptr = 0;
+            playNext();
+        }
+        else {
+            console.warn("Autoplay is disabled");
+            setAutoplayMessage(true);
+        }
+    }
+    else {
+        ptr = 0;
+        playNext().catch(function (ex) {
+            setAutoplayMessage(true);
+            console.warn("Autoplay is disabled", ex);
+        });
+    }
 })(tools.q, tools.qa);
