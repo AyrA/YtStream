@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -230,7 +231,7 @@ namespace YtStream.Controllers
         }
 
         [AllowAnonymous, HttpPost, ActionName("Login"), ValidateAntiForgeryToken]
-        public async Task<IActionResult> LoginPost(string userName, string password)
+        public async Task<IActionResult> LoginPost(string userName, string password, string returnUrl)
         {
             if (IsAuthenticated)
             {
@@ -245,6 +246,15 @@ namespace YtStream.Controllers
             {
                 _logger.LogInformation("User authenticated: {username}", Account.Username);
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, Account.GetIdentity());
+                //Redirect back to the source but ensure the Uri is local
+                if (!string.IsNullOrEmpty(returnUrl))
+                {
+                    var baseUrl = new Uri(HttpContext.Request.GetEncodedUrl());
+                    if (Uri.TryCreate(baseUrl, returnUrl, out Uri dest))
+                    {
+                        return Redirect(dest.PathAndQuery);
+                    }
+                }
                 return RedirectToAction("Index", "Home");
             }
 

@@ -1,15 +1,24 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
 using YtStream.Models;
 using YtStream.Services;
 using YtStream.Services.Accounts;
+using YtStream.Services.YT;
 
 namespace YtStream.Controllers
 {
     public class HomeController : BaseController
     {
-        public HomeController(ConfigService config, UserManagerService userManager) : base(config, userManager)
+        private readonly YtApiService _ytApiService;
+        private readonly YtCacheService _ytCacheService;
+
+        public HomeController(ConfigService config, UserManagerService userManager, YtApiService ytApiService, YtCacheService ytCacheService) : base(config, userManager)
         {
+            _ytApiService = ytApiService;
+            _ytCacheService = ytCacheService;
         }
 
         public IActionResult Index()
@@ -38,6 +47,55 @@ namespace YtStream.Controllers
                 }
             }
             return View(vm);
+        }
+
+        public async Task<IActionResult> Player(string playlist)
+        {
+            RequireSettings();
+
+            if (string.IsNullOrEmpty(Settings.YtApiKey))
+            {
+                return NotFound();
+            }
+            if (Settings.RequireAccount && !IsAuthenticated)
+            {
+                return RedirectToAction("Login", "Account", new { returnUrl = HttpContext.Request.Path });
+            }
+
+            if (!string.IsNullOrEmpty(playlist))
+            {
+                var plId = Tools.ExtractPlaylistFromUrl(playlist);
+                if (plId != playlist)
+                {
+                    return RedirectToAction("Player", new { playlist = plId });
+                }
+
+                var cacheKey = $"Player-{plId}";
+
+                var obj = _ytCacheService.Get(cacheKey);
+                if (obj != null)
+                {
+                    return View(obj as PlayerViewModel);
+                }
+
+                if (!Tools.IsYoutubePlaylist(plId))
+                {
+                    throw new Exception("Invalid playlist id");
+                }
+                var pl = await _ytApiService.GetPlaylistInfoAsync(plId)
+                    ?? throw new Exception("Playlist not found or not public");
+                var videos = await _ytApiService.GetPlaylistItemsAsync(plId)
+                    ?? throw new Exception("Failed to get playlist videos");
+                var vm = new PlayerViewModel(pl, videos.Select(m => m.ToApiModel()).ToArray());
+                if (videos.Length == 0)
+                {
+                    throw new Exception("This playlist is empty");
+                }
+                _ytCacheService.Set(cacheKey, vm, TimeSpan.FromHours(1));
+                return View(vm);
+            }
+
+            return View();
         }
 
         public IActionResult Info()

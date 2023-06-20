@@ -147,7 +147,6 @@ namespace YtStream
         {
             if (!response.HasStarted)
             {
-                //response.ContentType = "audio/mpeg";
                 response.Headers.ContentType = "audio/mpeg";
                 response.Headers.TryAdd("transferMode.dlna.org", "Streaming");
                 response.Headers.TryAdd("contentFeatures.dlna.org", "DLNA.ORG_PN=MP3;DLNA.ORG_OP=01;DLNA.ORG_FLAGS=01700000000000000000000000000000");
@@ -189,6 +188,27 @@ namespace YtStream
 
             //Because this service acts anonymously, FL,OL,LL are not actually supported.
             return PlRegex.IsMatch(playlist);
+        }
+
+        /// <summary>
+        /// Extracts a youtube playlist identifier from an URL
+        /// </summary>
+        /// <param name="playlistOrVideoUrl">playlist id or URL containing a playlist id</param>
+        /// <returns>Playlist id</returns>
+        /// <exception cref="ArgumentException">Argument doesn't contains a playlist id</exception>
+        public static string ExtractPlaylistFromUrl(string playlistOrVideoUrl)
+        {
+            if (string.IsNullOrWhiteSpace(playlistOrVideoUrl))
+            {
+                throw new ArgumentException($"'{nameof(playlistOrVideoUrl)}' cannot be null or whitespace.", nameof(playlistOrVideoUrl));
+            }
+
+            var m = Regex.Match(playlistOrVideoUrl, @"\bPL(?:[\w\-]{32}|[\dA-F]{16})\b");
+            if (m.Success)
+            {
+                return m.Value;
+            }
+            throw new ArgumentException("Not a valid playlist id or URL containing a playlist id");
         }
 
         /// <summary>
@@ -372,32 +392,36 @@ namespace YtStream
         /// <returns>Object with field name and value</returns>
         public static Antiforgery ParseAntiforgery(Microsoft.AspNetCore.Html.IHtmlContent FormElement)
         {
-            var Pattern = new Regex("(\\w+)\\s*=\\s*\"([^\"]+)\"");
-            string Form;
+            var pattern = new Regex("(\\w+)\\s*=\\s*\"([^\"]+)\"");
+            string form;
+            string? tokenName = null;
+            string? tokenValue = null;
+
             using (var SW = new StringWriter())
             {
                 FormElement.WriteTo(SW, System.Text.Encodings.Web.HtmlEncoder.Default);
-                Form = SW.ToString();
+                form = SW.ToString();
             }
-            var MM = Pattern.Matches(Form).OfType<Match>().ToArray();
-            var AF = new Antiforgery();
+            var MM = pattern.Matches(form).OfType<Match>().ToArray();
             foreach (var M in MM)
             {
                 if (M.Groups[1].Value.ToLower() == "name")
                 {
-                    AF.Name = M.Groups[2].Value;
+                    tokenName = M.Groups[2].Value;
                 }
                 if (M.Groups[1].Value.ToLower() == "value")
                 {
-                    AF.Value = M.Groups[2].Value;
+                    tokenValue = M.Groups[2].Value;
                 }
             }
-            return AF;
+            if (tokenName == null || tokenValue == null)
+            {
+                throw new ArgumentException("Invalid token form");
+            }
+            return new Antiforgery(tokenName, tokenValue);
         }
 
-        public struct Antiforgery
-        {
-            public string Name, Value;
-        }
+        public record Antiforgery(string Name, string Value);
+
     }
 }

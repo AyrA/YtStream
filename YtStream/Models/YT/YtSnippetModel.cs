@@ -24,6 +24,8 @@ namespace YtStream.Models.YT
 
         public string? VideoOwnerChannelId { get; set; }
 
+        public string? ChannelTitle { get; set; }
+
         /// <summary>
         /// Get the smallest thumbnail that has at least the specified dimensions if possible,
         /// otherwise returns the biggest thumbnail
@@ -63,7 +65,8 @@ namespace YtStream.Models.YT
             {
                 Title = Title,
                 Id = Id ?? ResourceId?.VideoId,
-                Thumbnail = (Thumbnails?.ContainsKey("medium") ?? false) ? Thumbnails["medium"]?.Url : null
+                Thumbnail = (Thumbnails?.ContainsKey("medium") ?? false) ? Thumbnails["medium"]?.Url : null,
+                Channel = ChannelTitle ?? VideoOwnerChannelTitle
             };
         }
     }

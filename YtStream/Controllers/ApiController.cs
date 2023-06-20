@@ -59,7 +59,7 @@ namespace YtStream.Controllers
                 {
                     return Json(data?.Select(m => m.ToApiModel()));
                 }
-                var Result = await _ytApiService.GetPlaylistInfoAsync(id);
+                var Result = await _ytApiService.GetPlaylistItemsAsync(id);
                 if (Result == null)
                 {
                     _ytCacheService.Set(id, null, TimeSpan.FromDays(1));

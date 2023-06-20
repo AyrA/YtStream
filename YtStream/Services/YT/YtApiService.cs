@@ -33,7 +33,39 @@ namespace YtStream.Services.YT
             apiKey = c.YtApiKey;
         }
 
-        public async Task<YtSnippetModel[]?> GetPlaylistInfoAsync(string playlistId, int maxItems = int.MaxValue)
+        public async Task<YtSnippetModel?> GetPlaylistInfoAsync(string playlistId)
+        {
+            if (!Tools.IsYoutubePlaylist(playlistId))
+            {
+                throw new ArgumentException("Playlist id is invalid");
+            }
+            var url = BuildUrl("playlists", new
+            {
+                part = "snippet",
+                maxResults = 1,
+                id = playlistId
+            });
+
+            YtResultModel result;
+            _logger.LogInformation("Getting YT playlist info for {id}", playlistId);
+            try
+            {
+                var str = await GetJson(url) ?? throw new Exception("Data error");
+                result = str.FromJson<YtResultModel>(true, true);
+                if (result.Items == null || result.Items.Length == 0)
+                {
+                    return null;
+                }
+                return result.Items[0].Snippet;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get JSON from YT API {url}", url);
+                return null;
+            }
+        }
+
+        public async Task<YtSnippetModel[]?> GetPlaylistItemsAsync(string playlistId, int maxItems = int.MaxValue)
         {
             if (!Tools.IsYoutubePlaylist(playlistId))
             {
@@ -51,7 +83,7 @@ namespace YtStream.Services.YT
                 playlistId
             });
             YtResultModel result;
-            _logger.LogInformation("Getting YT playlist info for {id}", playlistId);
+            _logger.LogInformation("Getting YT playlist items for {id}", playlistId);
             do
             {
                 try

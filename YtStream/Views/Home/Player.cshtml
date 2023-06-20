@@ -1,0 +1,73 @@
+﻿@model PlayerViewModel
+@{
+    ViewData["Title"] = "Media player";
+    var Settings = (ConfigModel)ViewBag.Settings;
+}
+<h1>Media player</h1>
+@if (Model == null)
+{
+    <form method="get">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="input-group mb-1">
+                    <input type="text" name="playlist" class="form-control" placeholder="Youtube URL or playlist id" />
+                    <div class="input-group-append">
+                        <input type="submit" class="btn btn-primary" value="Open" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+}
+else
+{
+    <div class="row mb-1">
+        <div class="col-md-3">
+            <img src="@Model.Videos[0].Thumbnail" alt="Video thumbnail" class="thumb" />
+        </div>
+        <div class="col-md-9">
+            <h1 data-albumtitle="@Model.Name">@Model.Name</h1>
+            <p>@Model.Description</p>
+        </div>
+    </div>
+    <div class="mb-1">
+        <button type="button" class="btn btn-link btn-lg" id="btnPrev">&#9198;</button>
+        <button type="button" class="btn btn-link btn-lg" id="btnPause">&#9199;</button>
+        <button type="button" class="btn btn-link btn-lg" id="btnNext">&#9197;</button>
+        <button type="button" class="btn btn-outline-primary btn-lg" id="btnShuffle">&#128256;</button><br />
+    </div>
+    <div class="mb-1">
+        <label for="tbVol">Volume</label>
+        <input type="range" min="0" max="10000" value="10000" id="tbVol" />
+        <time id="lblTime">00:00</time>
+    </div>
+    <div style="max-height:500px;overflow-y:scroll">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th colspan="2">Playlist</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var video in Model.Videos)
+                {
+                    <tr>
+                        <td>
+                            <img src="@video.Thumbnail" alt="Video thumbnail of @video.Title" class="thumb" />
+                            @video.Title
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-primary" data-videotitle="@video.Title"
+                                data-videochannel="@video.Channel"
+                                data-videothumb="@video.Thumbnail" data-videoid="@video.Id">Play</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+@section Scripts
+{
+    <script src="~/js/player.view.js" asp-append-version="true" defer></script>
+}

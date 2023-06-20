@@ -29,6 +29,7 @@ namespace YtStream.Controllers
         private readonly CacheService _cacheService;
         private readonly AdsService _adsService;
         private readonly SponsorBlockCacheService _sponsorBlockCacheService;
+        private Guid streamKey;
 
         public StreamController(ILogger<StreamController> logger, ConfigService config, UserManagerService userManager,
             LockService lockService, YoutubeDlService youtubeDlService,
@@ -72,7 +73,7 @@ namespace YtStream.Controllers
                 var key = context.HttpContext.Request.Query["key"];
                 if (key.Count == 1)
                 {
-                    if (Guid.TryParse(key.ToString(), out Guid streamKey))
+                    if (Guid.TryParse(key.ToString(), out streamKey))
                     {
                         SetApiUser(streamKey);
                         if (CurrentUser != null && CurrentUser.Enabled)
@@ -84,22 +85,14 @@ namespace YtStream.Controllers
                                 if (busyKeys.Contains(streamKey))
                                 {
                                     _logger.LogInformation("Key {key} already in use", streamKey);
+                                    streamKey = default;
+                                    context.Result = StatusCode(403, "This stream key is already in use");
+                                    return;
                                 }
                                 _logger.LogInformation("Locking key {key} for streaming", streamKey);
                                 busyKeys.Add(streamKey);
                             }
-                            try
-                            {
-                                await base.OnActionExecutionAsync(context, next);
-                            }
-                            finally
-                            {
-                                _logger.LogInformation("Unlocking key {key} for streaming", streamKey);
-                                lock (busyKeys)
-                                {
-                                    busyKeys.Remove(streamKey);
-                                }
-                            }
+                            await base.OnActionExecutionAsync(context, next);
                             return;
                         }
                     }
@@ -110,6 +103,21 @@ namespace YtStream.Controllers
             //Set converter user agent to match youtube-dl UA
             _mp3ConverterService.SetUserAgent(await _youtubeDlService.GetUserAgent());
             await base.OnActionExecutionAsync(context, next);
+        }
+
+        public override void OnActionExecuted(ActionExecutedContext context)
+        {
+            base.OnActionExecuted(context);
+            if (streamKey != Guid.Empty)
+            {
+                lock (busyKeys)
+                {
+                    if (busyKeys.Remove(streamKey))
+                    {
+                        _logger.LogInformation("Unlocking key {key} for streaming", streamKey);
+                    }
+                }
+            }
         }
 
         public IActionResult Locked()
@@ -238,7 +246,7 @@ namespace YtStream.Controllers
                     {
                         details = await _youtubeDlService.GetAudioDetails(ytid);
                         url = details.Url;
-                        if (details.Duration > Settings.MaxVideoDuration)
+                        if (Settings.MaxVideoDuration > 0 && details.Duration > Settings.MaxVideoDuration)
                         {
                             throw new YoutubeDlException("Video exceeds permitted duration. " +
                                 $"{TimeSpan.FromSeconds(details.Duration)} > {TimeSpan.FromSeconds(Settings.MaxVideoDuration)}");
@@ -247,7 +255,7 @@ namespace YtStream.Controllers
                     catch (YoutubeDlException ex)
                     {
                         //If this is the only id, return an error to the client.
-                        //We can't do this otherwise.
+                        //Otherwise we just skip it silently
                         if (ids.Length == 1)
                         {
                             return Error(ex);
