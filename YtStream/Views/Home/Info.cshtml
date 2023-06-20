@@ -2,10 +2,25 @@
     ViewData["Title"] = "Usage instructions";
     var Settings = (ConfigModel)ViewBag.Settings;
 }
-<h1>Usage instructions</h1>
+<h1>Playback</h1>
 <p>
-    This system operates on the video ids or playlist ids.
-    They both can be grabbed from the address bar of your browser.<br />
+    For playback in your browser, the easiest and most comfortable way is to use
+    <a asp-action="Player">the media player</a>.
+    It supports playback of all videos in a single playlist.
+    If you have a headset or keyboard with media keys, those should work too.
+    The playback list repeats indefinitely, and additionally can be shuffled.
+    The shuffle algorithm guarantees that every item plays exactly once before the list is reshuffled.<br />
+    Note that the playlist information is cached for an hour to not bug the YouTube API too much.
+</p>
+
+<h1>Streaming</h1>
+<p>
+    Manual streaming is recommended if you want to stream videos and/or playlists as a single continuous MP3 file.
+    It's also the way to go if you want to stream on a web radio device.
+</p>
+<p>
+    The streaming system operates on the video ids and playlist ids.
+    They both can be grabbed from the address bar of your browser on every youtube video.<br />
     This page explains how to construct a stream URL manually.
     It's better to use the <a asp-action="Builder">URL builder</a> instead,
     because it will extract video and playlist ids from youtube URLs automatically.

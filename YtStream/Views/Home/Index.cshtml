@@ -60,9 +60,20 @@
     }
     <p>
         This system allows you to directly stream Youtube videos to MP3.
-        It has a few features that separate it from other systems.
-        Options marked with an asterisk may be disabled by the application operator.
+        It has a few features that separate it from other systems.<br />
+        <i>Options marked with an asterisk may be disabled by the application operator.</i>
     </p>
+    <p>
+        <a asp-action="Player" class="btn btn-primary">I want to listen to a playlist with my browser</a><br />
+        Recommended if you want to listen to a single playlist in a comfortable manner.
+        This launches a full featured media player.
+    </p>
+    <p>
+        <a asp-action="Builder" class="btn btn-primary">I want to create a custom stream</a><br />
+        Recommended if you want to generate a URL to use on a different device,
+        or if you want to construct a more advanced stream from multiple videos and/or playlists.
+    </p>
+    @*
     <ul>
         <li>
             The audio stream is delivered while being downloaded.
@@ -89,10 +100,12 @@
     <p>
         Check "<a asp-action="Info">How to use</a>" for usage instructions.
     </p>
+    *@
     <hr />
     <p>
         YtStream: Live transcoding of youtube videos into MP3<br />
-        Copyright (C) 2022 Kevin Gut
+        Copyright (C) 2022 Kevin Gut - <a target="_blank" rel="noreferrer nofollow noopener"
+            href="https://github.com/AyrA/YtStream">Source Code</a>
     </p>
     <p>
         This program is free software: you can redistribute it and/or modify
