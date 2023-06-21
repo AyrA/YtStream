@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using YtStream.Enums;
 using YtStream.Models;
@@ -66,39 +67,68 @@ namespace YtStream.Controllers
                 context.Result = StatusCode(500, "Misconfiguration. Please check the application settings");
                 return;
             }
-            //Do not allow the use of stream keys if we're logged in
-            if (Settings.RequireAccount && !IsAuthenticated)
+            //handle session requirement
+            if (Settings.RequireAccount)
             {
+                bool usedKey = false;
                 //Check if streaming key was supplied
                 var key = context.HttpContext.Request.Query["key"];
                 if (key.Count == 1)
                 {
                     if (Guid.TryParse(key.ToString(), out streamKey))
                     {
-                        SetApiUser(streamKey);
-                        if (CurrentUser != null && CurrentUser.Enabled)
+                        if (SetApiUser(streamKey))
                         {
+                            usedKey = true;
                             _logger.LogInformation("User {username}: Key based authentication success", CurrentUser.Username);
-                            //Ensure a key is only used once at a time
-                            lock (busyKeys)
-                            {
-                                if (busyKeys.Contains(streamKey))
-                                {
-                                    _logger.LogInformation("Key {key} already in use", streamKey);
-                                    streamKey = default;
-                                    context.Result = StatusCode(403, "This stream key is already in use");
-                                    return;
-                                }
-                                _logger.LogInformation("Locking key {key} for streaming", streamKey);
-                                busyKeys.Add(streamKey);
-                            }
-                            await base.OnActionExecutionAsync(context, next);
-                            return;
                         }
                     }
                 }
-                context.Result = RedirectToAction("Login", "Account", new { returnUrl = HttpContext.Request.Path });
-                return;
+                else if (IsAuthenticated)
+                {
+                    //If authenticated but no key was used, use the username as key
+                    streamKey = new Guid(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(CurrentUser!.Username!)));
+                    _logger.LogInformation("User {username}: Using name based key: {key}", CurrentUser.Username, streamKey);
+                }
+                else
+                {
+                    //Neither user authenticated, nor key supplied. Redirect to login.
+                    context.Result = RequestLogin();
+                    return;
+                }
+
+                if (streamKey != Guid.Empty && CurrentUser != null && CurrentUser.Enabled)
+                {
+                    //Ensure a key is only used once at a time
+                    lock (busyKeys)
+                    {
+                        if (busyKeys.Contains(streamKey))
+                        {
+                            if (usedKey)
+                            {
+                                _logger.LogInformation("Key {key} already in use", streamKey);
+                                context.Result = StatusCode(403, "This stream key is already in use");
+                            }
+                            else
+                            {
+                                _logger.LogInformation("User session already in use with name based key {key}", streamKey);
+                                context.Result = StatusCode(403, "Your account is already streaming");
+                            }
+                            //Prevent faulty unlock by resetting the key
+                            streamKey = default;
+                            return;
+                        }
+                        _logger.LogInformation("Locking key {key} for streaming", streamKey);
+                        busyKeys.Add(streamKey);
+                    }
+                }
+                else
+                {
+                    //Authentication failure
+                    streamKey = default;
+                    context.Result = StatusCode(403, "Authentication failure");
+                    return;
+                }
             }
             //Set converter user agent to match youtube-dl UA
             _mp3ConverterService.SetUserAgent(await _youtubeDlService.GetUserAgent());
@@ -107,14 +137,20 @@ namespace YtStream.Controllers
 
         public override void OnActionExecuted(ActionExecutedContext context)
         {
-            base.OnActionExecuted(context);
-            if (streamKey != Guid.Empty)
+            try
             {
-                lock (busyKeys)
+                base.OnActionExecuted(context);
+            }
+            finally //Ensure key is always freed, even on server errors
+            {
+                if (streamKey != Guid.Empty)
                 {
-                    if (busyKeys.Remove(streamKey))
+                    lock (busyKeys)
                     {
-                        _logger.LogInformation("Unlocking key {key} for streaming", streamKey);
+                        if (busyKeys.Remove(streamKey))
+                        {
+                            _logger.LogInformation("Unlocking key {key} for streaming", streamKey);
+                        }
                     }
                 }
             }

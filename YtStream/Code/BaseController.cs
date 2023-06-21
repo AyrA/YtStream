@@ -96,9 +96,11 @@ namespace YtStream
         /// </summary>
         /// <param name="ApiKey">API key</param>
         /// <remarks>If the user is not found, CurrentUser will be set to null</remarks>
-        public void SetApiUser(Guid ApiKey)
+        [MemberNotNullWhen(true, nameof(CurrentUser))]
+        public bool SetApiUser(Guid ApiKey)
         {
             CurrentUser = _userManager.GetUser(ApiKey);
+            return CurrentUser != null;
         }
 
         /// <summary>
