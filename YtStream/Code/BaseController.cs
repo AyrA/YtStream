@@ -103,6 +103,13 @@ namespace YtStream
             return CurrentUser != null;
         }
 
+        [MemberNotNullWhen(true, nameof(CurrentUser))]
+        public bool SetUser(string? Username)
+        {
+            CurrentUser = _userManager.GetUser(Username);
+            return CurrentUser != null;
+        }
+
         /// <summary>
         /// Redirects the user and temporarily stores a message that can be retrieved on the next request
         /// </summary>
@@ -130,7 +137,11 @@ namespace YtStream
             return RedirectToAction(Action, Controller, RouteData);
         }
 
-        public IActionResult RequestLogin()
+        /// <summary>
+        /// Redirect to login page, and preserve current URL
+        /// </summary>
+        /// <returns>Redirection to /Account/Login</returns>
+        public RedirectToActionResult RequestLogin()
         {
             return RedirectToAction("Login", "Account", new { returnUrl = HttpContext.Request.GetEncodedPathAndQuery() });
         }

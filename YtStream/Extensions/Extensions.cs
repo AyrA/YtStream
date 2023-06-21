@@ -13,26 +13,27 @@ namespace YtStream.Extensions
         /// </summary>
         /// <typeparam name="T">target type</typeparam>
         /// <param name="s">String to parse</param>
-        /// <param name="Throw">
+        /// <param name="throwOnError">
         /// true to throw instead of returning the types default value
         /// </param>
+        /// <param name="ignoreCase">Do case insensitive property comparison</param>
         /// <returns>Deserialized data</returns>
-        public static T FromJson<T>(this string s, bool Throw = false, bool IgnoreCase = false)
+        public static T FromJson<T>(this string s, bool throwOnError = false, bool ignoreCase = false)
         {
             try
             {
                 if (!string.IsNullOrWhiteSpace(s))
                 {
-                    var Opt = new JsonSerializerOptions
+                    var opt = new JsonSerializerOptions
                     {
-                        PropertyNameCaseInsensitive = IgnoreCase
+                        PropertyNameCaseInsensitive = ignoreCase
                     };
-                    return JsonSerializer.Deserialize<T>(s, Opt)!;
+                    return JsonSerializer.Deserialize<T>(s, opt)!;
                 }
             }
             catch
             {
-                if (Throw)
+                if (throwOnError)
                 {
                     throw;
                 }

@@ -1,12 +1,15 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using YtStream.Enums;
 using YtStream.Interfaces;
+using YtStream.Models.Favs;
 using YtStream.Services.Accounts;
 
 namespace YtStream.Models.Accounts
@@ -20,6 +23,8 @@ namespace YtStream.Models.Accounts
         /// Streaming keys
         /// </summary>
         private List<UserApiKeyModel> _keys = new();
+
+        private readonly List<FavoriteBaseModel> _favs = new();
 
         /// <summary>
         /// Gets or sets if the account is enabled
@@ -68,14 +73,29 @@ namespace YtStream.Models.Accounts
             }
             set
             {
+                _keys.Clear();
                 if (value != null)
                 {
-                    _keys.Clear();
                     _keys.AddRange(value);
                 }
-                else
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets user favorites
+        /// </summary>
+        public FavoriteBaseModel[] Favorites
+        {
+            get
+            {
+                return _favs.ToArray();
+            }
+            set
+            {
+                _favs.Clear();
+                if (value != null)
                 {
-                    _keys.Clear();
+                    _favs.AddRange(value);
                 }
             }
         }
@@ -160,6 +180,7 @@ namespace YtStream.Models.Accounts
         /// Checks if the user has a hashed password
         /// </summary>
         /// <returns>true, if hashed password present</returns>
+        [MemberNotNullWhen(true, nameof(Password))]
         public bool HasPassword()
         {
             if (string.IsNullOrEmpty(Password))
@@ -182,6 +203,8 @@ namespace YtStream.Models.Accounts
             }
             return true;
         }
+
+        #region Keys
 
         /// <summary>
         /// Removes a streaming key
@@ -251,6 +274,39 @@ namespace YtStream.Models.Accounts
             return _keys != null && _keys.Any(m => m.Key == Key);
         }
 
+        #endregion
+
+        /// <summary>
+        /// Removes a favorite by id
+        /// </summary>
+        /// <param name="id">id</param>
+        /// <returns>true, if found and removed. False if not found</returns>
+        public bool RemoveFavorite(Guid id)
+        {
+            return _favs.RemoveAll(m => m.Id == id) > 0;
+        }
+
+        /// <summary>
+        /// Adds a new favorite
+        /// </summary>
+        /// <param name="fav">Favorite</param>
+        /// <exception cref="ArgumentNullException">argument is null</exception>
+        /// <remarks>This will reassign the id</remarks>
+        public void AddFavorite(FavoriteBaseModel fav)
+        {
+            if (fav is null)
+            {
+                throw new ArgumentNullException(nameof(fav));
+            }
+
+            fav.Id = Guid.NewGuid();
+            if (!fav.IsValid())
+            {
+                throw new ArgumentException("favorite failed validation");
+            }
+            _favs.Add(fav);
+        }
+
         /// <summary>
         /// Create .NET Core identity for HttpContext.SignInAsync()
         /// </summary>
@@ -272,6 +328,21 @@ namespace YtStream.Models.Accounts
             return new ClaimsPrincipal(identity);
         }
 
+        /// <summary>
+        /// Gets an account specific id based on the username
+        /// </summary>
+        /// <returns>Name based id</returns>
+        /// <exception cref="InvalidOperationException">Object in invalid state</exception>
+        public Guid GetNameBasedId()
+        {
+            if (IsValid())
+            {
+                return new Guid(SHA256.HashData(Encoding.UTF8.GetBytes(Username)).Take(16).ToArray());
+            }
+            throw new InvalidOperationException("Item not in valid state");
+        }
+
+        [MemberNotNullWhen(true, nameof(Username), nameof(Password))]
         public bool IsValid()
         {
             return GetValidationMessages().Length == 0;
@@ -288,6 +359,10 @@ namespace YtStream.Models.Accounts
             {
                 Messages.Add("Username must not be longer than 20 characters");
             }
+            else if (Username.Length < 3)
+            {
+                Messages.Add("Username must not be shorter than 3 characters");
+            }
             else if (!Regex.IsMatch(Username, UserManagerService.NamePattern))
             {
                 Messages.Add("Username may only contain alphanumeric characters");
@@ -303,6 +378,10 @@ namespace YtStream.Models.Accounts
             if (_keys != null && _keys.Any(m => m == null || !m.IsValid()))
             {
                 Messages.Add(_keys.Count(m => m == null || m.IsValid()) + " invalid API key(s)");
+            }
+            if (_favs != null && _favs.Any(m => m == null || !m.IsValid()))
+            {
+                Messages.Add(_favs.Count(m => m == null || m.IsValid()) + " invalid favorite(s)");
             }
             return Messages.ToArray();
         }

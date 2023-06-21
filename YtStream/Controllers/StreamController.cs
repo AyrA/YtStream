@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using YtStream.Enums;
 using YtStream.Models;
@@ -86,9 +86,12 @@ namespace YtStream.Controllers
                 }
                 else if (IsAuthenticated)
                 {
-                    //If authenticated but no key was used, use the username as key
-                    streamKey = new Guid(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(CurrentUser!.Username!)));
-                    _logger.LogInformation("User {username}: Using name based key: {key}", CurrentUser.Username, streamKey);
+                    if (SetUser(User.Identity?.Name))
+                    {
+                        //If authenticated but no key was used, use the username as key
+                        streamKey = CurrentUser.GetNameBasedId();
+                        _logger.LogInformation("User {username}: Using name based key: {key}", CurrentUser.Username, streamKey);
+                    }
                 }
                 else
                 {
@@ -99,6 +102,7 @@ namespace YtStream.Controllers
 
                 if (streamKey != Guid.Empty && CurrentUser != null && CurrentUser.Enabled)
                 {
+                    await WaitForKeyRelease(streamKey, TimeSpan.FromSeconds(5));
                     //Ensure a key is only used once at a time
                     lock (busyKeys)
                     {
@@ -529,6 +533,43 @@ namespace YtStream.Controllers
                 throw new InvalidOperationException("Settings object is not set");
             }
             return Settings.MarkAds;
+        }
+
+        /// <summary>
+        /// Wait for a maximum time period for a key release from the busy list
+        /// </summary>
+        /// <param name="key">Streaming key</param>
+        /// <param name="maxWait">Maximum time to wait</param>
+        /// <returns>true if released or not in list, false for timeout</returns>
+        /// <exception cref="ArgumentException">key is invalid</exception>
+        /// <exception cref="ArgumentOutOfRangeException">wait time is zero or negative</exception>
+        /// <remarks>
+        /// The check interval is 500 ms.
+        /// As a consequence, the granularity of <paramref name="maxWait"/> is 500 ms too.
+        /// </remarks>
+        private static async Task<bool> WaitForKeyRelease(Guid key, TimeSpan maxWait)
+        {
+            if (key == Guid.Empty)
+            {
+                throw new ArgumentException("Invalid key");
+            }
+            if (maxWait <= TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxWait));
+            }
+            Stopwatch sw = Stopwatch.StartNew();
+            while (sw.Elapsed < maxWait)
+            {
+                lock (busyKeys)
+                {
+                    if (!busyKeys.Contains(key))
+                    {
+                        return true;
+                    }
+                }
+                await Task.Delay(500);
+            }
+            return false;
         }
     }
 }

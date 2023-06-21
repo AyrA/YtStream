@@ -61,6 +61,9 @@ namespace YtStream.Services.Accounts
         /// </summary>
         public int MaxKeysPerUser { get; }
 
+        /// <summary>
+        /// Generate dummy account
+        /// </summary>
         static UserManagerService()
         {
             var D = new AccountInfoModel() { Username = "" };
@@ -93,10 +96,6 @@ namespace YtStream.Services.Accounts
                 ValidateAccounts(FileAccounts);
                 Accounts.Clear();
                 Accounts.AddRange(FileAccounts);
-                foreach (var Acc in Accounts.Where(m => m.ApiKeys == null))
-                {
-                    Acc.ApiKeys = Array.Empty<UserApiKeyModel>();
-                }
             }
         }
 

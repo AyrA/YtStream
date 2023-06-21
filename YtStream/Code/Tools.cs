@@ -161,7 +161,7 @@ namespace YtStream
         /// <param name="Id">video id</param>
         /// <returns>true if valid</returns>
         /// <remarks>This will not contact youtube and only check formal correctness</remarks>
-        public static bool IsYoutubeId(string Id)
+        public static bool IsYoutubeId(string? Id)
         {
             return !string.IsNullOrEmpty(Id) &&
                 IdRegex.IsMatch(Id);
@@ -172,7 +172,7 @@ namespace YtStream
         /// </summary>
         /// <param name="playlist">Playlist id</param>
         /// <returns>true, if valid playlist</returns>
-        public static bool IsYoutubePlaylist(string playlist)
+        public static bool IsYoutubePlaylist(string? playlist)
         {
             if (string.IsNullOrEmpty(playlist))
             {
