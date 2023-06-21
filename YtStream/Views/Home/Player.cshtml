@@ -1,6 +1,13 @@
 ﻿@model PlayerViewModel
 @{
-    ViewData["Title"] = "Media player";
+    if (!string.IsNullOrEmpty(Model?.Name))
+    {
+        ViewData["Title"] = "Media player - " + Model.Name;
+    }
+    else
+    {
+        ViewData["Title"] = "Media player";
+    }
     var Settings = (ConfigModel)ViewBag.Settings;
 }
 <h1>Media player</h1>

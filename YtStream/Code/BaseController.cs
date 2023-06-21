@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System;
@@ -125,6 +126,11 @@ namespace YtStream
         {
             HttpContext.Response.Cookies.Append("status", Message);
             return RedirectToAction(Action, Controller, RouteData);
+        }
+
+        public IActionResult RequestLogin()
+        {
+            return RedirectToAction("Login", "Account", new { returnUrl = HttpContext.Request.GetEncodedPathAndQuery() });
         }
 
         [MemberNotNull(nameof(Settings))]

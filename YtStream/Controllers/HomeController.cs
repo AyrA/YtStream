@@ -36,7 +36,7 @@ namespace YtStream.Controllers
             }
             if (Settings.RequireAccount && !IsAuthenticated)
             {
-                return RedirectToAction("Login", "Account", new { returnUrl = HttpContext.Request.Path });
+                return RequestLogin();
             }
             var vm = new BuilderViewModel();
             if (CurrentUser?.ApiKeys != null)
@@ -59,7 +59,7 @@ namespace YtStream.Controllers
             }
             if (Settings.RequireAccount && !IsAuthenticated)
             {
-                return RedirectToAction("Login", "Account", new { returnUrl = HttpContext.Request.Path });
+                return RequestLogin();
             }
 
             if (!string.IsNullOrEmpty(playlist))
