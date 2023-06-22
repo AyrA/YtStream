@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using YtStream.Models.Favs;
 using YtStream.Models.YT;
 using YtStream.Services;
 using YtStream.Services.Accounts;
@@ -108,6 +110,27 @@ namespace YtStream.Controllers
                 return Json(await _sponsorBlockCacheService.GetRangesAsync(id));
             }
             return BadRequest("Invalid youtube id");
+        }
+
+        [HttpPost, ValidateAntiForgeryToken, Authorize]
+        public IActionResult SaveStreamFav(string idlist, string name)
+        {
+            try
+            {
+                var fav = new StreamFavoriteModel
+                {
+                    Name = name,
+                    Ids = idlist.Split(','),
+                    Type = FavoriteType.Stream
+                };
+                CurrentUser?.AddFavorite(fav);
+                _userManager.Save();
+                return Json(new { id = fav.Id });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

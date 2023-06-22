@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using YtStream.Enums;
 using YtStream.Extensions;
 using YtStream.Models.Accounts;
+using YtStream.Models.Favs;
 
 namespace YtStream.Services.Accounts
 {
@@ -219,6 +220,30 @@ namespace YtStream.Services.Accounts
                 Accounts.Remove(User);
                 Save();
             }
+        }
+
+        /// <summary>
+        /// Get the given favorite
+        /// </summary>
+        /// <param name="favKey">Favorite id</param>
+        /// <param name="username">User name. If supplied, serach is restricted to the given user</param>
+        /// <returns>Favorite. Null if none found</returns>
+        public FavoriteBaseModel? GetFavorite(Guid favKey, string? username = null)
+        {
+            if (favKey == Guid.Empty)
+            {
+                return null;
+            }
+            if (!string.IsNullOrEmpty(username))
+            {
+                var acc = GetUser(username);
+                if (acc != null)
+                {
+                    return acc.Favorites.FirstOrDefault(m => m.Id == favKey);
+                }
+                return null;
+            }
+            return Accounts.SelectMany(m => m.Favorites).FirstOrDefault(m => m.Id == favKey);
         }
 
         /// <summary>

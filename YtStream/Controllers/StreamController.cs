@@ -10,6 +10,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using YtStream.Enums;
 using YtStream.Models;
+using YtStream.Models.Favs;
 using YtStream.Models.Mp3;
 using YtStream.Models.YtDl;
 using YtStream.Services;
@@ -176,6 +177,67 @@ namespace YtStream.Controllers
         }
 
         /// <summary>
+        /// Calls the "Send" endpoint with the ids obtained from the given favorite
+        /// </summary>
+        /// <param name="id">Id of a user favorite entry</param>
+        /// <param name="buffer">
+        /// Amount of data buffer in seconds. The default is 5.
+        /// Has no effect if "<paramref name="stream"/>" argument is not enabled
+        /// </param>
+        /// <param name="repeat">Number of repetitions. The default is 1</param>
+        /// <param name="key">
+        /// Streaming key.
+        /// Required if the system requires an account to stream, and the device is not logged in
+        /// </param>
+        /// <param name="stream">
+        /// Send as live stream rather than as fast as possible.
+        /// If supplied, data will be sent at the speed required for playback,
+        /// plus a few extra seconds buffer as specified in "<paramref name="buffer"/>" argument
+        /// </param>
+        /// <param name="raw">
+        /// Do not cut non-music sections.
+        /// If supplied, the system will not try to cut sections marked as non-music,
+        /// and instead sends the raw MP3 data as-is.
+        /// This parameter is ignored if the admin disables non-music cutting
+        /// </param>
+        /// <param name="random">
+        /// Randomize id list.
+        /// If specified, it randomizes the id list before playback.
+        /// This is done for every repeat iteration if there are multiple
+        /// </param>
+        /// <returns>MP3 data</returns>
+        [HttpGet, ActionName("Favorite"), Produces("audio/mpeg")]
+        public async Task<IActionResult> FavAsync(
+            [FromRoute] string id,
+            [FromQuery] int? buffer,
+            [FromQuery] int? repeat,
+            [FromQuery] string? key,
+            [FromQuery] ApiBoolEnum? stream = ApiBoolEnum.N,
+            [FromQuery] ApiBoolEnum? raw = ApiBoolEnum.N,
+            [FromQuery] ApiBoolEnum? random = ApiBoolEnum.N)
+        {
+            if (Guid.TryParse(id, out var favKey))
+            {
+                var fav = _userManager.GetFavorite(favKey);
+                if (fav == null)
+                {
+                    return NotFound("A favorite with the given id was not found");
+                }
+                if (fav.Type == FavoriteType.Stream)
+                {
+                    var sFav = (StreamFavoriteModel)fav;
+                    var ids = string.Join(",", sFav.Ids ?? Array.Empty<string>());
+                    return await SendAsync(ids, buffer, repeat, key, stream, raw, random);
+                }
+                else
+                {
+                    return BadRequest("This favorite is for the media player, not the streaming system");
+                }
+            }
+            return BadRequest("Invalid id");
+        }
+
+        /// <summary>
         /// Converts and sends YT data as a single, continuous MP3 stream
         /// </summary>
         /// <param name="id">List of video and/or playlist ids. Items are separated by comma</param>
@@ -206,7 +268,6 @@ namespace YtStream.Controllers
         /// </param>
         /// <returns>MP3 data</returns>
         [HttpGet, ActionName("Send"), Produces("audio/mpeg")]
-        //[Route("[controller]/[action]/{id}")]
         public async Task<IActionResult> SendAsync(
             [FromRoute] string id,
             [FromQuery] int? buffer,
