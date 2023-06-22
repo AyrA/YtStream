@@ -173,6 +173,11 @@ namespace YtStream.Controllers
             return View();
         }
 
+        public IActionResult ManageFavs()
+        {
+            return View();
+        }
+
         [AllowAnonymous, HttpPost, ActionName("Register"), ValidateAntiForgeryToken]
         public async Task<IActionResult> RegisterPost(string userName, string password, string passwordRepeat)
         {

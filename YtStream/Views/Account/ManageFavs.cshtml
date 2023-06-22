@@ -1,0 +1,46 @@
+﻿@{
+    ViewData["Title"] = "Favorites management";
+    var Settings = (ConfigModel)ViewBag.Settings;
+    var User = (AccountInfoModel)ViewBag.User;
+}
+
+<h1>Favorites management</h1>
+<p>
+    You can create favorites to make using the player or the streaming functionality easier.<br />
+    <b>
+        Favorites can be used by anyone who knows the id, which permits sharing of your custom playlists
+    </b>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Type</th>
+            <th>Name</th>
+            <th>Options</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var F in User.Favorites)
+        {
+            <tr>
+                <td class="copy-on-click" title="Click to copy"><code>@F.Id</code></td>
+                <td>@F.Type</td>
+                <td>@F.Name</td>
+                <td>
+                    <form method="post" class="form-inline" asp-action="DeleteFav">
+                        <input type="hidden" name="Id" value="@F.Id" />
+                        <input type="submit" class="btn btn-danger" title="Delete" value="&#128465;&#65039;" />
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<h2>Create a Favorite</h2>
+<p>
+    To create a favorite,
+    open the appropriate page (player or stream builder)
+    and save your configuration when offered
+</p>

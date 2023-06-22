@@ -5,6 +5,7 @@ namespace YtStream.Models.Favs
     public class PlayerFavoriteModel : FavoriteBaseModel
     {
         public string? PlaylistId { get; set; }
+        public bool Random { get; set; }
 
         public override string[] GetValidationMessages()
         {

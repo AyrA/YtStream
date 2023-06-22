@@ -15,8 +15,10 @@
             for example an internet radio device.<br />
             @if (_userManager.MaxKeysPerUser > 0)
             {
-                <span>You can create up to @_userManager.MaxKeysPerUser keys</span>
-
+                <span>
+                    You can create up to <b>@_userManager.MaxKeysPerUser</b> keys.
+                    You currently have <b>@User.ApiKeys.Length</b> keys.
+                </span>
                 <br />
             }
             <a asp-action="Info" asp-controller="Home">Click here to see how to use stream keys</a>

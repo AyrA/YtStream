@@ -16,6 +16,9 @@
     Streaming keys: <b>@Model.ApiKeys.Length</b> [<a asp-action="ManageKeys">Manage</a>]
 </p>
 <p>
+    Favorites: <b>@Model.Favorites.Length</b> [<a asp-action="ManageFavs">Manage</a>]
+</p>
+<p>
     Permissions: <b>@string.Join(", ", Model.GetRoleStrings())</b>
 </p>
 @if (Model.Roles.HasFlag(UserRoles.Administrator))
