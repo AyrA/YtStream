@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -108,7 +109,28 @@ namespace YtStream.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View(new ErrorViewModel
+            {
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
+                Status = HttpContext.Response.StatusCode
+            });
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Exception()
+        {
+            var pathFeature = HttpContext.Features.Get<IExceptionHandlerPathFeature>();
+            var exception = pathFeature?.Error;
+            int statusCode = 500;
+            var model = new ErrorViewModel
+            {
+                Status = statusCode,
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
+                Error = exception,
+                ShowDetails = IsAuthenticated && CurrentUser.Roles.HasFlag(Enums.UserRoles.Administrator)
+            };
+            //_logger.LogError(exception, "Server error");
+            return View("Error", model);
         }
     }
 }

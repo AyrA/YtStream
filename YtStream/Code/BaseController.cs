@@ -97,14 +97,14 @@ namespace YtStream
         /// <param name="ApiKey">API key</param>
         /// <remarks>If the user is not found, CurrentUser will be set to null</remarks>
         [MemberNotNullWhen(true, nameof(CurrentUser))]
-        public bool SetApiUser(Guid ApiKey)
+        protected bool SetApiUser(Guid ApiKey)
         {
             CurrentUser = _userManager.GetUser(ApiKey);
             return CurrentUser != null;
         }
 
         [MemberNotNullWhen(true, nameof(CurrentUser))]
-        public bool SetUser(string? Username)
+        protected bool SetUser(string? Username)
         {
             CurrentUser = _userManager.GetUser(Username);
             return CurrentUser != null;
@@ -117,7 +117,7 @@ namespace YtStream
         /// <param name="Message">Message to store</param>
         /// <param name="RouteData">Additional route data</param>
         /// <returns><see cref="RedirectToActionResult"/></returns>
-        public IActionResult RedirectWithMessage(string? Action, string Message, object? RouteData = null)
+        protected IActionResult RedirectWithMessage(string? Action, string Message, object? RouteData = null)
         {
             HttpContext.Response.Cookies.Append("status", Message);
             return RedirectToAction(Action, RouteData);
@@ -131,7 +131,7 @@ namespace YtStream
         /// <param name="Message">Message to store</param>
         /// <param name="RouteData">Additional route data</param>
         /// <returns><see cref="RedirectToActionResult"/></returns>
-        public IActionResult RedirectWithMessage(string? Action, string? Controller, string Message, object? RouteData = null)
+        protected IActionResult RedirectWithMessage(string? Action, string? Controller, string Message, object? RouteData = null)
         {
             HttpContext.Response.Cookies.Append("status", Message);
             return RedirectToAction(Action, Controller, RouteData);
@@ -141,13 +141,13 @@ namespace YtStream
         /// Redirect to login page, and preserve current URL
         /// </summary>
         /// <returns>Redirection to /Account/Login</returns>
-        public RedirectToActionResult RequestLogin()
+        protected RedirectToActionResult RequestLogin()
         {
             return RedirectToAction("Login", "Account", new { returnUrl = HttpContext.Request.GetEncodedPathAndQuery() });
         }
 
         [MemberNotNull(nameof(Settings))]
-        public void RequireSettings()
+        protected void RequireSettings()
         {
             if (Settings == null)
             {
@@ -155,7 +155,7 @@ namespace YtStream
             }
         }
 
-        internal bool IsHead()
+        protected bool IsHead()
         {
             return HttpContext.Request.Method.ToUpper() == "HEAD";
         }

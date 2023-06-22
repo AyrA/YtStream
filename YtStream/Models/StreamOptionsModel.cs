@@ -1,10 +1,13 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using YtStream.Controllers;
+using YtStream.Interfaces;
 
 namespace YtStream.Models
 {
-    public class StreamOptionsModel
+    public class StreamOptionsModel : IValidateable
     {
         /// <summary>
         /// Maximum number of seconds the client can buffer ahead
@@ -80,6 +83,40 @@ namespace YtStream.Models
                     Buffer = Math.Min(MaxBufferSize, Math.Max(1, Buffer));
                 }
             }
+        }
+
+        public StreamOptionsModel(ApiBoolEnum? stream, int? buffer, int? repeat, ApiBoolEnum? random, ApiBoolEnum? raw)
+        {
+            Repeat = repeat ?? 1;
+            Buffer = buffer ?? DefaultBufferSize;
+            Random = EnumToBool(random);
+            Raw = EnumToBool(raw);
+            Stream = EnumToBool(stream);
+        }
+
+        private static bool EnumToBool(ApiBoolEnum? value)
+        {
+            return (value ?? ApiBoolEnum.N) == ApiBoolEnum.Y;
+        }
+
+        public bool IsValid()
+        {
+            return GetValidationMessages().Length == 0;
+        }
+
+        public string[] GetValidationMessages()
+        {
+            var msg = new List<string>();
+            if (Repeat < 1 || Repeat > MaxRepetitions)
+            {
+                msg.Add($"Repetition count must be at least 1 and at most {MaxRepetitions}");
+            }
+            if (Buffer < 0 || Buffer > MaxBufferSize)
+            {
+                msg.Add($"Buffer size must be at least 1 and at most {MaxBufferSize}. " +
+                    $"The default is {DefaultBufferSize}");
+            }
+            return msg.ToArray();
         }
 
         /// <summary>

@@ -10,7 +10,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.WindowsServices;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
 using System;
+using System.IO;
+using System.Reflection;
 
 namespace YtStream
 {
@@ -65,6 +68,20 @@ namespace YtStream
             AutoDIExtensions.DebugLogging = builder.Environment.IsDevelopment();
             builder.Services.AutoRegisterCurrentAssembly();
 
+            //Add Swagger
+            builder.Services.AddSwaggerGen(options =>
+            {
+                options.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Version = "v1",
+                    Title = "YtStream Streaming API",
+                    Description = "API endpoint for streaming files",
+                });
+
+                var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+            });
+
             //Give us access to the IUrlHelper in services
             builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>()
                 .AddScoped(x =>
@@ -82,7 +99,7 @@ namespace YtStream
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
+            if (false && app.Environment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
@@ -91,6 +108,10 @@ namespace YtStream
                 app.UseExceptionHandler("/Home/Exception");
             }
             app.UseStatusCodePagesWithReExecute("/Home/Error/{0}");
+
+            //Enable API browser
+            app.UseSwagger();
+            app.UseSwaggerUI();
 
             app.UseStaticFiles();
             app.UseRouting();

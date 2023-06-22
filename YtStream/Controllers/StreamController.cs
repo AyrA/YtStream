@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using YtStream.Enums;
 using YtStream.Models;
@@ -18,6 +19,14 @@ using YtStream.YtDl;
 
 namespace YtStream.Controllers
 {
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public enum ApiBoolEnum
+    {
+        Y = 1,
+        N = 0
+    }
+
+    [ApiController, Route("[controller]/[action]/{id}")]
     public class StreamController : BaseController
     {
         private static readonly List<Guid> busyKeys = new();
@@ -47,9 +56,9 @@ namespace YtStream.Controllers
             _sponsorBlockCacheService = sponsorBlockCacheService;
         }
 
-        private static string[] SplitIds(string id)
+        private static string[] SplitIds(string idList)
         {
-            return string.IsNullOrEmpty(id) ? Array.Empty<string>() : id.Split(',');
+            return string.IsNullOrEmpty(idList) ? Array.Empty<string>() : idList.Split(',');
         }
 
         public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
@@ -160,20 +169,66 @@ namespace YtStream.Controllers
             }
         }
 
+        [HttpGet, ApiExplorerSettings(IgnoreApi = true)]
         public IActionResult Locked()
         {
             return View();
         }
 
-        [HttpGet, ActionName("Send")]
-        public async Task<IActionResult> SendAsync(string id)
+        /// <summary>
+        /// Converts and sends YT data as a single, continuous MP3 stream
+        /// </summary>
+        /// <param name="id">List of video and/or playlist ids. Items are separated by comma</param>
+        /// <param name="buffer">
+        /// Amount of data buffer in seconds. The default is 5.
+        /// Has no effect if "<paramref name="stream"/>" argument is not enabled
+        /// </param>
+        /// <param name="repeat">Number of repetitions. The default is 1</param>
+        /// <param name="key">
+        /// Streaming key.
+        /// Required if the system requires an account to stream, and the device is not logged in
+        /// </param>
+        /// <param name="stream">
+        /// Send as live stream rather than as fast as possible.
+        /// If supplied, data will be sent at the speed required for playback,
+        /// plus a few extra seconds buffer as specified in "<paramref name="buffer"/>" argument
+        /// </param>
+        /// <param name="raw">
+        /// Do not cut non-music sections.
+        /// If supplied, the system will not try to cut sections marked as non-music,
+        /// and instead sends the raw MP3 data as-is.
+        /// This parameter is ignored if the admin disables non-music cutting
+        /// </param>
+        /// <param name="random">
+        /// Randomize id list.
+        /// If specified, it randomizes the id list before playback.
+        /// This is done for every repeat iteration if there are multiple
+        /// </param>
+        /// <returns>MP3 data</returns>
+        [HttpGet, ActionName("Send"), Produces("audio/mpeg")]
+        //[Route("[controller]/[action]/{id}")]
+        public async Task<IActionResult> SendAsync(
+            [FromRoute] string id,
+            [FromQuery] int? buffer,
+            [FromQuery] int? repeat,
+            [FromQuery] string? key,
+            [FromQuery] ApiBoolEnum? stream = ApiBoolEnum.N,
+            [FromQuery] ApiBoolEnum? raw = ApiBoolEnum.N,
+            [FromQuery] ApiBoolEnum? random = ApiBoolEnum.N)
         {
             if (Settings == null)
             {
                 return Error(new Exception("Settings object not present"));
             }
-            //We do not bind the model as parameter in the method because we want custom boolean parser
-            var model = new StreamOptionsModel(Request.Query);
+            //We do not bind the model as parameter in the method because we want the oparameter documentation
+            var model = new StreamOptionsModel(stream, buffer, repeat, random, raw);
+
+            if (!model.IsValid())
+            {
+                throw new ArgumentException("The supplied arguments are invalid:" + Environment.NewLine +
+                    "-> " + string.Join(Environment.NewLine + "-> ", model.GetValidationMessages()));
+            }
+
 
             var ids = await ExpandIdList(SplitIds(id));
             if (ids == null || ids.Length == 0)

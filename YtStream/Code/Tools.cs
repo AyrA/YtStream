@@ -35,6 +35,16 @@ namespace YtStream
         private static readonly Regex PlRegex = new(@"^PL(?:[\dA-F]{16}|[\w\-]{32})$");
 
         /// <summary>
+        /// Converts a string in the format "PascalCaseString" into "Pascal Case String"
+        /// </summary>
+        /// <param name="text">string in PascalCase</param>
+        /// <returns>Formatted string</returns>
+        public static string PascalCaseConverter(string text)
+        {
+            return Regex.Replace(text, @"(\w)([A-Z])", "$1 $2");
+        }
+
+        /// <summary>
         /// Shuffles an array in an unbiased way
         /// </summary>
         /// <typeparam name="T">Array type</typeparam>

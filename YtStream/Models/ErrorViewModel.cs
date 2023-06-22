@@ -22,12 +22,32 @@ namespace YtStream.Models
         /// <summary>
         /// Exception that is displayed
         /// </summary>
-        public Exception Error { get; set; }
+        public Exception? Error { get; set; }
 
         /// <summary>
         /// Random id of the request
         /// </summary>
         public string? RequestId { get; set; }
+
+        public int Status { get; set; }
+
+        public bool IsClientError => Status >= 400 && Status < 500;
+
+        /// <summary>
+        /// Gest the description for the given status code
+        /// </summary>
+        public string StatusDescription
+        {
+            get
+            {
+                var code = (System.Net.HttpStatusCode)Status;
+                if (Enum.IsDefined(code))
+                {
+                    return Tools.PascalCaseConverter(code.ToString());
+                }
+                return "Unknown error";
+            }
+        }
 
         /// <summary>
         /// True if RequestId passes <see cref="string.IsNullOrEmpty"/>
@@ -40,7 +60,6 @@ namespace YtStream.Models
         public ErrorViewModel()
         {
             ShowDetails = DefaultDetailOption;
-            Error = new Exception("Unspecified error");
         }
 
         /// <summary>

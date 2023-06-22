@@ -6,59 +6,70 @@
 <h1 class="text-danger">Error</h1>
 <p class="text-danger">An error occurred while processing your request</p>
 
-@if (Model.ShowRequestId)
+@if (Model.IsClientError)
 {
+    <h1 class="text-danger">HTTP @Model.Status - @Model.StatusDescription</h1>
     <p>
-        <strong>Request ID:</strong> <code>@Model.RequestId</code>
+        @YtStream.Code.HttpStatusDescriptions.GetDescription(Model.Status)
     </p>
 }
-@if (Model.Error != null)
+else
 {
-    <h2>Error message</h2>
-    <p>@Model.Error.Message</p>
-    if (Model.ShowDetails)
+    @*if (Model.ShowRequestId)
     {
-        <div class="alert alert-info">Developer information</div>
-        var Trace = Model.ParseStackTrace();
-        <div>
-            <h2>Type</h2>
-            <pre>@Model.Error.GetType().Name</pre>
-        </div>
-        <div>
-            <h2>Stack trace</h2>
-            <table class="table">
-                <tr>
-                    <th>Function</th>
-                    <th>Arguments</th>
-                    <th>Filename</th>
-                    <th>Line</th>
-                </tr>
-                @foreach (var T in Trace)
-                {
+        <p>
+            <strong>Request ID:</strong> <code>@Model.RequestId</code>
+        </p>
+    }
+    *@
+    @if (Model.Error != null)
+    {
+        <h2>Error message</h2>
+        <p>@Model.Error.Message</p>
+        if (Model.ShowDetails)
+        {
+            <div class="alert alert-info">Developer information</div>
+            var Trace = Model.ParseStackTrace();
+            <div>
+                <h2>Type</h2>
+                <pre>@Model.Error.GetType().Name</pre>
+            </div>
+            <div>
+                <h2>Stack trace</h2>
+                <table class="table">
                     <tr>
-                        @if (T.Function != null)
-                        {
-                            <td>
-                                @T.Function
-                            </td>
-                            <td>
-                                @T.Arguments
-                            </td>
-                            <td>
-                                @T.Filename
-                            </td>
-                            <td>
-                                @T.Line
-                            </td>
-                        }
-                        else
-                        {
-                            <td colspan="3">@T.Raw</td>
-                        }
+                        <th>Function</th>
+                        <th>Arguments</th>
+                        <th>Filename</th>
+                        <th>Line</th>
                     </tr>
-                }
-            </table>
-        </div>
+                    @foreach (var T in Trace)
+                    {
+                        <tr>
+                            @if (T.Function != null)
+                            {
+                                <td>
+                                    @T.Function
+                                </td>
+                                <td>
+                                    @T.Arguments
+                                </td>
+                                <td>
+                                    @T.Filename
+                                </td>
+                                <td>
+                                    @T.Line
+                                </td>
+                            }
+                            else
+                            {
+                                <td colspan="3">@T.Raw</td>
+                            }
+                        </tr>
+                    }
+                </table>
+            </div>
+        }
     }
 }
 
