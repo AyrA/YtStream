@@ -18,7 +18,7 @@ This application is a lot more than a simple MP3 downloader
 Data is sent to the client and to the cache (if enabled) at the same time as it's downloaded and converted.
 Because of that, streaming will start as soon as the first MP3 fragment (approx 20-30 ms) arrives.
 
-### Live stream simulation
+### Live stream speed simulation
 
 Data is normally sent to the client as fast as possible.
 While this is great for downloading, it's not so great for streaming.
@@ -26,7 +26,7 @@ It can overwhelm webradio devices, or it can cause web browsers to cache so much
 that they don't request new data for a long time, causing the server to close the connection.
 
 YtStream supports a setting that delivers data with the exact speed needed to play it back,
-with an added 3 second buffer.
+with an added buffer of a few seconds.
 
 ### Removal of non-music sections
 
@@ -34,7 +34,7 @@ By using SBlock, non-music sections that have been marked as such by the communi
 The section is only removed from the file that's streamed to the client and not the cached copy.
 This ensures that changes to the SBlock ranges can be accounted for without having to download the file again.
 
-This application only removes section marked as non-music.
+This application only removes section marked as "non-music".
 It will not remove other sections such as end cards because this tends to cut off the music.
 
 ### Stream concatenation
@@ -64,6 +64,12 @@ Custom intermissions can be inserted before the first file, between files, and a
 
 This can be used for ads or other purposes.
 
+### Media Player
+
+Instead of directly streaming data, YtStream offers a fully functional media player
+that allows you to play any public YT playlist as if they were local files.
+Note however that due to the streaming nature of this application, seeking around the files is not supported.
+
 ## Additional licenses
 
 SBlock operates on a custom license that requires attribution.
@@ -85,14 +91,15 @@ For the exact details, see the `LICENSE` file.
 
 1. [Download](https://gitload.net/AyrA/YtStream)
 2. Extract
-3. Run `YtStream.exe`
-4. Go to http://localhost:5000
+3. Edit the base path in `appsettings.json` and set it to an empty directory
+4. Run `YtStream.exe`
+5. Go to http://localhost:5000
 
 YtStream is built in a way that allows it to function in one of three ways:
 
-- Standalone (as shown above) which also works as GGI backend
-- Using IIS
-- As Windows Service 
+- Standalone (as shown above) which also works as reverse proxy backend for apache, nginx or other web servers
+- Using as IIS module with the provided web.config file
+- As Windows Service (this supposedly also supports Linux systemd)
 
 Note: Commits are generally only pushed to master after building them locally.
 This means you should be able to download and build
@@ -100,12 +107,12 @@ the latest version of this project from source as well.
 
 ### File system layout
 
-YtStream creates the following files and folders in the application directory:
+YtStream creates the following files and folders in the specified base path directory:
 
 | Name          | Type   | Description                                                  |
 |---------------|--------|--------------------------------------------------------------|
 | Cache         | Folder | Holds cached files. Can be freely moved or disabled entirely |
-| accounts.json | File   | Holds user accounts                                          |
+| accounts.json | File   | Holds user accounts and their favorites                      |
 | config.json   | File   | Holds application settings                                   |
 | ads.json      | File   | Holds the intermission configuration                         |
 
@@ -113,7 +120,6 @@ The cache location can be changed in the settings. This will not move existing c
 
 The JSON files are only written to when you make changes to the settings, user accounts,
 or intermissions.
-The application can run on a readonly file system as long as you don't do that.
 
 **CAUTION!** Do not directly edit the JSON files while the application is running.
 The changes may not be reflected in the application, and they may be overwritten.
@@ -123,8 +129,9 @@ or it may force itself into lockdown mode.
 
 ### Dependencies
 
-This application requires FFmpeg and Youtube-Dl to work.
+This application requires FFmpeg and Youtube-Dl (or a fork) to work.
 You can install them anywhere you like and then specify the path to the tools in the settings.
+The settings page has links to the appropriate download pages of said tools.
 
 Note: The application will start and run without these tools,
 but streaming functionality will be unavailable until said tools are configured.
@@ -181,7 +188,7 @@ You can change the follow settings:
 
 ### Youtube
 
-- Set the YouTube API key (optional)
+- Set the YouTube API key. Optional for streaming, required for the url builder or the built-in media player
 
 ### Cache
 
@@ -197,11 +204,11 @@ You can change the follow settings:
 
 ### Streaming options
 
-- Simulate real live-stream
 - Disable anonymous streaming
-- Enable marking of ads
+- Enable marking of ads in MP3 files using the "private" bit
 - Configure ads for administrators
 - Limit number of video ids users can concatenate
+- Limit permitted runtime of a single video file
 - Set audio bitrate and sampling frequency
 
 **CAUTION!** Read the warning below the bitrate and frequency settings before changing them.
