@@ -9,10 +9,10 @@ using YtStream.Models.Ad;
 
 namespace YtStream.Services
 {
-    [AutoDIRegister(AutoDIType.Transient)]
     /// <summary>
     /// Provides ad segments before, between and after streams
     /// </summary>
+    [AutoDIRegister(AutoDIType.Transient)]
     public class AdsService
     {
         /// <summary>

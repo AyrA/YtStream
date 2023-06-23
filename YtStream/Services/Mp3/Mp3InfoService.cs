@@ -5,10 +5,10 @@ using YtStream.Models.Mp3;
 
 namespace YtStream.Services.Mp3
 {
-    [AutoDIRegister(AutoDIType.Singleton)]
     /// <summary>
     /// MP3 utility functions
     /// </summary>
+    [AutoDIRegister(AutoDIType.Singleton)]
     public class Mp3InfoService
     {
         /// <summary>

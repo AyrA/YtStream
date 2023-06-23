@@ -10,10 +10,10 @@ using YtStream.Models.Mp3;
 
 namespace YtStream.Services.Mp3
 {
-    [AutoDIRegister(AutoDIType.Transient)]
     /// <summary>
     /// Cuts and filters MP3 data
     /// </summary>
+    [AutoDIRegister(AutoDIType.Transient)]
     public class Mp3CutService
     {
         /// <summary>

@@ -22,8 +22,9 @@ namespace YtStream.Models
         /// <summary>
         /// Creates a new instance
         /// </summary>
-        /// <param name="CopyStreamResult">Task</param>
-        /// <param name="StandardOutputStream">Stream</param>
+        /// <param name="copyStreamResult">Task</param>
+        /// <param name="standardInputStream">STDIN Stream</param>
+        /// <param name="standardOutputStream">STDOUT Stream</param>
         public AsyncStreamResultModel(Task copyStreamResult, Stream standardInputStream, Stream standardOutputStream)
         {
             CopyStreamResult = copyStreamResult;

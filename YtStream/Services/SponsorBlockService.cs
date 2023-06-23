@@ -10,10 +10,10 @@ using YtStream.Models;
 
 namespace YtStream.Services
 {
-    [AutoDIRegister(AutoDIType.Transient)]
     /// <summary>
     /// Provides limited access to the SponsorBlock API
     /// </summary>
+    [AutoDIRegister(AutoDIType.Transient)]
     public class SponsorBlockService
     {
         /// <summary>

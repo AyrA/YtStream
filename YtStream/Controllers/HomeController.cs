@@ -127,7 +127,8 @@ namespace YtStream.Controllers
                 Status = statusCode,
                 RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
                 Error = exception,
-                ShowDetails = IsAuthenticated && CurrentUser.Roles.HasFlag(Enums.UserRoles.Administrator)
+                //CurrentUser is not null if IsAuthenticated is true
+                ShowDetails = IsAuthenticated && CurrentUser!.Roles.HasFlag(Enums.UserRoles.Administrator)
             };
             //_logger.LogError(exception, "Server error");
             return View("Error", model);

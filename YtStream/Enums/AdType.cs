@@ -11,7 +11,7 @@ namespace YtStream.Enums
         /// <summary>
         /// Default value, cannot be used by the user as function arguments
         /// </summary>
-        /// <remarks>This is in use by <see cref="AdFileInfoModel"/> only</remarks>
+        /// <remarks>This is in use by <see cref="Models.Ad.AdFileInfoModel"/> only</remarks>
         None = 0,
         /// <summary>
         /// All supported types

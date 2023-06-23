@@ -11,10 +11,10 @@ using YtStream.Models.Favs;
 
 namespace YtStream.Services.Accounts
 {
-    [AutoDIRegister(AutoDIType.Transient)]
     /// <summary>
     /// Provides account management features
     /// </summary>
+    [AutoDIRegister(AutoDIType.Transient)]
     public class UserManagerService
     {
         /// <summary>

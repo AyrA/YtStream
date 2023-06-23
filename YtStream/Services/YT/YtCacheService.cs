@@ -8,10 +8,10 @@ using System.Threading;
 
 namespace YtStream.Services.YT
 {
-    [AutoDIRegister(AutoDIType.Singleton)]
     /// <summary>
     /// Caches responses from the youtube API
     /// </summary>
+    [AutoDIRegister(AutoDIType.Singleton)]
     public class YtCacheService : IDisposable
     {
         /// <summary>

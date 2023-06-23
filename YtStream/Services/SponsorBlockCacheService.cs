@@ -30,9 +30,6 @@ namespace YtStream.Services
         /// Gets time ranges for the given youtube id and utilizes cache where possible.
         /// </summary>
         /// <param name="ytid">Youtube id</param>
-        /// <param name="Settings">
-        /// Settings. If null or not supplied, will pull config from file
-        /// </param>
         /// <returns>Time ranges</returns>
         public async Task<TimeRangeModel[]> GetRangesAsync(string ytid)
         {

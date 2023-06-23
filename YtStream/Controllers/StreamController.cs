@@ -281,6 +281,11 @@ namespace YtStream.Controllers
             {
                 return Error(new Exception("Settings object not present"));
             }
+            //This parameter is already processed at this point
+            if (!Guid.TryParse(key, out _))
+            {
+                key = null;
+            }
             //We do not bind the model as parameter in the method because we want the oparameter documentation
             var model = new StreamOptionsModel(stream, buffer, repeat, random, raw);
 

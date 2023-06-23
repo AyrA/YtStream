@@ -11,8 +11,8 @@ namespace YtStream.Models
         /// <summary>
         /// If set to true, details are shown by default
         /// </summary>
-        /// <remarks>In <see cref="Startup"/> this is set to true for the development environment</remarks>
-        public static bool DefaultDetailOption { get; private set; }
+        /// <remarks>In <see cref="Program"/> this is set to true for the development environment</remarks>
+        public static bool DefaultDetailOption { get; set; }
 
         /// <summary>
         /// Gets if details should be shown (exception type and stack trace)
@@ -29,8 +29,14 @@ namespace YtStream.Models
         /// </summary>
         public string? RequestId { get; set; }
 
+        /// <summary>
+        /// HTTP Status code
+        /// </summary>
         public int Status { get; set; }
 
+        /// <summary>
+        /// Gets if the <see cref="Status"/> describes a client error
+        /// </summary>
         public bool IsClientError => Status >= 400 && Status < 500;
 
         /// <summary>

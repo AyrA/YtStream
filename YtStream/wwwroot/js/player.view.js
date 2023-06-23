@@ -153,7 +153,7 @@
     const play = function (id) {
         console.log("Loading and playing audio", id);
         player.src = "/Stream/Send/" + id + "?stream=y&buffer=10";
-        q("[data-videoid='" + id + "']").parentNode.parentNode.scrollIntoView();
+        q("[data-videoid='" + id + "']").parentNode.parentNode.scrollIntoView({ behavior: "smooth" });
         const promise = player.play();
         navigator.mediaSession.playbackState = "playing";
         setMediaInfo(sources[videoIndex(id)]);

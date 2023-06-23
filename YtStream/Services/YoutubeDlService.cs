@@ -12,10 +12,10 @@ using YtStream.YtDl;
 
 namespace YtStream.Services
 {
-    [AutoDIRegister(AutoDIType.Transient)]
     /// <summary>
     /// Provides a youtube-dl interface
     /// </summary>
+    [AutoDIRegister(AutoDIType.Transient)]
     public class YoutubeDlService
     {
         /// <summary>
@@ -59,7 +59,8 @@ namespace YtStream.Services
         /// <summary>
         /// Creates a new instance
         /// </summary>
-        /// <param name="Executable">ytdl executable path</param>
+        /// <param name="config">System configuration instance</param>
+        /// <param name="logger">Logger instance</param>
         public YoutubeDlService(ConfigService config, ILogger<YoutubeDlService> logger)
         {
             var c = config.GetConfiguration();
@@ -115,6 +116,7 @@ namespace YtStream.Services
         /// Downloads a youtube playlist and returns all video ids within
         /// </summary>
         /// <param name="playlist">Playlist id</param>
+        /// <param name="maxItems">Maximum number of items to extract</param>
         /// <returns>Video Ids</returns>
         public async Task<string[]> GetPlaylist(string playlist, int maxItems)
         {

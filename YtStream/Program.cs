@@ -14,6 +14,7 @@ using Microsoft.OpenApi.Models;
 using System;
 using System.IO;
 using System.Reflection;
+using YtStream.Models;
 
 namespace YtStream
 {
@@ -99,13 +100,15 @@ namespace YtStream
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            if (false && app.Environment.IsDevelopment())
+            if (app.Environment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                ErrorViewModel.DefaultDetailOption = true;
             }
             else
             {
                 app.UseExceptionHandler("/Home/Exception");
+                ErrorViewModel.DefaultDetailOption = false;
             }
             app.UseStatusCodePagesWithReExecute("/Home/Error/{0}");
 

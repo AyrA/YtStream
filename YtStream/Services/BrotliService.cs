@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 
 namespace YtStream.Services
 {
-    [AutoDIRegister(AutoDIType.Transient)]
     /// <summary>
     /// Provides Brotli compression and decompression routines
     /// </summary>
+    [AutoDIRegister(AutoDIType.Transient)]
     public class BrotliService
     {
         /// <summary>

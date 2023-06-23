@@ -45,15 +45,16 @@ namespace YtStream.Extensions
         /// Serialize an object as JSON
         /// </summary>
         /// <param name="o">Object</param>
-        /// <param name="Pretty">print nicely instead of as compact as possible</param>
+        /// <param name="pretty">print nicely instead of as compact as possible</param>
+        /// <param name="useCamelCase">Convert JSON properties to camelCase instead of leaving them as-is</param>
         /// <returns>Serialized data</returns>
-        public static string ToJson(this object o, bool Pretty = false, bool UseCamelCase = false)
+        public static string ToJson(this object o, bool pretty = false, bool useCamelCase = false)
         {
             var Opt = new JsonSerializerOptions()
             {
-                WriteIndented = Pretty
+                WriteIndented = pretty
             };
-            if (UseCamelCase)
+            if (useCamelCase)
             {
                 Opt.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
             }

@@ -33,7 +33,7 @@ namespace YtStream.Models.Mp3
         /// Gets if this stream is used for live streaming
         /// </summary>
         /// <remarks>
-        /// If this is true, <see cref="MP3Cut"/> will stream data in real time
+        /// If this is true, <see cref="Services.Mp3.Mp3CutService.CutMp3"/> will stream data in real time
         /// instead of trying to get it out as fast as possible.
         /// </remarks>
         public bool LiveStream { get; }
@@ -50,6 +50,7 @@ namespace YtStream.Models.Mp3
         /// <param name="isUncut">true to receive all MP3 data, false to receive cut data only</param>
         /// <param name="canFault">true to permit faulting, false otherwise</param>
         /// <param name="skipOnTimeout">true to no longer write to this stream on a slow stream timeout</param>
+        /// <param name="liveStream">Whether to cut in real time or as fast as possible</param>
         public Mp3CutTargetStreamInfoModel(Stream stream, bool isUncut, bool canFault, bool skipOnTimeout, bool liveStream)
         {
             Stream = stream ?? throw new ArgumentNullException(nameof(stream));

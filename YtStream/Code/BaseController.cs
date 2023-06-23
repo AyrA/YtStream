@@ -35,7 +35,7 @@ namespace YtStream
         /// </summary>
         /// <remarks>
         /// Automatically cleared on every request.
-        /// This is set on the request made after <see cref="RedirectWithMessage"/> or an overload.
+        /// This is set on the request made after <see cref="RedirectWithMessage(string?, string, object?)"/> or an overload.
         /// The message is automatically shown by the general layout razor page</remarks>
         public string? CookieMessage { get; private set; }
 

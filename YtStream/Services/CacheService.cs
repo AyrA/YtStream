@@ -5,10 +5,10 @@ using YtStream.Enums;
 
 namespace YtStream.Services
 {
-    [AutoDIRegister(AutoDIType.Transient)]
     /// <summary>
     /// Caching utility
     /// </summary>
+    [AutoDIRegister(AutoDIType.Transient)]
     public partial class CacheService
     {
         /// <summary>

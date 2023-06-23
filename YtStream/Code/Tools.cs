@@ -27,7 +27,7 @@ namespace YtStream
         /// <summary>
         /// Regex of a valid youtube video id
         /// </summary>
-        /// <seealso cref="https://cable.ayra.ch/help/fs.php?help=youtube_id"/>
+        /// <remarks>See https://cable.ayra.ch/help/fs.php?help=youtube_id</remarks>
         private static readonly Regex IdRegex = new(@"^[\w\-]{10}[AEIMQUYcgkosw048]$");
         /// <summary>
         /// Regex of a regular playlist

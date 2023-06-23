@@ -9,10 +9,10 @@ using YtStream.Models;
 
 namespace YtStream.Services.Mp3
 {
-    [AutoDIRegister(AutoDIType.Transient)]
     /// <summary>
     /// Converts to MP3
     /// </summary>
+    [AutoDIRegister(AutoDIType.Transient)]
     public class Mp3ConverterService : IDisposable
     {
         /// <summary>
@@ -257,9 +257,7 @@ namespace YtStream.Services.Mp3
         /// <summary>
         /// Gets conversion arguments for a stream
         /// </summary>
-        /// <param name="Arg">Stream</param>
         /// <returns>Conversion arguments for a stream</returns>
-        /// <remarks><paramref name="Arg"/> is not actually touched in any way</remarks>
         private string GetArgs()
         {
             return $"-i pipe:0 " + GetBaseArg();
