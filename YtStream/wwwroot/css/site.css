@@ -14,6 +14,10 @@
     max-width:200px;
 }
 
+.current-item{
+    background-color:#FFE;
+}
+
 /* == Automatically generated rules below == */
 a.navbar-brand {
     white-space: normal;

@@ -9,24 +9,30 @@
     let doRandom = false;
     let errorCounter = retryCount;
     const setAutoplayMessage = function (visible) {
+        console.log("Autoplay hint set to", visible ? "visible" : "hidden");
         q("#autoplayInfo").style.display = visible ? "block" : "none";
     };
 
     const canAutoplay = async function () {
-        //A single frame of MP3
-        const emptyData = "data:audio/mpeg;base64,//uQ" + ('A'.repeat(552));
         //Use new method if supported by the browser
-        if (navigator.getAutoplayPolicy) {
+        if (navigator && typeof (navigator.getAutoplayPolicy) === "function") {
             return navigator.getAutoplayPolicy(player) === "allowed";
         }
-        //Try traditional method of just trying
+        //Use traditional method of just trying to play a file
         try {
-            player.src = emptyData;
+            //A single sample of WAV audio
+            const emptyData = new Uint8Array(atob("UklGRiUAAABXQVZFZm10IBAAAAABAAIARKwAAIhYAQACABAAZGF0YXQAAAAAAAAA").split('').map(v => v.charCodeAt(0)));
+            const wavdata = URL.createObjectURL(new Blob([emptyData], { type: "audio/wave" }));
+            player.src = wavdata;
             await player.play();
             return true;
         }
         catch (e) {
             console.warn("Autoplay test threw exception:", e);
+        }
+        finally {
+            console.log("Revoking URL", player.src);
+            URL.revokeObjectURL(player.src);
         }
         return false;
     };
@@ -156,7 +162,9 @@
     const play = function (id) {
         console.log("Loading and playing audio", id);
         setPlayerSrc(id);
-        q("[data-videoid='" + id + "']").parentNode.parentNode.scrollIntoView({ behavior: "smooth" });
+        const tableRow = q("[data-videoid='" + id + "']").parentNode.parentNode;
+        tableRow.scrollIntoView({ behavior: "smooth" });
+        highlightElement(tableRow);
         const promise = player.play();
         navigator.mediaSession.playbackState = "playing";
         setMediaInfo(sources[videoIndex(id)]);
@@ -167,16 +175,12 @@
     };
 
     const playPrev = function () {
-        console.debug("Before: ptr is", ptr);
         const promise = play(prevId());
-        console.debug("After: ptr is", ptr);
         return promise;
     };
 
     const playNext = function () {
-        console.debug("Before: ptr is", ptr);
         const promise = play(nextId());
-        console.debug("After: ptr is", ptr);
         return promise;
     };
 
@@ -229,12 +233,20 @@
         }
     };
 
+    const highlightElement = function (e) {
+        const current = Array.from(qa("#playlist .current-item"));
+        current.forEach(v => v.classList.remove("current-item"));
+        if (e instanceof Node) {
+            e.classList.add("current-item");
+        }
+    };
+
     player.onended = playNext;
     player.ontimeupdate = updateTime;
     player.onerror = playbackError;
     q("#tbVol").addEventListener("input", function (e) {
         e.preventDefault();
-        player.volume = this.value / 10000;
+        player.volume = this.value / +this.max;
     });
     q("#btnPause").addEventListener("click", function (e) {
         e.preventDefault();
@@ -243,7 +255,6 @@
             playNext();
         }
         else {
-            setAutoplayMessage(false);
             player.paused ? player.play() : player.pause();
         }
         setPlayState();
@@ -271,7 +282,7 @@
         ptr = 0;
         playNext();
     });
-    //Hook event, and save initial position to undo the shuffle
+    //Hook event for each individual "play" button, and generate initial ordered playback list to undo the shuffle
     getVideos().forEach(function (v) {
         v.node.addEventListener("click", playButtonHandler);
         initSources.push(v);
@@ -289,9 +300,10 @@
         playNext();
     }
     else {
-        console.warn("Autoplay is disabled");
+        console.log("Autoplay is disabled");
         setAutoplayMessage(true);
         //Setting the initial file allows the play/pause media control to work
         setPlayerSrc(sources[0].id);
+        highlightElement(sources[0].node.parentNode.parentNode);
     }
 })(tools.q, tools.qa);
