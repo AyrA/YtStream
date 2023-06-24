@@ -73,7 +73,7 @@ namespace YtStream.Controllers
                     throw new FileNotFoundException($"{Filename} not found in server library");
                 }
                 _adsService.AddFile(Filename, Type);
-                return RedirectWithMessage("Index", $"File added to {Type}");
+                return RedirectWithMessage("Index", $"File added to {Type}", true);
             }
             catch (Exception ex)
             {
@@ -95,7 +95,7 @@ namespace YtStream.Controllers
                     throw new ArgumentException($"'{nameof(Filename)}' cannot be null or whitespace.", nameof(Filename));
                 }
                 _adsService.RemoveFile(Filename, Type);
-                return RedirectWithMessage("Index", $"File removed from category '{Type}'");
+                return RedirectWithMessage("Index", $"File removed from category '{Type}'", true);
             }
             catch (Exception ex)
             {
@@ -117,7 +117,7 @@ namespace YtStream.Controllers
                     throw new ArgumentException($"'{nameof(Filename)}' cannot be null or whitespace.", nameof(Filename));
                 }
                 _adsService.DeleteFile(Filename);
-                return RedirectWithMessage("Index", $"File deleted from the system");
+                return RedirectWithMessage("Index", $"File deleted from the system", true);
             }
             catch (Exception ex)
             {
@@ -222,7 +222,7 @@ namespace YtStream.Controllers
                 _logger.LogInformation("{file} added to cache", destPath);
             }
 
-            return RedirectWithMessage("Index", "Files uploaded and processed: " + string.Join(", ", uploadedFiles));
+            return RedirectWithMessage("Index", "Files uploaded and processed: " + string.Join(", ", uploadedFiles), true);
         }
     }
 }

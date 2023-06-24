@@ -57,6 +57,11 @@ namespace YtStream.Models
         public int MaxKeysPerUser { get; set; }
 
         /// <summary>
+        /// Maximum allowed parallel streams for every key
+        /// </summary>
+        public int MaxKeyUsageCount { get; set; }
+
+        /// <summary>
         /// Maximum allowed ids for a single stream
         /// </summary>
         /// <remarks>
@@ -139,12 +144,13 @@ namespace YtStream.Models
             SponsorBlockServer = SponsorBlockService.DefaultHost;
             CachePath = Path.Combine(AppContext.BaseDirectory, "Cache");
             FfmpegPath = Path.Combine(AppContext.BaseDirectory, "Tools", "ffmpeg.exe");
-            YoutubedlPath = Path.Combine(AppContext.BaseDirectory, "Tools", "youtube-dl.exe");
+            YoutubedlPath = Path.Combine(AppContext.BaseDirectory, "Tools", "yt-dlp.exe");
             //Cache MP3 forever
             CacheMp3Lifetime = 0;
             //7 days
             CacheSBlockLifetime = SponsorBlockCacheService.SponsorBlockCacheTime;
             MaxKeysPerUser = 10;
+            MaxKeyUsageCount = 1;
             //Default MP3 settings
             AudioBitrate = Mp3ConverterService.DefaultRate;
             AudioFrequency = Mp3ConverterService.DefaultFrequency;
@@ -168,6 +174,14 @@ namespace YtStream.Models
             if (MaxKeysPerUser < 0)
             {
                 Messages.Add(nameof(MaxKeysPerUser) + " cannot be negative. Use zero to impose no limit instead.");
+            }
+            if (MaxKeyUsageCount < 0)
+            {
+                Messages.Add(nameof(MaxKeyUsageCount) + " cannot be negative. Use zero to impose no limit instead.");
+            }
+            if (MaxKeyUsageCount > StreamKeyLockService.MaxSemaphoreCount)
+            {
+                Messages.Add($"{nameof(MaxKeyUsageCount)} cannot be bigger than {StreamKeyLockService.MaxSemaphoreCount}");
             }
             if (MaxStreamIds < 0)
             {

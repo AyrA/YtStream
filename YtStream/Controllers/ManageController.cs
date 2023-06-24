@@ -22,13 +22,15 @@ namespace YtStream.Controllers
         private readonly string _basePath;
         private readonly BrotliService _brotli;
         private readonly CacheService _cache;
-        private readonly LockService _lock;
+        private readonly ApplicationLockService _lock;
         private readonly ConfigService _config;
+        private readonly StreamKeyLockService _streamLock;
 
         public ManageController(ILogger<StreamController> Logger, ConfigService config,
             UserManagerService userManager,
             BasePathService basePath, BrotliService brotli,
-            CacheService cache, LockService lockService) : base(config, userManager)
+            CacheService cache, ApplicationLockService lockService,
+            StreamKeyLockService streakLock) : base(config, userManager)
         {
             _logger = Logger;
             _basePath = basePath.BasePath;
@@ -36,6 +38,7 @@ namespace YtStream.Controllers
             _cache = cache;
             _lock = lockService;
             _config = config;
+            _streamLock = streakLock;
         }
 
         [HttpGet]
@@ -61,7 +64,7 @@ namespace YtStream.Controllers
             try
             {
                 var Msg = $"Deleted {Handler.ClearStale()} expired files from cache";
-                return RedirectWithMessage("CacheInfo", Msg);
+                return RedirectWithMessage("CacheInfo", Msg, true);
             }
             catch (Exception ex)
             {
@@ -79,7 +82,7 @@ namespace YtStream.Controllers
                 var Handler = _cache.GetHandler(CacheTypeEnum.MP3, Settings.CacheMp3Lifetime);
                 var Count = Handler.Purge();
                 _logger.LogInformation("MP3 cache purge: Deleted {count} files", Count);
-                return RedirectWithMessage("CacheInfo", $"Deleted {Count} files from cache");
+                return RedirectWithMessage("CacheInfo", $"Deleted {Count} files from cache", true);
             }
             catch (Exception ex)
             {
@@ -200,7 +203,7 @@ namespace YtStream.Controllers
                 return View("Error", new ErrorViewModel(ex));
             }
             _logger.LogInformation("User {username} deleted", Acc.Username);
-            return RedirectWithMessage("AccountList", $"User '{Acc.Username}' was deleted");
+            return RedirectWithMessage("AccountList", $"User '{Acc.Username}' was deleted", true);
         }
 
         [HttpGet]
@@ -226,7 +229,7 @@ namespace YtStream.Controllers
             {
                 if (id == username)
                 {
-                    return RedirectWithMessage("AccountEdit", null, "No change", new { id = username });
+                    return RedirectWithMessage("AccountEdit", "No change", false, new { id = username });
                 }
                 try
                 {
@@ -238,7 +241,7 @@ namespace YtStream.Controllers
                         //and thus validation would always fail
                         Acc.Username = username;
                         _userManager.Save();
-                        return RedirectWithMessage("AccountEdit", null, $"Renamed to {username}", new { id = username });
+                        return RedirectWithMessage("AccountEdit", $"Renamed to {username}", true, new { id = username });
                     }
                     //Regular renaming action
                     if (_userManager.GetUser(username) != null)
@@ -251,7 +254,7 @@ namespace YtStream.Controllers
                     }
                     Acc.Username = username;
                     _userManager.Save();
-                    return RedirectWithMessage("AccountEdit", null, $"Renamed to {username}", new { id = username });
+                    return RedirectWithMessage("AccountEdit", $"Renamed to {username}", true, new { id = username });
                 }
                 catch (Exception ex)
                 {
@@ -318,7 +321,7 @@ namespace YtStream.Controllers
             {
                 return View("Error", new ErrorViewModel(ex));
             }
-            return RedirectWithMessage("AccountEdit", "Password changed", new { id });
+            return RedirectWithMessage("AccountEdit", "Password changed", true, new { id });
         }
 
         [HttpPost, ValidateAntiForgeryToken]
@@ -358,7 +361,7 @@ namespace YtStream.Controllers
             {
                 return View("Error", new ErrorViewModel(ex));
             }
-            return RedirectWithMessage("AccountEdit", "Permissions adjusted", new { id });
+            return RedirectWithMessage("AccountEdit", "Permissions adjusted", true, new { id });
         }
 
         [HttpPost, ValidateAntiForgeryToken]
@@ -379,7 +382,7 @@ namespace YtStream.Controllers
             {
                 return View("Error", new ErrorViewModel(ex));
             }
-            return RedirectWithMessage("AccountEdit", "Options adjusted", new { id });
+            return RedirectWithMessage("AccountEdit", "Options adjusted", true, new { id });
         }
 
         #endregion
@@ -414,7 +417,7 @@ namespace YtStream.Controllers
             {
                 _lock.Lock();
             }
-            return RedirectWithMessage("ChangeLock", "Application lock changed");
+            return RedirectWithMessage("ChangeLock", "Application lock changed", true);
         }
 
         [HttpGet, ActionName("ChangeLock")]
@@ -460,8 +463,15 @@ namespace YtStream.Controllers
             {
                 return View(model);
             }
+            if (_streamLock.IsAdjustingSettings && _config.GetConfiguration().MaxKeyUsageCount != model.MaxKeyUsageCount)
+            {
+                SetMessage("The system is still adjusting the streaming keys from a previous settings change. " +
+                    "You cannot change this value as of now", false);
+                return View(model);
+            }
             _config.SaveConfiguration(model);
-            return RedirectWithMessage("Config", "Settings saved and applied");
+            _streamLock.UpdateMaxCount();
+            return RedirectWithMessage("Config", "Settings saved and applied", true);
         }
 
         #endregion
@@ -482,7 +492,7 @@ namespace YtStream.Controllers
             }
             Acc.Enabled = State;
             _userManager.Save();
-            return RedirectWithMessage("AccountList", $"User {Username} was {Msg}");
+            return RedirectWithMessage("AccountList", $"User {Username} was {Msg}", true);
         }
 
         private AccountInfoModel GetAccount(string Username, bool AllowSelf = false)
@@ -511,7 +521,7 @@ namespace YtStream.Controllers
                 }
                 _config.SaveConfiguration(data);
             }
-            return RedirectWithMessage("Backup", "Settings imported");
+            return RedirectWithMessage("Backup", "Settings imported", true);
         }
 
         private async Task<IActionResult> RestoreAccounts(IFormFile formFile)
@@ -536,7 +546,7 @@ namespace YtStream.Controllers
                 await System.IO.File.WriteAllTextAsync(System.IO.Path.Combine(_basePath, UserManagerService.FileName), data.ToJson(true));
                 _userManager.Reload();
             }
-            return RedirectWithMessage("Backup", "User accounts imported");
+            return RedirectWithMessage("Backup", "User accounts imported", true);
         }
 
         #endregion

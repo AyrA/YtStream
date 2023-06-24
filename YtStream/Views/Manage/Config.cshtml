@@ -294,6 +294,24 @@ else
     </div>
     <div class="row">
         <div class="col-md-4 form-group">
+            <label>
+                Maximum parallel streams per key
+            </label>
+            <input type="number" min="0" asp-for="MaxKeyUsageCount" class="form-control" />
+            <i>Zero indicates to not impose a limit.</i>
+            <p class="auto-help">
+                <i>
+                    The account itself also acts as a streaming key,
+                    but it does not count as a key towardst the maximum stream keys per user setting.
+                    The maximum parallel streams per key on the other side, accounts for this.
+                    This means the largest total number of parallel streams an account can have
+                    is <code>(maxKeys+1)*maxUseCount</code>
+                </i>
+            </p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 form-group">
             <input type="submit" value="Send" class="btn btn-primary" />
         </div>
     </div>

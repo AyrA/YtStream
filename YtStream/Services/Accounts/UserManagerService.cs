@@ -167,11 +167,12 @@ namespace YtStream.Services.Accounts
         /// Gets a user by API key
         /// </summary>
         /// <param name="ApiKey">API key</param>
+        /// <param name="permitNameKey">Permit the name based key to find the user</param>
         /// <returns>User</returns>
         /// <remarks>Returns null if no user found</remarks>
-        public AccountInfoModel? GetUser(Guid ApiKey)
+        public AccountInfoModel? GetUser(Guid ApiKey, bool permitNameKey)
         {
-            return Accounts.FirstOrDefault(m => m.HasKey(ApiKey));
+            return Accounts.FirstOrDefault(m => m.HasKey(ApiKey) || (permitNameKey && m.GetNameBasedId() == ApiKey));
         }
 
         /// <summary>

@@ -2,6 +2,7 @@
     var Settings = (ConfigModel)ViewBag.Settings;
     var Acc = (AccountInfoModel)ViewBag.User;
     var Msg = (string)ViewBag.CookieMessage;
+    var MsgClass = ((bool)ViewBag.CookieMessageSuccess) ? "success" : "danger";
     var AFToken = Tools.ParseAntiforgery(Html.AntiForgeryToken());
 }
 <!DOCTYPE html>
@@ -83,7 +84,7 @@
         <main role="main" class="pb-3">
             @if (!string.IsNullOrEmpty(Msg))
             {
-                <div class="alert alert-success">@Msg</div>
+                <div class="alert alert-@MsgClass">@Msg</div>
             }
             @RenderBody()
         </main>

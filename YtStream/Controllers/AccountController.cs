@@ -31,14 +31,13 @@ namespace YtStream.Controllers
             return View(CurrentUser);
         }
 
-
         public IActionResult ChangeAdSetting()
         {
             if (CurrentUser.Roles.HasFlag(UserRoles.Administrator))
             {
                 CurrentUser.DisableAds = !CurrentUser.DisableAds;
                 _userManager.Save();
-                return RedirectWithMessage("Index", "Ad settings changed");
+                return RedirectWithMessage("Index", "Ad settings changed", true);
             }
             return Forbid();
         }

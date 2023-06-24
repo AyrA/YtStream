@@ -1,4 +1,4 @@
-﻿@inject YtStream.Services.LockService _lockService
+﻿@inject YtStream.Services.ApplicationLockService _lockService
 @{
     ViewData["Title"] = "Settings overview";
     var label = _lockService.Locked ? "locked" : "unlocked";

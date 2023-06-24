@@ -229,11 +229,12 @@
             console.log("Retrying playback...");
             setTimeout(function () {
                 play(sources[ptr].id);
-            }, 500);
+            }, 1000);
         }
         else {
             console.log("Giving up. Going to next file");
-            playNext();
+            errorCounter = retryCount;
+            setTimeout(playNext, 1000);
         }
     };
 

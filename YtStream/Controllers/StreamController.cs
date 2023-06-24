@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
@@ -30,22 +29,22 @@ namespace YtStream.Controllers
     [ApiController, Route("[controller]/[action]/{id}")]
     public class StreamController : BaseController
     {
-        private static readonly List<Guid> busyKeys = new();
-
         private readonly ILogger<StreamController> _logger;
-        private readonly LockService _lockService;
+        private readonly ApplicationLockService _lockService;
         private readonly YoutubeDlService _youtubeDlService;
         private readonly Mp3ConverterService _mp3ConverterService;
         private readonly Mp3CutService _mp3CutService;
         private readonly CacheService _cacheService;
         private readonly AdsService _adsService;
         private readonly SponsorBlockCacheService _sponsorBlockCacheService;
+        private readonly StreamKeyLockService _keyLockService;
         private Guid streamKey;
 
         public StreamController(ILogger<StreamController> logger, ConfigService config, UserManagerService userManager,
-            LockService lockService, YoutubeDlService youtubeDlService,
+            ApplicationLockService lockService, YoutubeDlService youtubeDlService,
             Mp3ConverterService mp3ConverterService, Mp3CutService mp3CutService, CacheService cacheService,
-            AdsService adsService, SponsorBlockCacheService sponsorBlockCacheService) : base(config, userManager)
+            AdsService adsService, SponsorBlockCacheService sponsorBlockCacheService,
+            StreamKeyLockService keyLockService) : base(config, userManager)
         {
             _logger = logger;
             _lockService = lockService;
@@ -55,6 +54,7 @@ namespace YtStream.Controllers
             _cacheService = cacheService;
             _adsService = adsService;
             _sponsorBlockCacheService = sponsorBlockCacheService;
+            _keyLockService = keyLockService;
         }
 
         private static string[] SplitIds(string idList)
@@ -69,18 +69,16 @@ namespace YtStream.Controllers
             {
                 context.HttpContext.Response.StatusCode = 503;
                 context.Result = View("Locked");
-                await base.OnActionExecutionAsync(context, next);
                 return;
             }
             if (Settings == null || !Settings.IsValid())
             {
-                context.Result = StatusCode(500, "Misconfiguration. Please check the application settings");
+                EarlyTermination(context, 500, "Misconfiguration. Please check the application settings");
                 return;
             }
             //handle session requirement
             if (Settings.RequireAccount)
             {
-                bool usedKey = false;
                 //Check if streaming key was supplied
                 var key = context.HttpContext.Request.Query["key"];
                 if (key.Count == 1)
@@ -89,7 +87,6 @@ namespace YtStream.Controllers
                     {
                         if (SetApiUser(streamKey))
                         {
-                            usedKey = true;
                             _logger.LogInformation("User {username}: Key based authentication success", CurrentUser.Username);
                         }
                     }
@@ -100,7 +97,8 @@ namespace YtStream.Controllers
                     {
                         //If authenticated but no key was used, use the username as key
                         streamKey = CurrentUser.GetNameBasedId();
-                        _logger.LogInformation("User {username}: Using name based key: {key}", CurrentUser.Username, streamKey);
+                        _logger.LogInformation("User {username}: Using name based key: {key}",
+                            CurrentUser.Username, streamKey);
                     }
                 }
                 else
@@ -112,35 +110,19 @@ namespace YtStream.Controllers
 
                 if (streamKey != Guid.Empty && CurrentUser != null && CurrentUser.Enabled)
                 {
-                    await WaitForKeyRelease(streamKey, TimeSpan.FromSeconds(5));
-                    //Ensure a key is only used once at a time
-                    lock (busyKeys)
+                    if (!await _keyLockService.UseKeyAsync(streamKey, TimeSpan.FromSeconds(5)))
                     {
-                        if (busyKeys.Contains(streamKey))
-                        {
-                            if (usedKey)
-                            {
-                                _logger.LogInformation("Key {key} already in use", streamKey);
-                                context.Result = StatusCode(403, "This stream key is already in use");
-                            }
-                            else
-                            {
-                                _logger.LogInformation("User session already in use with name based key {key}", streamKey);
-                                context.Result = StatusCode(403, "Your account is already streaming");
-                            }
-                            //Prevent faulty unlock by resetting the key
-                            streamKey = default;
-                            return;
-                        }
-                        _logger.LogInformation("Locking key {key} for streaming", streamKey);
-                        busyKeys.Add(streamKey);
+                        _logger.LogInformation("Key {key} already in use", streamKey);
+                        EarlyTermination(context, 403, "Stream key is already in use");
+                        return;
                     }
+                    _logger.LogInformation("Locking key {key} for streaming", streamKey);
                 }
                 else
                 {
                     //Authentication failure
                     streamKey = default;
-                    context.Result = StatusCode(403, "Authentication failure");
+                    EarlyTermination(context, 403, "Authentication failure");
                     return;
                 }
             }
@@ -159,13 +141,8 @@ namespace YtStream.Controllers
             {
                 if (streamKey != Guid.Empty)
                 {
-                    lock (busyKeys)
-                    {
-                        if (busyKeys.Remove(streamKey))
-                        {
-                            _logger.LogInformation("Unlocking key {key} for streaming", streamKey);
-                        }
-                    }
+                    _keyLockService.FreeKey(streamKey);
+                    _logger.LogInformation("Unlocking key {key} for streaming", streamKey);
                 }
             }
         }
@@ -206,7 +183,7 @@ namespace YtStream.Controllers
         /// This is done for every repeat iteration if there are multiple
         /// </param>
         /// <returns>MP3 data</returns>
-        [HttpGet, ActionName("Favorite"), Produces("audio/mpeg")]
+        [HttpGet, ActionName("Favorite"), Produces("audio/mpeg", "text/plain")]
         public async Task<IActionResult> FavAsync(
             [FromRoute] string id,
             [FromQuery] int? buffer,
@@ -267,7 +244,7 @@ namespace YtStream.Controllers
         /// This is done for every repeat iteration if there are multiple
         /// </param>
         /// <returns>MP3 data</returns>
-        [HttpGet, ActionName("Send"), Produces("audio/mpeg")]
+        [HttpGet, ActionName("Send"), Produces("audio/mpeg", "text/plain")]
         public async Task<IActionResult> SendAsync(
             [FromRoute] string id,
             [FromQuery] int? buffer,
@@ -654,43 +631,6 @@ namespace YtStream.Controllers
                 throw new InvalidOperationException("Settings object is not set");
             }
             return Settings.MarkAds;
-        }
-
-        /// <summary>
-        /// Wait for a maximum time period for a key release from the busy list
-        /// </summary>
-        /// <param name="key">Streaming key</param>
-        /// <param name="maxWait">Maximum time to wait</param>
-        /// <returns>true if released or not in list, false for timeout</returns>
-        /// <exception cref="ArgumentException">key is invalid</exception>
-        /// <exception cref="ArgumentOutOfRangeException">wait time is zero or negative</exception>
-        /// <remarks>
-        /// The check interval is 500 ms.
-        /// As a consequence, the granularity of <paramref name="maxWait"/> is 500 ms too.
-        /// </remarks>
-        private static async Task<bool> WaitForKeyRelease(Guid key, TimeSpan maxWait)
-        {
-            if (key == Guid.Empty)
-            {
-                throw new ArgumentException("Invalid key");
-            }
-            if (maxWait <= TimeSpan.Zero)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxWait));
-            }
-            Stopwatch sw = Stopwatch.StartNew();
-            while (sw.Elapsed < maxWait)
-            {
-                lock (busyKeys)
-                {
-                    if (!busyKeys.Contains(key))
-                    {
-                        return true;
-                    }
-                }
-                await Task.Delay(500);
-            }
-            return false;
         }
     }
 }

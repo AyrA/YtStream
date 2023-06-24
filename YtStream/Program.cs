@@ -42,8 +42,26 @@ namespace YtStream
             builder.Services.AddLogging(loggingBuilder =>
             {
                 var basePath = builder.Configuration.GetValue<string>("Config:BasePath");
+                if (string.IsNullOrEmpty(basePath))
+                {
+                    throw new Exception("Unable to obtain BasePath value from configuration");
+                }
+                if (!Directory.Exists(basePath))
+                {
+                    throw new DirectoryNotFoundException($"Configured base path '{basePath}' does not exist");
+                }
+                //Standard log file
                 loggingBuilder.AddFile(@"{1}\Logs\app_{0:yyyy}-{0:MM}-{0:dd}.log", fileLoggerOpts =>
                 {
+                    fileLoggerOpts.FormatLogFileName = fName =>
+                    {
+                        return string.Format(fName, DateTime.UtcNow, basePath);
+                    };
+                });
+                //Log file for important messages
+                loggingBuilder.AddFile(@"{1}\Logs\error_{0:yyyy}-{0:MM}-{0:dd}.log", fileLoggerOpts =>
+                {
+                    fileLoggerOpts.MinLevel = LogLevel.Error;
                     fileLoggerOpts.FormatLogFileName = fName =>
                     {
                         return string.Format(fName, DateTime.UtcNow, basePath);
@@ -62,6 +80,7 @@ namespace YtStream
             {
                 options.CheckConsentNeeded = context => false;
                 options.MinimumSameSitePolicy = SameSiteMode.Strict;
+                options.HttpOnly = Microsoft.AspNetCore.CookiePolicy.HttpOnlyPolicy.Always;
             });
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
 

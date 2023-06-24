@@ -10,9 +10,7 @@ namespace YtStream.Code
         {
             { 400, "The server is refusing to complete your request because it doesn't satisfies the conditions." },
             { 401, "The server requires you to authenticate." },
-            { 403, "You do not have access to this location. " +
-                "Most likely cause is that you tried to perform an administrative action " +
-                "without sufficient permissions." },
+            { 403, "You do not have access to this location, or are not allowed to perform the desired action." },
             { 404, "The URL you requested was not found on this server." },
             { 405, "Your browser used the wrong request type. " +
                 "Most likely cause is that you copied the URL from a page that was the result of a form " +
