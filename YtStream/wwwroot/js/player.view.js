@@ -1,6 +1,7 @@
 "use strict";
 
 (async function (q, qa) {
+    const wavSample = "UklGRiUAAABXQVZFZm10IBAAAAABAAIARKwAAIhYAQACABAAZGF0YXQAAAAAAAAA";
     const retryCount = 5;
     const player = document.body.appendChild(document.createElement("audio"));
     const initSources = [];
@@ -20,17 +21,20 @@
         }
         //Use traditional method of just trying to play a file
         try {
-            //A single sample of WAV audio
-            const emptyData = new Uint8Array(atob("UklGRiUAAABXQVZFZm10IBAAAAABAAIARKwAAIhYAQACABAAZGF0YXQAAAAAAAAA").split('').map(v => v.charCodeAt(0)));
+            //Convert WAV sample into temporary URL
+            const emptyData = new Uint8Array(atob(wavSample).split('').map(v => v.charCodeAt(0)));
             const wavdata = URL.createObjectURL(new Blob([emptyData], { type: "audio/wave" }));
+            //Try to play file
             player.src = wavdata;
             await player.play();
             return true;
         }
         catch (e) {
+            //Autoplay disabled or wav not supported. Likely the first error.
             console.warn("Autoplay test threw exception:", e);
         }
         finally {
+            //Cleanup
             console.log("Revoking URL", player.src);
             URL.revokeObjectURL(player.src);
         }
