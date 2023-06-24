@@ -32,7 +32,7 @@ namespace YtStream.Services
 
         public async Task<bool> UseKeyAsync(Guid key, TimeSpan maxWait)
         {
-            var acc = _userManager.GetUser(key);
+            var acc = _userManager.GetUser(key, true);
             if (acc == null || !acc.Enabled)
             {
                 _logger.LogWarning("Cannot find account for key {key}", key);
