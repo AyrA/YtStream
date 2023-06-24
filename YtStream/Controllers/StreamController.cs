@@ -5,8 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using YtStream.Code;
 using YtStream.Enums;
 using YtStream.Models;
 using YtStream.Models.Favs;
@@ -19,12 +19,6 @@ using YtStream.YtDl;
 
 namespace YtStream.Controllers
 {
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public enum ApiBoolEnum
-    {
-        Y = 1,
-        N = 0
-    }
 
     [ApiController, Route("[controller]/[action]/{id}")]
     public class StreamController : BaseController
