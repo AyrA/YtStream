@@ -1,14 +1,34 @@
 "use strict";
 
-(function (q, qa) {
+(async function (q, qa) {
+    const retryCount = 5;
     const player = document.body.appendChild(document.createElement("audio"));
     const initSources = [];
     const sources = [];
     let ptr = -1;
     let doRandom = false;
-
+    let errorCounter = retryCount;
     const setAutoplayMessage = function (visible) {
         q("#autoplayInfo").style.display = visible ? "block" : "none";
+    };
+
+    const canAutoplay = async function () {
+        //A single frame of MP3
+        const emptyData = "data:audio/mpeg;base64,//uQ" + ('A'.repeat(552));
+        //Use new method if supported by the browser
+        if (navigator.getAutoplayPolicy) {
+            return navigator.getAutoplayPolicy(player) === "allowed";
+        }
+        //Try traditional method of just trying
+        try {
+            player.src = emptyData;
+            await player.play();
+            return true;
+        }
+        catch (e) {
+            console.warn("Autoplay test threw exception:", e);
+        }
+        return false;
     };
 
     const videoIndex = function (id) {
@@ -19,7 +39,8 @@
             }
         });
         return index;
-    }
+    };
+
     const getVideos = function () {
         return Array.from(qa("[data-videoid]")).map(function (v) {
             return {
@@ -39,28 +60,6 @@
         }
         hookMediaEvents.hooked = true;
         if ("mediaSession" in navigator) {
-            /* No need to hook play and pause. The System does it for us
-            navigator.mediaSession.setActionHandler("play", () => {
-                console.debug("Media event: play");
-                if (player.paused) {
-                    player.play();
-                }
-                setPlayState();
-            });
-            navigator.mediaSession.setActionHandler("pause", () => {
-                console.debug("Media event: pause");
-                if (!player.paused) {
-                    player.pause();
-                }
-                setPlayState();
-            });
-            navigator.mediaSession.setActionHandler("stop", () => {
-                console.debug("Media event: stop");
-                if (!player.paused) {
-                    player.pause();
-                }
-            });
-            //*/
             navigator.mediaSession.setActionHandler("previoustrack", () => {
                 console.debug("Media event: prev");
                 playPrev();
@@ -150,14 +149,21 @@
         return sources[ptr++].id;
     };
 
+    const setPlayerSrc = function (id) {
+        player.src = "/Stream/Send/" + id + "?stream=y&buffer=10";
+    };
+
     const play = function (id) {
         console.log("Loading and playing audio", id);
-        player.src = "/Stream/Send/" + id + "?stream=y&buffer=10";
+        setPlayerSrc(id);
         q("[data-videoid='" + id + "']").parentNode.parentNode.scrollIntoView({ behavior: "smooth" });
         const promise = player.play();
         navigator.mediaSession.playbackState = "playing";
         setMediaInfo(sources[videoIndex(id)]);
-        return promise.then(() => setAutoplayMessage(false));
+        return promise.then(function () {
+            errorCounter = retryCount;
+            setAutoplayMessage(false);
+        });
     };
 
     const playPrev = function () {
@@ -195,18 +201,37 @@
 
         if ('setPositionState' in navigator.mediaSession) {
             if (player.buffered.length > 0) {
-                navigator.mediaSession.setPositionState({
-                    duration: player.buffered.end(0),
-                    playbackRate: player.playbackRate,
-                    position: player.currentTime,
-                });
+                const end = player.buffered.end(0) | 0;
+                const pos = player.currentTime | 0;
+                //Only update time if values are valid
+                if (pos >= 0 && pos <= end && end > 0) {
+                    navigator.mediaSession.setPositionState({
+                        duration: end,
+                        playbackRate: player.playbackRate,
+                        position: pos,
+                    });
+                }
             }
         }
         return ret;
     };
 
+    const playbackError = function () {
+        if (--errorCounter > 0) {
+            console.log("Retrying playback...");
+            setTimeout(function () {
+                play(sources[ptr].id);
+            }, 500);
+        }
+        else {
+            console.log("Giving up. Going to next file");
+            playNext();
+        }
+    };
+
     player.onended = playNext;
     player.ontimeupdate = updateTime;
+    player.onerror = playbackError;
     q("#tbVol").addEventListener("input", function (e) {
         e.preventDefault();
         player.volume = this.value / 10000;
@@ -251,25 +276,22 @@
         v.node.addEventListener("click", playButtonHandler);
         initSources.push(v);
     });
-
+    //Media button events
     hookMediaEvents();
+    //Initialize list with standard position
     initList();
+    //Set media information
     setMediaInfo(sources[0]);
-    if (navigator.getAutoplayPolicy) {
-        if (navigator.getAutoplayPolicy(player) === "allowed") {
-            ptr = 0;
-            playNext();
-        }
-        else {
-            console.warn("Autoplay is disabled");
-            setAutoplayMessage(true);
-        }
+
+    //Check autoplay and deal with the result
+    if (await canAutoplay()) {
+        ptr = 0;
+        playNext();
     }
     else {
-        ptr = 0;
-        playNext().catch(function (ex) {
-            setAutoplayMessage(true);
-            console.warn("Autoplay is disabled", ex);
-        });
+        console.warn("Autoplay is disabled");
+        setAutoplayMessage(true);
+        //Setting the initial file allows the play/pause media control to work
+        setPlayerSrc(sources[0].id);
     }
 })(tools.q, tools.qa);
