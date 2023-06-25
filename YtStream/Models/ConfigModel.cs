@@ -135,6 +135,11 @@ namespace YtStream.Models
         public Mp3FrequencyEnum AudioFrequency { get; set; }
 
         /// <summary>
+        /// Stereo/Mono for MP3 conversion
+        /// </summary>
+        public Mp3ChannelEnum AudioChannels { get; set; }
+
+        /// <summary>
         /// Initializes a configuration with defaults
         /// </summary>
         public ConfigModel()
@@ -154,6 +159,7 @@ namespace YtStream.Models
             //Default MP3 settings
             AudioBitrate = Mp3ConverterService.DefaultRate;
             AudioFrequency = Mp3ConverterService.DefaultFrequency;
+            AudioChannels = Mp3ConverterService.DefaultChannels;
         }
 
         public string[] GetValidationMessages()

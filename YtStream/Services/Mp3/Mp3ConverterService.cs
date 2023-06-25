@@ -22,16 +22,20 @@ namespace YtStream.Services.Mp3
         /// You can set it lower though.
         /// 128 kbps is common for internet radio stations.
         /// If you use this instance for spoken material and not music, you can go down to 64 kbps.
-        /// In that case you may also want to switch to mono. (ffmpeg argument: -ac 1)
+        /// In that case you may also want to switch to mono
         /// </summary>
         public const Mp3BitrateEnum DefaultRate = Mp3BitrateEnum.kbps192;
         /// <summary>
         /// Default frequency for the MP3 target.
         /// Defaults to 44.1 kHz ("CD quality")
         /// because the difference to 48 kHz is inaudible at 1x playback speed
-        /// and 32 kHz is too low.
+        /// and 32 kHz is too low for music.
         /// </summary>
         public const Mp3FrequencyEnum DefaultFrequency = Mp3FrequencyEnum.Hz44100;
+        /// <summary>
+        /// Default channels for the MP3 target. Defaults to stereo
+        /// </summary>
+        public const Mp3ChannelEnum DefaultChannels = Mp3ChannelEnum.Stereo;
 
         /// <summary>
         /// FFmpeg Executable path
@@ -47,14 +51,19 @@ namespace YtStream.Services.Mp3
         private Process? P;
 
         /// <summary>
-        /// Get or set audio bitrate
+        /// Get audio bitrate
         /// </summary>
         public Mp3BitrateEnum AudioRate { get; }
 
         /// <summary>
-        /// Get or set audio frequency
+        /// Get audio frequency
         /// </summary>
         public Mp3FrequencyEnum AudioFrequency { get; }
+
+        /// <summary>
+        /// Get audio channel layout
+        /// </summary>
+        public Mp3ChannelEnum AudioChannels { get; }
 
         /// <summary>
         /// Gets if the converter is currently running
@@ -77,6 +86,7 @@ namespace YtStream.Services.Mp3
             executable = c.FfmpegPath;
             AudioRate = c.AudioBitrate;
             AudioFrequency = c.AudioFrequency;
+            AudioChannels = c.AudioChannels;
         }
 
         public void SetUserAgent(string ffmpegUserAgent)
@@ -286,7 +296,8 @@ namespace YtStream.Services.Mp3
         /// </remarks>
         private string GetBaseArg()
         {
-            return $"-ab {(int)AudioRate}k -vn -ar {(int)AudioFrequency} -acodec mp3 -f mp3 -y pipe:1";
+            var channelCount = AudioChannels == Mp3ChannelEnum.Mono ? 1 : 2;
+            return $"-map_metadata -1 -ac {channelCount} -ab {(int)AudioRate}k -vn -ar {(int)AudioFrequency} -acodec mp3 -f mp3 -y pipe:1";
         }
 
         /// <summary>

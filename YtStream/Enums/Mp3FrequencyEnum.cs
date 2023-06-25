@@ -1,7 +1,7 @@
 ﻿namespace YtStream.Enums
 {
     /// <summary>
-    /// Known frequencies
+    /// Permitted Frequencies for MP3
     /// </summary>
     public enum Mp3FrequencyEnum : int
     {

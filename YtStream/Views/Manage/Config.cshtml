@@ -43,10 +43,6 @@
             </ul>
         </div>
     }
-    else
-    {
-        <div class="alert alert-info">Configuration is valid</div>
-    }
 }
 else
 {
@@ -55,264 +51,469 @@ else
         Error: <code>@ErrMsg</code>
     </div>
 }
-<form asp-action="Config" method="post">
-    <h2>Conversion tools</h2>
-    <div class="row">
-        <div class="col-md-6 form-group">
-            <label>
-                FFmpeg path
-            </label>
-            <input type="text" asp-for="FfmpegPath" class="form-control" />
-            <a href="https://ffmpeg.org/download.html" target="_blank" rel="noreferrer nofollow noopener">Download</a><br />
-            Selected version: <i>@FfmpegVersion</i>
-        </div>
-        <div class="col-md-6 form-group">
-            <label>
-                Youtube-dl path
-            </label>
-            <input type="text" asp-for="YoutubedlPath" class="form-control" />
-            <a href="https://gitload.net/yt-dlp/yt-dlp" target="_blank" rel="noreferrer nofollow noopener">Download</a><br />
-            Selected version: <i>@ytdlVersion</i><br />
-            User agent: <i>@ytdlUA</i>
-        </div>
-    </div>
 
-    <h2>Youtube</h2>
-    <div class="row">
-        <div class="col-md-6 form-group">
-            <label>
-                Youtube API key
-            </label>
-            <input type="password" asp-for="YtApiKey" class="form-control"
-                   value="@Model?.YtApiKey" placeholder="YouTube API Key" />
-            <i>
-                This is optional. If you don't set this then the URL builder will be unavailable,
+<ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link active" href="#tabTools" data-toggle="tab" role="tab" aria-controls="tabTools" aria-selected="true">Conversion tools</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="#tabYoutube" data-toggle="tab" role="tab" aria-controls="tabYoutube" aria-selected="false">Youtube</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="#tabCache" data-toggle="tab" role="tab" aria-controls="tabCache" aria-selected="false">Cache</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="#tabSblock" data-toggle="tab" role="tab" aria-controls="tabSblock" aria-selected="false">SponsorBlock</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="#tabStreaming" data-toggle="tab" role="tab" aria-controls="tabStreaming" aria-selected="false">Streaming options</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="#tabQuality" data-toggle="tab" role="tab" aria-controls="tabQuality" aria-selected="false">Quality</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="#tabAccounts" data-toggle="tab" role="tab" aria-controls="tabAccounts" aria-selected="false">Accounts</a>
+    </li>
+</ul>
+
+<form asp-action="Config" method="post">
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="tabTools" role="tabpanel">
+            <h2>Conversion tools</h2>
+            <p class="alert alert-info">
+                These tools are required to stream data.
+                FFmpeg is needed to convert the data into MP3 format,
+                and youtube-dl is needed to obtain the raw video URL, to pull additional metadata,
+                and to extract video URLs from playlists.
+            </p>
+            <div class="row">
+                <div class="col-md-6 form-group">
+                    <label>
+                        FFmpeg path
+                    </label>
+                    <input type="text" asp-for="FfmpegPath" class="form-control" />
+                    <a href="https://ffmpeg.org/download.html" target="_blank" rel="noreferrer nofollow noopener">Download</a><br />
+                    Selected version: <code>@FfmpegVersion</code>
+                </div>
+                <div class="col-md-6 form-group">
+                    <label>
+                        Youtube-dl path
+                    </label>
+                    <input type="text" asp-for="YoutubedlPath" class="form-control" />
+                    <a href="https://gitload.net/yt-dlp/yt-dlp" target="_blank" rel="noreferrer nofollow noopener">Download</a><br />
+                    Selected version: <code>@ytdlVersion</code><br />
+                    User agent: <code>@ytdlUA</code>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="tabYoutube" role="tabpanel">
+            <h2>Youtube</h2>
+            <p class="alert alert-info">
+                Configuring the YouTube API is optional.
+                If you don't set this then the URL builder and media player will be unavailable,
                 but streaming playlists will still work.
+                The API is free to use for a limited number of requests.
+                If you exceed that limit, the API will stop functioning
+                until enough time has passed to reset the counter.<br />
                 <a href="https://developers.google.com/youtube/v3/getting-started"
                    target="_blank" rel="noreferrer nofollow noopener">Get an API key here</a>
-            </i>
+            </p>
+            <div class="row">
+                <div class="col-md-6 form-group">
+                    <label>
+                        Youtube API key
+                    </label>
+                    <input type="password" asp-for="YtApiKey" class="form-control"
+                           value="@Model?.YtApiKey" placeholder="YouTube API Key" />
+                    <i>
+                    </i>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div class="row">
-        <div class="col-md-6">
+        <div class="tab-pane fade" id="tabCache" role="tabpanel">
             <h2>Cache</h2>
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" asp-for="UseCache" value="True" />
-                    Use cache
-                </label>
-                <p>
-                    <i>
-                        If enabled, MP3 files are stored on the server
-                    </i>
-                </p>
+            <p class="alert alert-info">
+                The audio and video data of a given YouTube video id never changes.
+                Because of that, it's wasteful to stream audio live from YouTube every time you want to listen to a song.
+                YtStream can save streamed MP3 files to disk.
+                If a stream is requested for an existing file, YouTube can be completely bypassed.
+                This makes that specific audio file save from removal by YouTube.<br />
+                Additionally, if you stream too much from it,
+                YouTube will eventually limit the bandwidth they give to you.
+            </p>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" asp-for="UseCache" value="True" />
+                            Use cache
+                        </label>
+                        <p>
+                            <i>
+                                Note: Disabling this will not automatically purge the cache.
+                            </i>
+                        </p>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label>
-                    Cache path
-                </label>
-                <input type="text" asp-for="CachePath" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label>
-                    Max cache time for MP3 files (in seconds)
-                </label>
-                <input type="number" min="0" asp-for="CacheMp3Lifetime" class="form-control" />
-                <i>
-                    Zero indicates to cache forever.
-                    For MP3, this is the preferred option because they never change on their own.
-                </i>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>
+                            Cache path
+                        </label>
+                        <input type="text" asp-for="CachePath" class="form-control" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>
+                            Max cache time for MP3 files
+                        </label>
+                        <div class="input-group">
+                            <input type="number" min="0" asp-for="CacheMp3Lifetime" class="form-control" />
+                            <div class="input-group-append">
+                                <span class="input-group-text" id="basic-addon2">Seconds</span>
+                            </div>
+                        </div>
+                        <i>
+                            Zero indicates to cache forever.
+                            For MP3, this is the preferred option because they never change on their own.
+                            Only decrease this number if you run into disk space problems.
+                        </i>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="tab-pane fade" id="tabSblock" role="tabpanel">
             <h2>SponsorBlock</h2>
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" asp-for="UseSponsorBlock" value="True" />
-                    Use SponsorBlock
-                </label>
-                <p>
+            <p class="alert alert-info">
+                SponsorBlock is a 3rd party database that contains time ranges of videos
+                that the community marks an categorizes.
+                This allows fully automatic skipping of ads within videos for example.
+                YtStream uses this system to skip over non-music sections in the audio.
+                This creates a more streamlined experience for you.
+                It tends to cuts off the start and end of music videos,
+                because they often don't contain any music.<br />
+                Clients still have the ability to disable SponsorBlock for their stream if they want to,
+                but they can't enable it if you disable it here.
+            </p>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" asp-for="UseSponsorBlock" value="True" />
+                            Use SponsorBlock
+                        </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>
+                                SponsorBlock server
+                            </label>
+                            <input type="text" asp-for="SponsorBlockServer" class="form-control" />
+                            <p>
+                                <i>
+                                    Different servers have different licenses.
+                                    The default server uses a license that doesn't permits commercial use.
+                                </i>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>
+                                Max cache time for SponsorBlock files
+                            </label>
+                            <div class="input-group">
+                                <input type="number" min="0" asp-for="CacheSBlockLifetime" class="form-control" />
+                                <div class="input-group-append">
+                                    <span class="input-group-text" id="basic-addon2">Seconds</span>
+                                </div>
+                            </div>
+                            <i>
+                                Zero indicates to cache forever.
+                                Recommendation is between 1 (86400) and 7 (@(86400 * 7)) days.
+                                Only successful responses with at least one range are cached.
+                            </i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="tabStreaming" role="tabpanel">
+            <h2>Streaming options</h2>
+            <p class="alert alert-info">
+                Here you configure various options to limit who can stream,
+                how much they can stream, and how streams behave.
+            </p>
+            <div class="row">
+                <div class="col-md-6 form-group">
+                    <label>
+                        <input type="checkbox" asp-for="RequireAccount" value="True" />
+                        Require account to stream
+                    </label>
+                    <p>
+                        <i>
+                            If set, people need to either be logged in or use a streaming key.
+                            If disabled, anyone can stream media from this server.
+                        </i>
+                    </p>
+                    <label>
+                        <input type="checkbox" asp-for="AdminAds" value="True" />
+                        Play ads for administrators too
+                    </label>
+                    <p>
+                        <i>
+                            Ads are normally not played when an administrator account streams media.
+                            You can enable ads here. Most useful for testing purposes.
+                        </i>
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <label>
+                        <input type="checkbox" asp-for="MarkAds" value="True" />
+                        Mark ads in MP3 header
+                    </label>
+                    <p>
+                        <i>
+                            This sets the "private" bit in the MP3 headers that contain ads.
+                            This would allow an application to automatically mark them to the user,
+                            or to silence/remove them.
+                            If this option is unset, the "private" bit will be cleared in all MP3 headers.
+                        </i>
+                    </p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <label>
+                        Maximum number of video ids per stream
+                    </label>
+                    <input type="number" min="0" max="1000" asp-for="MaxStreamIds" class="form-control" />
+                    Zero indicates no limit.
+                </div>
+                <div class="offset-2 col-md-4">
+                    <label>
+                        Maximum duration per video
+                    </label>
+                    <div class="input-group">
+                        <input type="number" min="0" max="86400" asp-for="MaxVideoDuration" class="form-control" />
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="basic-addon2">Seconds</span>
+                        </div>
+                    </div>
+                    <p>
+                        Zero indicates no limit.
+                        This has no effect on already cached MP3 files.
+                    </p>
+                </div>
+            </div>
+            <p>
+                <i>
+                    Once the video id limit is reached,
+                    the system stops adding more ids to the stream list.
+                    Regardless of this setting, there's a hard limit of
+                    @YoutubeDlService.MaxPlaylistEntries items per individual playlist.
+                    This will stop most bad people from overloading the system
+                    by trying to stream multiple huge playlists.
+                    There is no exception for administrators either.
+                </i>
+            </p>
+        </div>
+
+        <div class="tab-pane fade" id="tabQuality" role="tabpanel">
+            <h2>Quality</h2>
+            <p class="alert alert-info">
+                Here you can set the quality of the stream files.
+                Please carefully read the warnings below before adjusting these values.
+            </p>
+            <div class="row">
+                <div class="col-md-4 form-group">
+                    <label>Bitrate</label>
+                    <select asp-for="AudioBitrate" asp-items="Tools.HtmlEnumSwapList<Mp3BitrateEnum>()" class="form-control"></select>
+                    <i>Default recommended bitrate: @Tools.SwapEnumName(Mp3BitrateEnum.kbps192)</i>
+                </div>
+                <div class="col-md-4 form-group">
+                    <label>Frequency</label>
+                    <select asp-for="AudioFrequency" asp-items="Tools.HtmlEnumSwapList<Mp3FrequencyEnum>()" class="form-control"></select>
+                    <i>Default recommended frequency: @Tools.SwapEnumName(Mp3FrequencyEnum.Hz44100)</i>
+                </div>
+                <div class="col-md-4 form-group">
+                    <label>Channels</label>
+                    <select asp-for="AudioChannels" asp-items="Tools.HtmlEnumList<Mp3ChannelEnum>()" class="form-control"></select>
+                    <i>Default recommended channel: @Mp3ChannelEnum.Stereo</i>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12 form-group text-danger">
+                    <h2>&#9888;&#65039; CAUTION &#9888;&#65039;</h2>
+                    <p>
+                        After changing the frequency or bitrate you must clear the MP3 cache if it's enabled and not empty.
+                        Many browsers and devices have trouble playing streams that are made up of files with the old and new settings mixed.
+                        The player may simply stop at the first time the value change is encountered in the stream,
+                        or the time may stop counting up or trigger other weird behavior.
+                        Consider locking the application before changing audio settings
+                        if this application is already in active use.
+                    </p>
+
+                    <h2>RECOMMENDATION</h2>
+                    <ul>
+                        <li>
+                            General purpose streaming:
+                            @Tools.SwapEnumName(Mp3BitrateEnum.kbps128) to @Tools.SwapEnumName(Mp3BitrateEnum.kbps192),
+                            @Tools.SwapEnumName(Mp3FrequencyEnum.Hz44100),
+                            @Mp3ChannelEnum.Stereo
+                        </li>
+                        <li>
+                            Audio books or podcasts:
+                            @Tools.SwapEnumName(Mp3BitrateEnum.kbps48) to @Tools.SwapEnumName(Mp3BitrateEnum.kbps64),
+                            @Tools.SwapEnumName(Mp3FrequencyEnum.Hz32000),
+                            @Mp3ChannelEnum.Mono
+                        </li>
+                    </ul>
+
+                    <h2>BITRATE</h2>
+                    <p>
+                        The bitrate dictates how much data per second is available
+                        to encode the audio information.
+                        Increasing the bitrate beyond the recommendation will not yield better quality
+                        because the material from YouTube is already compressed,
+                        and information has already been irreversibly lost.
+                        Setting the bitrate too high will consume more bandwidth and disk space,
+                        but provides little to not benefit.
+                        Setting it too low will increasingly create audible audio artifacts.<br />
+                    </p>
+
+                    <h3>Capitalist explanation</h3>
+                    <p>
+                        You can view the bitrate as the budget you have to spend on the frequency
+                        and the audio channels. If the budget is too small,
+                        cost cutting methods will have to be taken,
+                        which you hear as unpleasant audio artifacts.<br />
+                        If it's set too high, you have excess spending that doesn't benefits anyone, which is wasteful.
+                    </p>
+
+                    <h2>FREQUENCY</h2>
+                    <p>
+                        The frequency (also known as sample rate) dictates how many audio samples per second are taken.
+                        The Nyquist–Shannon sampling theorem dictates that the sample rate
+                        has to be at least twice the frequency of the highest frequency signal
+                        that you want to preserve.
+                        Usually, @Tools.SwapEnumName(Mp3FrequencyEnum.Hz44100) is the best choice
+                        because it covers the entire hearing range of humans.
+                        The hearing range of humans drops at around 16 kHz,
+                        and pretty much completely stops at 20 kHz.
+                        As people get older, these numbers tend to decrease further.<br />
+                        A sample frequency of @Tools.SwapEnumName(Mp3FrequencyEnum.Hz44100)
+                        covers audio frequencies of up to 22.5 kHz,
+                        this is comparable to the frequency on CD audio.
+                        Higher values are of no benefit, because you can't hear them.<br />
+                        Audio compression algorithms like to remove high frequencies first,
+                        because they're less audible to the general public.
+                        If you increase the frequency, you generally also need to increase the bitrate
+                        to get anything useful out of it, and the material from YouTube is already compressed,
+                        and that audio information has already been lost and cannot be recovered.<br />
+                        For podcasts and audiobooks, you can reduce it to @Tools.SwapEnumName(Mp3FrequencyEnum.Hz32000)
+                        if you want to. This of course cuts off all frequencies above 16 kHz,
+                        but it also reduces the frequency range that the configured bitrate has to cover
+                        down to 16 kHz, and because of that,
+                        more of the bitrate can be used to preserve the lower frequencies.
+                        This is ideal for human voice.
+                    </p>
+
+                    <h3>Capitalist explanation</h3>
+                    <p>
+                        You can view the frequency as the area of a public park you have to maintain.
+                        The bitrate (your budget) is not spent equal amounts everywhere,
+                        but the places (frequencies) that people visit the most will get more
+                        maintenance budget than the areas people visit the least.
+                        If the park area is too big for your budget,
+                        your highly visited areas will suffer and people start to complain.
+                        This noise is called "audio artifacts" and is what makes low quality audio sound robotic.<br />
+                        In simple terms, if your budget is small, consider making the park smaller too.
+                    </p>
+
+                    <h2>CHANNELS</h2>
+                    <p>
+                        Most audio is recorded in two channels, known as stereo.
+                        This is what gives your ears a sense of direction from where the audio comes from.
+                        This makes music sound great and room filling but it also costs a lot of bitrate.<br />
+                        Using mono is a great way to bump up audio quality,
+                        especially if the source is not really using the stereo effect,
+                        which is common for spoken content.
+                    </p>
+
+                    <h3>Capitalist explanation</h3>
+                    <p>
+                        The channels are the number of public parks you have to maintain using your bitrate (the budget).
+                        Less parks means the budget can be spent more efficiently on the remaining parks.
+                    </p>
+
+                    <h2>ADS</h2>
+                    <p>
+                        If you are using ads, you must re-upload them all.
+                        It's recommended that you remove all ads from the system before changing the audio settings
+                        or you risk people being unable to stream at all until all ads are re-uploaded.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="tabAccounts" role="tabpanel">
+            <h2>Accounts</h2>
+            <div class="row">
+                <div class="col-md-4 form-group">
+                    <label>
+                        <input type="checkbox" asp-for="PublicRegistration" value="True" />
+                        Enable public account registration
+                    </label><br />
+                    <i>If disabled, ony the admin can create accounts</i>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4 form-group">
+                    <label>
+                        Maximum number of streaming keys per user
+                    </label>
+                    <input type="number" min="0" asp-for="MaxKeysPerUser" class="form-control" />
+                    <i>Zero indicates to not impose a limit</i>
+                </div>
+                <div class="offset-2 col-md-4 form-group">
+                    <label>
+                        Maximum parallel streams per key
+                    </label>
+                    <input type="number" min="0" asp-for="MaxKeyUsageCount" class="form-control" />
                     <i>
-                        Even if enabled, clients have the ability to disable this on a per-stream basis
+                        Zero indicates to not impose a limit.<br />
+                        Has no effect if anonymous streaming is allowed.
                     </i>
-                </p>
+                </div>
             </div>
-            <div class="form-group">
-                <label>
-                    SponsorBlock server
-                </label>
-                <input type="text" asp-for="SponsorBlockServer" class="form-control" />
+            <div class="row">
+                <div class="col-12">
+                    <p class="auto-help">
+                        <i>
+                            The account itself also acts as a streaming key that obeys this limit,
+                            but it's not considered a key in the traditional sense.
+                            This means you can set the streaming key count to zero to effectively disable key generation,
+                            but the maximum parallel stream settings still applies to the account.
+                            The largest total number of parallel streams an account can have
+                            is <code>(maxKeys + 1) &times; maxUseCount</code> streams.
+                        </i>
+                    </p>
+                </div>
             </div>
-            <div class="form-group">
-                <label>
-                    Max cache time for SponsorBlock files (in seconds)
-                </label>
-                <input type="number" min="0" asp-for="CacheSBlockLifetime" class="form-control" />
-                <i>
-                    Zero indicates to cache forever.
-                    Recommendation is between 1 (86400) and 7 (@(86400*7)) days.
-                    Only successful responses with at least one range are cached.
-                </i>
+            <div class="row">
+                <div class="col-md-4 form-group">
+                    <input type="submit" value="Save" class="btn btn-primary" />
+                </div>
             </div>
-        </div>
-    </div>
-
-    <h2>Streaming options</h2>
-    <div class="row">
-        <div class="col-md-6 form-group">
-            <label>
-                <input type="checkbox" asp-for="RequireAccount" value="True" />
-                Require account to stream
-            </label>
-            <p>
-                <i>
-                    If set, people need to either be logged in or use a streaming key.
-                    If disabled, anyone can stream media from this server.
-                </i>
-            </p>
-            <label>
-                <input type="checkbox" asp-for="AdminAds" value="True" />
-                Play ads for administrators too
-            </label>
-            <p>
-                <i>
-                    Ads are normally not played when an administrator account streams media.
-                    You can enable ads here. Most useful for testing purposes.
-                </i>
-            </p>
-        </div>
-        <div class="col-md-6">
-            <label>
-                <input type="checkbox" asp-for="MarkAds" value="True" />
-                Mark ads in MP3 header
-            </label>
-            <p class="auto-help">
-                <i>
-                    This sets the "private" bit in the MP3 headers that contain ads.
-                    This would allow an application to automatically mark them to the user,
-                    or to silence/remove them.
-                    If this option is unset, the "private" bit will be cleared in all MP3 headers.
-                </i>
-            </p>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-6 form-group">
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-4">
-            <label>
-                Maximum number of video ids per stream
-            </label>
-            <input type="number" min="0" max="1000" asp-for="MaxStreamIds" class="form-control" />
-            Zero indicates no limit.
-        </div>
-        <div class="offset-2 col-md-4">
-            <label>
-                Maximum duration per video
-            </label>
-            <input type="number" min="0" max="86400" asp-for="MaxVideoDuration" class="form-control" />
-            Zero indicates no limit. Setting has no effect on files from the cache.
-        </div>
-    </div>
-    <p class="auto-help">
-        <i>
-            Once this limit is reached,
-            the system stops adding more ids to the stream list.
-            Regardless of this setting, there's a hard limit of
-            @YoutubeDlService.MaxPlaylistEntries items per individual playlist.
-            This will stop most bad people from overloading the system
-            by trying to stream multiple huge playlists.
-            There is no exception for administrators either.
-        </i>
-    </p>
-
-    <h2>Converter options</h2>
-    <div class="row">
-        <div class="col-md-4 form-group">
-            <label>Bitrate</label>
-            <select asp-for="AudioBitrate" asp-items="Tools.HtmlEnumSwapList<Mp3BitrateEnum>()" class="form-control"></select>
-            <i>Default recommended bitrate: @Tools.SwapEnumName(Mp3BitrateEnum.kbps192)</i>
-        </div>
-        <div class="offset-2 col-md-4 form-group">
-            <label>Frequency</label>
-            <select asp-for="AudioFrequency" asp-items="Tools.HtmlEnumSwapList<Mp3FrequencyEnum>()" class="form-control"></select>
-            <i>Default recommended frequency: @Tools.SwapEnumName(Mp3FrequencyEnum.Hz44100)</i>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-12 form-group text-danger">
-            <p>
-                <b>&#9888;&#65039; CAUTION &#9888;&#65039;</b><br />
-                After changing the frequency or bitrate you must clear the MP3 cache if it's enabled and not empty.
-                Many browsers and devices have trouble playing streams that are made up of files with the old and new settings mixed.
-                The player may simply stop at the first time the value change is encountered in the stream,
-                or the time may stop counting up or trigger other weird behavior.
-                Consider locking the application before changing audio settings
-                if this application is already in active use.
-            </p>
-            <p>
-                <b>QUALITY</b><br />
-                Increasing the values will not yield better quality,
-                simply because the material from Youtube is not of better quality,
-                but it will consume more bandwidth.
-                You can reduce the Bitrate to @Tools.SwapEnumName(Mp3BitrateEnum.kbps128) if bandwidth is a concern
-                without sacrificing audio quality too much.
-                If you plan on using this system purely for voice content and want to save as much bandwidth as possible,
-                you can reduce the bitrate to around @Tools.SwapEnumName(Mp3BitrateEnum.kbps64)
-                and still get acceptable results.
-            </p>
-            <p>
-                <b>ADS</b><br />
-                If you are using ads, you must re-upload them all.
-                It's recommended that you remove all ads from the system before changing the audio settings
-                or you risk people being unable to stream at all until all ads are re-uploaded.
-            </p>
-        </div>
-    </div>
-
-    <h2>Accounts</h2>
-    <div class="row">
-        <div class="col-md-4 form-group">
-            <label>
-                <input type="checkbox" asp-for="PublicRegistration" value="True" />
-                Enable public account registration
-            </label><br />
-            <i>If disabled, ony the admin can create accounts</i>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-4 form-group">
-            <label>
-                Maximum number of streaming keys per user
-            </label>
-            <input type="number" min="0" asp-for="MaxKeysPerUser" class="form-control" />
-            <i>Zero indicates to not impose a limit</i>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-4 form-group">
-            <label>
-                Maximum parallel streams per key
-            </label>
-            <input type="number" min="0" asp-for="MaxKeyUsageCount" class="form-control" />
-            <i>Zero indicates to not impose a limit.</i>
-            <p class="auto-help">
-                <i>
-                    The account itself also acts as a streaming key,
-                    but it does not count as a key towardst the maximum stream keys per user setting.
-                    The maximum parallel streams per key on the other side, accounts for this.
-                    This means the largest total number of parallel streams an account can have
-                    is <code>(maxKeys+1)*maxUseCount</code>
-                </i>
-            </p>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-4 form-group">
-            <input type="submit" value="Send" class="btn btn-primary" />
         </div>
     </div>
 </form>
@@ -320,6 +521,6 @@ else
     <a asp-action="Index" class="btn btn-link">Go back</a>
 </p>
 @section Scripts
-{
+    {
     <script src="~/js/config.view.js" asp-append-version="true" defer></script>
 }

@@ -322,6 +322,15 @@ namespace YtStream
             }
         }
 
+        public static IEnumerable<SelectListItem> HtmlEnumList<T>()
+        {
+            var Values = Enum.GetValues(typeof(T)).OfType<T>();
+            foreach (var V in Values)
+            {
+                yield return new SelectListItem($"{V}", $"{V}");
+            }
+        }
+
         /// <summary>
         /// Swaps "NameValue" enum string into "Value Name"
         /// </summary>
