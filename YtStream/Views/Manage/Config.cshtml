@@ -298,7 +298,7 @@ else
                     <input type="number" min="0" max="1000" asp-for="MaxStreamIds" class="form-control" />
                     Zero indicates no limit.
                 </div>
-                <div class="offset-2 col-md-4">
+                <div class="offset-md-2 col-md-4">
                     <label>
                         Maximum duration per video
                     </label>
@@ -467,6 +467,9 @@ else
 
         <div class="tab-pane fade" id="tabAccounts" role="tabpanel">
             <h2>Accounts</h2>
+            <p class="alert alert-info">
+                Here you configure account specific settings
+            </p>
             <div class="row">
                 <div class="col-md-4 form-group">
                     <label>
@@ -484,7 +487,7 @@ else
                     <input type="number" min="0" asp-for="MaxKeysPerUser" class="form-control" />
                     <i>Zero indicates to not impose a limit</i>
                 </div>
-                <div class="offset-2 col-md-4 form-group">
+                <div class="offset-md-2 col-md-4 form-group">
                     <label>
                         Maximum parallel streams per key
                     </label>

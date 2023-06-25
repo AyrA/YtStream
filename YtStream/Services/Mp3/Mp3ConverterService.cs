@@ -297,7 +297,7 @@ namespace YtStream.Services.Mp3
         private string GetBaseArg()
         {
             var channelCount = AudioChannels == Mp3ChannelEnum.Mono ? 1 : 2;
-            return $"-map_metadata -1 -ac {channelCount} -ab {(int)AudioRate}k -vn -ar {(int)AudioFrequency} -acodec mp3 -f mp3 -y pipe:1";
+            return $"-ac {channelCount} -ab {(int)AudioRate}k -vn -ar {(int)AudioFrequency} -acodec mp3 -f mp3 -y pipe:1";
         }
 
         /// <summary>
