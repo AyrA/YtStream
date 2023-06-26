@@ -263,11 +263,11 @@
         if (!player.src) {
             ptr = 0;
             playNext();
-            setAutoplayMessage(false);
         }
         else {
             player.paused ? player.play() : player.pause();
         }
+        setAutoplayMessage(false);
         setPlayState();
     });
     q("#btnPrev").addEventListener("click", function (e) {
