@@ -1,4 +1,5 @@
-﻿using YtStream.Models.Api;
+﻿using System;
+using YtStream.Models.Api;
 using YtStream.Models.YT;
 
 namespace YtStream.Models
@@ -10,6 +11,8 @@ namespace YtStream.Models
         public string Description { get; set; }
 
         public string Owner { get; set; }
+
+        public Guid? StreamKey { get; set; }
 
         public InfoModel[] Videos { get; set; }
 

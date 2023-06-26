@@ -50,7 +50,7 @@ namespace YtStream.Controllers
             return View(vm);
         }
 
-        public async Task<IActionResult> Player(string playlist)
+        public async Task<IActionResult> Player(string playlist, Guid? key)
         {
             RequireSettings();
 
@@ -58,39 +58,59 @@ namespace YtStream.Controllers
             {
                 return NotFound();
             }
-            if (Settings.RequireAccount && !IsAuthenticated)
+            if (Settings.RequireAccount && !IsAuthenticated && key.HasValue)
             {
-                return RequestLogin();
+                if (!SetApiUser(key.Value))
+                {
+                    return Forbid();
+                }
             }
 
             if (!string.IsNullOrEmpty(playlist))
             {
+                if (Settings.RequireAccount && !IsAuthenticated)
+                {
+                    return RequestLogin();
+                }
                 var plId = Tools.ExtractPlaylistFromUrl(playlist);
+                //Redirect the user to the correct URL if the playlist Id doesn't matches the original input
                 if (plId != playlist)
                 {
-                    return RedirectToAction("Player", new { playlist = plId });
+                    return RedirectToAction("Player", new
+                    {
+                        playlist = plId,
+                        key
+                    });
                 }
 
                 var cacheKey = $"Player-{plId}";
 
-                var obj = _ytCacheService.Get(cacheKey);
-                if (obj != null)
+                if (_ytCacheService.Get(cacheKey) is PlayerViewModel obj)
                 {
-                    return View(obj as PlayerViewModel);
+                    if (key.HasValue)
+                    {
+                        obj.StreamKey = key.Value;
+                    }
+                    return View(obj);
                 }
 
                 if (!Tools.IsYoutubePlaylist(plId))
                 {
-                    throw new Exception("Invalid playlist id");
+                    return RedirectWithMessage("Player", "Invalid playlist id format", false);
                 }
+                //Extract playlist and video information
                 var pl = await _ytApiService.GetPlaylistInfoAsync(plId)
                     ?? throw new Exception("Playlist not found or not public");
                 var videos = await _ytApiService.GetPlaylistItemsAsync(plId)
                     ?? throw new Exception("Failed to get playlist videos");
-                var vm = new PlayerViewModel(pl, videos.Select(m => m.ToApiModel()).ToArray());
                 if (videos.Length == 0)
                 {
-                    throw new Exception("This playlist is empty");
+                    return RedirectWithMessage("Player", "This playlist is empty", false);
+                }
+                var vm = new PlayerViewModel(pl, videos.Select(m => m.ToApiModel()).ToArray());
+                if (key.HasValue)
+                {
+                    vm.StreamKey = key.Value;
                 }
                 _ytCacheService.Set(cacheKey, vm, TimeSpan.FromHours(1));
                 return View(vm);

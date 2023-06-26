@@ -308,9 +308,21 @@ namespace YtStream.Models.Accounts
         }
 
         /// <summary>
-        /// Create .NET Core identity for HttpContext.SignInAsync()
+        /// Create .NET Core identity for
+        /// <see cref="Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions.SignInAsync(Microsoft.AspNetCore.Http.HttpContext, ClaimsPrincipal)"/>
         /// </summary>
         public ClaimsPrincipal GetIdentity()
+        {
+            return new ClaimsPrincipal(GetClaimsIdentity());
+        }
+
+        /// <summary>
+        /// Gets an identity that can be assigned to the
+        /// <see cref="Microsoft.AspNetCore.Http.HttpContext.User"/> object
+        /// </summary>
+        /// <returns>Claims identity for the current user</returns>
+        /// <exception cref="InvalidOperationException">Username has not been set</exception>
+        public ClaimsIdentity GetClaimsIdentity()
         {
             if (string.IsNullOrEmpty(Username))
             {
@@ -325,7 +337,7 @@ namespace YtStream.Models.Accounts
             {
                 identity.AddClaim(new Claim(ClaimTypes.Role, Role));
             }
-            return new ClaimsPrincipal(identity);
+            return identity;
         }
 
         /// <summary>

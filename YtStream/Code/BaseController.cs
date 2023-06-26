@@ -131,9 +131,19 @@ namespace YtStream
         protected bool SetApiUser(Guid apiKey)
         {
             CurrentUser = _userManager.GetUser(apiKey, false);
+            if (CurrentUser != null)
+            {
+                HttpContext.User = CurrentUser.GetIdentity();
+                ViewBag.User = CurrentUser;
+            }
             return CurrentUser != null;
         }
 
+        /// <summary>
+        /// Sets the currently logged in user based on the username
+        /// </summary>
+        /// <param name="username">Username</param>
+        /// <returns>true, if user could be set</returns>
         [MemberNotNullWhen(true, nameof(CurrentUser))]
         protected bool SetUser(string? username)
         {

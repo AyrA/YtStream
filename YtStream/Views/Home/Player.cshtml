@@ -14,10 +14,22 @@
 @if (Model == null)
 {
     <form method="get">
+        @if (Settings.RequireAccount && !(User.Identity?.IsAuthenticated ?? false))
+        {
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <input type="text" name="key" required class="form-control" placeholder="Streaming key" />
+                    <i>
+                        Public streaming is dabled and you're not logged in.
+                        You must provide a streaming key to continue
+                    </i>
+                </div>
+            </div>
+        }
         <div class="row">
             <div class="col-md-6">
                 <div class="input-group mb-1">
-                    <input type="text" name="playlist" class="form-control" placeholder="Youtube URL or playlist id" />
+                    <input type="text" name="playlist" required class="form-control" placeholder="Youtube URL or playlist id" />
                     <div class="input-group-append">
                         <input type="submit" class="btn btn-primary" value="Open" />
                     </div>
@@ -80,6 +92,6 @@ else
     </div>
     @section Scripts
     {
-        <script src="~/js/player.view.js" asp-append-version="true" defer></script>
+        <script src="~/js/player.view.js" asp-append-version="true" defer data-streamkey="@Model.StreamKey"></script>
     }
 }

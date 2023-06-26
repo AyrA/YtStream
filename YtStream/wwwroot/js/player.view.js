@@ -1,6 +1,7 @@
 "use strict";
 
 (async function (q, qa) {
+    const streamKey = q("[data-streamkey]").dataset.streamkey || null;
     const wavSample = "UklGRiUAAABXQVZFZm10IBAAAAABAAIARKwAAIhYAQACABAAZGF0YXQAAAAAAAAA";
     const retryCount = 5;
     const player = document.body.appendChild(document.createElement("audio"));
@@ -159,8 +160,12 @@
         return sources[ptr++].id;
     };
 
+    const getStreamUrl = function (id) {
+        return "/Stream/Send/" + id + "?stream=y&buffer=10" + (streamKey ? "&key=" + streamKey : "");
+    };
+
     const setPlayerSrc = function (id) {
-        player.src = "/Stream/Send/" + id + "?stream=y&buffer=10";
+        player.src = getStreamUrl(id);
     };
 
     const play = function (id) {
@@ -258,6 +263,7 @@
         if (!player.src) {
             ptr = 0;
             playNext();
+            setAutoplayMessage(false);
         }
         else {
             player.paused ? player.play() : player.pause();
