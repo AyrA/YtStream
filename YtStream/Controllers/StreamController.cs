@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -32,13 +33,14 @@ namespace YtStream.Controllers
         private readonly AdsService _adsService;
         private readonly SponsorBlockCacheService _sponsorBlockCacheService;
         private readonly StreamKeyLockService _keyLockService;
+        private readonly IHostApplicationLifetime _applicationLifetime;
         private Guid streamKey;
 
         public StreamController(ILogger<StreamController> logger, ConfigService config, UserManagerService userManager,
             ApplicationLockService lockService, YoutubeDlService youtubeDlService,
             Mp3ConverterService mp3ConverterService, Mp3CutService mp3CutService, CacheService cacheService,
             AdsService adsService, SponsorBlockCacheService sponsorBlockCacheService,
-            StreamKeyLockService keyLockService) : base(config, userManager)
+            StreamKeyLockService keyLockService, IHostApplicationLifetime applicationLifetime) : base(config, userManager)
         {
             _logger = logger;
             _lockService = lockService;
@@ -49,6 +51,7 @@ namespace YtStream.Controllers
             _adsService = adsService;
             _sponsorBlockCacheService = sponsorBlockCacheService;
             _keyLockService = keyLockService;
+            _applicationLifetime = applicationLifetime;
         }
 
         private static string[] SplitIds(string idList)
@@ -282,19 +285,24 @@ namespace YtStream.Controllers
                 Tools.SetAudioHeaders(Response);
                 return new EmptyResult();
             }
+            var requestCancelToken = HttpContext.RequestAborted;
+            var applicationTerminationToken = _applicationLifetime.ApplicationStopping;
             var includeAds = ShouldPlayAds();
             var markAds = ShouldMarkAds();
             var currentAdType = AdTypeEnum.Intro;
             var mp3CacheHandler = _cacheService.GetHandler(CacheTypeEnum.MP3, Settings.CacheMp3Lifetime);
             var skipped = 0;
             Mp3CutTargetStreamConfigModel? outputStreams = null;
-            var cancelToken = HttpContext.RequestAborted;
-            cancelToken.Register(delegate ()
+
+            var killOutput = delegate ()
             {
                 _logger.LogInformation("Connection gone");
                 var os = outputStreams;
                 os?.SetTimeout(false);
-            });
+            };
+
+            requestCancelToken.Register(killOutput);
+            applicationTerminationToken.Register(killOutput);
             _logger.LogInformation("Preparing response for {count} ids", ids.Length);
 
             for (var iteration = 0; iteration < model.Repeat; iteration++)
@@ -306,7 +314,9 @@ namespace YtStream.Controllers
                 foreach (var ytid in ids)
                 {
                     //Stop streaming if the client is gone or the application has been locked
-                    if (_lockService.Locked || cancelToken.IsCancellationRequested)
+                    if (_lockService.Locked ||
+                        requestCancelToken.IsCancellationRequested ||
+                        applicationTerminationToken.IsCancellationRequested)
                     {
                         break;
                     }
